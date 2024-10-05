@@ -6,20 +6,77 @@ static void wait_cycles (uint32_t cycles)
 
 }
 
-
-void adc_immediate (struct NESEmu *emu)
+uint16_t immediate (struct NESEmu *emu)
 {
-    flags_adc_imm (emu);
-    emu->cpu.A += emu->buf[emu->cpu.PC + 1];
-    emu->cpu.PC += 2;
-    wait_cycles(2);
+    return emu->buf[emu->cpu.PC + 1];
 }
 
-void adc_absolute (struct NESEmu *emu)
+uint16_t absolute (struct NESEmu *emu)
 {
-    flags_adc_absolute(emu);
     uint16_t addr = *(uint16_t *) &emu->buf[emu->cpu.PC + 1];
+    return addr;
+}
+
+uint16_t zeropage (struct NESEmu *emu)
+{
+    uint8_t addr = emu->buf[emu->cpu.PC + 1];
+    return addr;
+}
+
+uint16_t zeropage_x (struct NESEmu *emu)
+{
+    uint8_t addr = emu->buf[emu->cpu.PC + 1] + emu->cpu.X;
+    return addr;
+}
+
+uint16_t absolute_x (struct NESEmu *emu)
+{
+    uint16_t addr = *((uint16_t *) &emu->buf[emu->cpu.PC + 1]) + emu->cpu.X;
+    return addr;
+}
+
+uint16_t absolute_y (struct NESEmu *emu)
+{
+    uint16_t addr = *((uint16_t *) &emu->buf[emu->cpu.PC + 1]) + emu->cpu.Y;
+    return addr;
+}
+
+uint16_t indirect_x (struct NESEmu *emu)
+{
+    uint8_t addr = emu->buf[emu->cpu.PC + 1];
+    uint16_t indirect = *((uint16_t *) &emu->buf[emu->cpu.X]);
+    uint16_t fulladdr = addr + indirect;
+
+    return fulladdr;
+}
+
+uint16_t indirect_y (struct NESEmu *emu)
+{
+    uint8_t zeroaddr = emu->buf[emu->cpu.PC + 1];
+    uint16_t addr = *((uint16_t *) &emu->buf[zeroaddr]);
+    uint16_t fulladdr = addr + emu->cpu.Y;
+
+    return fulladdr;
+}
+
+void adc (struct NESEmu *emu, uint16_t addr)
+{
     emu->cpu.A += emu->buf[addr];
-    emu->cpu.PC += 3;
-    wait_cycles(4);
+}
+
+
+void calc_addr (struct NESEmu *emu,
+                uint16_t (*get_addr) (struct NESEmu *emu),
+                void (*flags) (struct NESEmu *emu),
+                void (*opcode_exec) (struct NESEmu *emu, uint16_t addr),
+                uint16_t pc_offset,
+                uint8_t cycles,
+                uint8_t cross_page
+                )
+{
+    flags (emu);
+    uint16_t addr = get_addr (emu);
+    opcode_exec (nes, addr);
+    emu->cpu.PC += pc_offset;
+    wait_cycles(cycles);
 }
