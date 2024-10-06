@@ -19,13 +19,16 @@ uint16_t indirect_x (struct NESEmu *emu);
 uint16_t indirect_y (struct NESEmu *emu);
 
 void adc (struct NESEmu *emu, uint16_t addr);
+void _and (struct NESEmu *emu, uint16_t addr);
+
 
 void calc_addr (struct NESEmu *emu,
                 uint16_t (*get_addr) (struct NESEmu *emu),
-                void (*flags) (struct NESEmu *emu),
+                void (*flags) (struct NESEmu *emu, uint16_t addr),
                 void (*opcode_exec) (struct NESEmu *emu, uint16_t addr),
                 uint16_t pc_offset,
-                uint8_t cycles
+                uint8_t cycles,
+                uint8_t cross_page
                 );
 
 #endif // OPCODE_EXEC_H

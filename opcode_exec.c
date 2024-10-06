@@ -1,7 +1,7 @@
 #include "opcode_exec.h"
 #include "flags_checking.h"
 
-static void wait_cycles (struct NESEmu *emu, uint32_t start_pc, uint32_t cycles)
+static void wait_cycles (struct NESEmu *emu, uint32_t addr, uint32_t cycles)
 {
 
 }
@@ -64,19 +64,24 @@ void adc (struct NESEmu *emu, uint16_t addr)
     emu->cpu.A += emu->buf[addr];
 }
 
+void _and (struct NESEmu *emu, uint16_t addr)
+{
+    emu->cpu.A &= emu->buf[addr];
+}
+
 
 void calc_addr (struct NESEmu *emu,
                 uint16_t (*get_addr) (struct NESEmu *emu),
-                void (*flags) (struct NESEmu *emu),
+                void (*flags) (struct NESEmu *emu, uint16_t addr),
                 void (*opcode_exec) (struct NESEmu *emu, uint16_t addr),
                 uint16_t pc_offset,
                 uint8_t cycles,
                 uint8_t cross_page
                 )
 {
-    flags (emu);
     uint16_t addr = get_addr (emu);
+    flags (emu, addr);
     opcode_exec (nes, addr);
-    wait_cycles(emu, emu->cpu.PC, cycles);
+    wait_cycles(emu, addr, cycles);
     emu->cpu.PC += pc_offset;
 }
