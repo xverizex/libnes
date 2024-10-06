@@ -2,6 +2,8 @@
 #define OPCODE_EXEC_H
 #include <cpunes.h>
 
+uint16_t accumulator (struct NESEmu *emu);
+
 uint16_t immediate (struct NESEmu *emu);
 
 uint16_t absolute (struct NESEmu *emu);
@@ -20,6 +22,11 @@ uint16_t indirect_y (struct NESEmu *emu);
 
 void adc (struct NESEmu *emu, uint16_t addr);
 void _and (struct NESEmu *emu, uint16_t addr);
+void asl (struct NESEmu *emu, uint16_t addr);
+void bcc (struct NESEmu *emu, uint16_t addr);
+void bcs (struct NESEmu *emu, uint16_t addr);
+void beq (struct NESEmu *emu, uint16_t addr);
+void bit (struct NESEmu *emu, uint16_t addr);
 
 
 void calc_addr (struct NESEmu *emu,

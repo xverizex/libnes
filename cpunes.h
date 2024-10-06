@@ -22,6 +22,7 @@ struct CPUNes {
 
 struct NESEmu {
     struct CPUNes cpu;
+    uint8_t is_branch;
 
     uint8_t *buf;
 };
