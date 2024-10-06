@@ -2,6 +2,11 @@
 #define OPERATOR_NAMES_H
 
 enum {
+    ASL_ZEROPAGE = 0x06,
+    ASL_ACCUMULATOR = 0x0a,
+    ASL_ABSOLUTE = 0x0e,
+    ASL_ZEROPAGE_X = 0x16,
+    ASL_ABSOLUTE_X = 0x1e,
     AND_INDIRECT_X = 0x21,
     AND_ZEROPAGE = 0x25,
     AND_IMMEDIATE = 0x29,
