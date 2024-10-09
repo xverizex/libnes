@@ -1,5 +1,5 @@
-#ifndef FLAGS_CHECKING_H
-#define FLAGS_CHECKING_H
+#ifndef FLAGS_H
+#define FLAGS_H
 #include <cpunes.h>
 
 void flags_adc_imm (struct NESEmu *emu, uint16_t addr);
@@ -29,4 +29,4 @@ void flags_asl_absolute (struct NESEmu *emu, uint16_t addr);
 void flags_bit_zeropage (struct NESEmu *emu, uint16_t addr);
 void flags_bit_absolute (struct NESEmu *emu, uint16_t addr);
 
-#endif // FLAGS_CHECKING_H
+#endif // FLAGS_H

@@ -1,5 +1,5 @@
-#include "opcode_exec.h"
-#include "flags_checking.h"
+#include "exec.h"
+#include "flags.h"
 
 static void wait_cycles (struct NESEmu *emu, uint32_t addr, uint32_t cycles)
 {
@@ -110,6 +110,11 @@ void beq (struct NESEmu *emu, uint16_t addr)
 }
 
 void bit (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void bmi (struct NESEmu *emu, uint16_t addr)
 {
 
 }

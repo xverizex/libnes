@@ -1,4 +1,4 @@
-#include "flags_checking.h"
+#include "flags.h"
 #include <cpunes.h>
 
 void flags_adc_imm (struct NESEmu *emu, uint16_t addr)

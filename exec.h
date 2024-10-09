@@ -1,5 +1,5 @@
-#ifndef OPCODE_EXEC_H
-#define OPCODE_EXEC_H
+#ifndef EXEC_H
+#define EXEC_H
 #include <cpunes.h>
 
 uint16_t accumulator (struct NESEmu *emu);
@@ -38,4 +38,4 @@ void calc_addr (struct NESEmu *emu,
                 uint8_t cross_page
                 );
 
-#endif // OPCODE_EXEC_H
+#endif // EXEC_H

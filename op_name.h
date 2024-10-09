@@ -1,5 +1,5 @@
-#ifndef OPERATOR_NAMES_H
-#define OPERATOR_NAMES_H
+#ifndef OP_NAME_H
+#define OP_NAME_H
 
 enum {
     ASL_ZEROPAGE = 0x06,
@@ -14,6 +14,7 @@ enum {
     AND_IMMEDIATE = 0x29,
     BIT_ABSOLUTE = 0x2c,
     AND_ABSOLUTE = 0x2d,
+    BMI_RELATIVE = 0x30,
     AND_INDIRECT_Y = 0x31,
     AND_ZEROPAGE_X = 0x35,
     AND_ABSOLUTE_Y = 0x39,
@@ -33,4 +34,4 @@ enum {
     BEQ_RELATIVE = 0xf0,
 };
 
-#endif // OPERATOR_NAMES_H
+#endif // OP_NAME_H

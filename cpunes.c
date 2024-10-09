@@ -1,7 +1,7 @@
 #include "cpunes.h"
-#include <flags_checking.h>
-#include <opcode_exec.h>
-#include <operator_names.h>
+#include <flags.h>
+#include <exec.h>
+#include <op_name.h>
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
@@ -83,6 +83,9 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
             break;
         case BIT_ABSOLUTE:
             calc_addr (emu, absolute, flags_bit_absolute, bit, 3, 4, 0);
+            break;
+        case BMI_RELATIVE:
+            calc_addr (emu, NULL, NULL, bmi, 2, 2, 2);
             break;
         }
     }
