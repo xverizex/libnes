@@ -87,6 +87,30 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
         case BMI_RELATIVE:
             calc_addr (emu, NULL, NULL, bmi, 2, 2, 2);
             break;
+        case BNE_RELATIVE:
+            calc_addr (emu, NULL, NULL, bne, 2, 2, 2);
+            break;
+        case BRK_IMPLIED:
+            calc_addr (emu, NULL, NULL, brk, 1, 7, 0);
+            break;
+        case BVC_RELATIVE:
+            calc_addr (emu, NULL, NULL, bvc, 2, 2, 2);
+            break;
+        case BVS_RELATIVE:
+            calc_addr (emu, NULL, NULL, vbs, 2, 2, 2);
+            break;
+        case CLC_IMPLIED:
+            calc_addr (emu, NULL, NULL, clc, 1, 2, 0);
+            break;
+        case CLD_IMPLIED:
+            calc_addr (emu, NULL, NULL, cld, 1, 2, 0);
+            break;
+        case CLI_IMPLIED:
+            calc_addr (emu, NULL, NULL, cli, 1, 2, 0);
+            break;
+        case CLV_IMPLIED:
+            calc_addr (emu, NULL, NULL, clv, 1, 2, 0);
+            break;
         }
     }
 }

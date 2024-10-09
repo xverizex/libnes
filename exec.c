@@ -119,6 +119,51 @@ void bmi (struct NESEmu *emu, uint16_t addr)
 
 }
 
+void bne (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void bpl (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void brk (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void bvc (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void bvs (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void clc (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void cld (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void cli (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
+void clv (struct NESEmu *emu, uint16_t addr)
+{
+
+}
+
 void calc_addr (struct NESEmu *emu,
                 uint16_t (*get_addr) (struct NESEmu *emu),
                 void (*flags) (struct NESEmu *emu, uint16_t addr),
