@@ -439,6 +439,8 @@ void nes_emu_init (struct NESEmu *emu)
 		END_DEFINE_STATIC_STRUCT ()
 
 		pnes_handler = nes_handler;
+
+		is_init_global_func = 1;
 	}
 }
 
