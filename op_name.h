@@ -58,6 +58,7 @@ enum {
     EOR_ABSOLUTE_Y = 0x59,
     EOR_ABSOLUTE_X = 0x5d,
     LSR_ABSOLUTE_X = 0x5e,
+
     RTS_IMPLIED = 0x60,
     ADC_INDIRECT_X = 0x61,
     ADC_ZEROPAGE = 0x65,
@@ -109,6 +110,7 @@ enum {
     LDX_ABSOLUTE = 0xae,
     BCS_RELATIVE = 0xb0,
     LDA_INDIRECT_Y = 0xb1,
+
     LDY_ZEROPAGE_X = 0xb4,
     LDA_ZEROPAGE_X = 0xb5,
     LDX_ZEROPAGE_Y = 0xb6,

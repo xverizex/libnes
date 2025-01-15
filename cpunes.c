@@ -1,462 +1,451 @@
-#include "cpunes.h"
-#include <flags.h>
-#include <exec.h>
-#include <op_name.h>
+#include <cpunes.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+
+static uint32_t is_init_global_func;
+
+typedef void (*handler_opcode) (struct NESEmu *emu);
+
+#define DEFINE_STATIC_STRUCT_NES_HANDLER() \
+	static handler_opcode nes_handler[256] = {
+
+#define END_DEFINE_STATIC_STRUCT() \
+	};
+
+#define ADD_HANDLER(func) \
+	func,
+
+void invalid_opcode (struct NESEmu *);
+void brk_implied (struct NESEmu *);
+void ora_indirect_x (struct NESEmu *);
+void ora_zeropage (struct NESEmu *);
+void asl_zeropage (struct NESEmu *);
+void php_implied (struct NESEmu *);
+void ora_immediate (struct NESEmu *);
+void asl_accumulator (struct NESEmu *);
+void ora_absolute (struct NESEmu *);
+void asl_absolute (struct NESEmu *);
+void bpl_relative (struct NESEmu *);
+void ora_indirect_y (struct NESEmu *);
+void ora_zeropage_x (struct NESEmu *);
+void asl_zeropage_x (struct NESEmu *);
+void clc_implied (struct NESEmu *);
+void ora_absolute_y (struct NESEmu *);
+void ora_absolute_x (struct NESEmu *);
+void asl_absolute_x (struct NESEmu *);
+void jsr_absolute (struct NESEmu *);
+void and_indirect_x (struct NESEmu *);
+void bit_zeropage (struct NESEmu *);
+void and_zeropage (struct NESEmu *);
+void rol_zeropage (struct NESEmu *);
+void plp_implied (struct NESEmu *);
+void and_immediate (struct NESEmu *);
+void rol_accumulator (struct NESEmu *);
+void bit_absolute (struct NESEmu *);
+void and_absolute (struct NESEmu *);
+void rol_absolute (struct NESEmu *);
+void bmi_relative (struct NESEmu *);
+void and_indirect_y (struct NESEmu *);
+void and_zeropage_x (struct NESEmu *);
+void rol_zeropage_x (struct NESEmu *);
+void sec_implied (struct NESEmu *);
+void and_absolute_y (struct NESEmu *);
+void and_absolute_x (struct NESEmu *);
+void rol_absolute_x (struct NESEmu *);
+void rti_implied (struct NESEmu *);
+void eor_indirect_x (struct NESEmu *);
+void eor_zeropage (struct NESEmu *);
+void lsr_zeropage (struct NESEmu *);
+void pha_implied (struct NESEmu *);
+void eor_immediate (struct NESEmu *);
+void lsr_accumulator (struct NESEmu *);
+void jmp_absolute (struct NESEmu *);
+void eor_absolute (struct NESEmu *);
+void lsr_absolute (struct NESEmu *);
+void bvc_relative (struct NESEmu *);
+void eor_indirect_y (struct NESEmu *);
+void eor_zeropage_x (struct NESEmu *);
+void lsr_zeropage_x (struct NESEmu *);
+void cli_implied (struct NESEmu *);
+void eor_absolute_y (struct NESEmu *);
+void eor_absolute_x (struct NESEmu *);
+void lsr_absolute_x (struct NESEmu *);
+void rts_implied (struct NESEmu *);
+void adc_indirect_x (struct NESEmu *);
+void adc_zeropage (struct NESEmu *);
+void ror_zeropage (struct NESEmu *);
+void pla_implied (struct NESEmu *);
+void adc_immediate (struct NESEmu *);
+void ror_accumulator (struct NESEmu *);
+void jmp_indirect (struct NESEmu *);
+void adc_absolute (struct NESEmu *);
+void ror_absolute (struct NESEmu *);
+void bvs_relative (struct NESEmu *);
+void adc_indirect_y (struct NESEmu *);
+void adc_zeropage_x (struct NESEmu *);
+void ror_zeropage_x (struct NESEmu *);
+void sei_implied (struct NESEmu *);
+void adc_absolute_y (struct NESEmu *);
+void adc_absolute_x (struct NESEmu *);
+void ror_absolute_x (struct NESEmu *);
+void sta_indirect_x (struct NESEmu *);
+void sty_zeropage (struct NESEmu *);
+void sta_zeropage (struct NESEmu *);
+void stx_zeropage (struct NESEmu *);
+void dey_implied (struct NESEmu *);
+void txa_implied (struct NESEmu *);
+void sty_absolute (struct NESEmu *);
+void sta_absolute (struct NESEmu *);
+void stx_absolute (struct NESEmu *);
+void bcc_relative (struct NESEmu *);
+void sta_indirect_y (struct NESEmu *);
+void sty_zeropage_x (struct NESEmu *);
+void sta_zeropage_x (struct NESEmu *);
+void stx_zeropage_y (struct NESEmu *);
+void tya_implied (struct NESEmu *);
+void sta_absolute_y (struct NESEmu *);
+void txs_implied (struct NESEmu *);
+void sta_absolute_x (struct NESEmu *);
+void ldy_immediate (struct NESEmu *);
+void lda_indirect_x (struct NESEmu *);
+void ldx_immediate (struct NESEmu *);
+void ldy_zeropage (struct NESEmu *);
+void lda_zeropage (struct NESEmu *);
+void ldx_zeropage (struct NESEmu *);
+void tay_implied (struct NESEmu *);
+void lda_immediate (struct NESEmu *);
+void tax_implied (struct NESEmu *);
+void ldy_absolute (struct NESEmu *);
+void lda_absolute (struct NESEmu *);
+void ldx_absolute (struct NESEmu *);
+void bcs_relative (struct NESEmu *);
+void lda_indirect_y (struct NESEmu *);
+void ldy_zeropage_x (struct NESEmu *);
+void lda_zeropage_x (struct NESEmu *);
+void ldx_zeropage_y (struct NESEmu *);
+void clv_implied (struct NESEmu *);
+void lda_absolute_y (struct NESEmu *);
+void tsx_implied (struct NESEmu *);
+void ldy_absolute_x (struct NESEmu *);
+void lda_absolute_x (struct NESEmu *);
+void ldx_absolute_y (struct NESEmu *);
+void cpy_immediate (struct NESEmu *);
+void cmp_indirect_x (struct NESEmu *);
+void cpy_zeropage (struct NESEmu *);
+void cmp_zeropage (struct NESEmu *);
+void dec_zeropage (struct NESEmu *);
+void iny_implied (struct NESEmu *);
+void cmp_immediate (struct NESEmu *);
+void dex_implied (struct NESEmu *);
+void cpy_absolute (struct NESEmu *);
+void cmp_absolute (struct NESEmu *);
+void dec_absolute (struct NESEmu *);
+void bne_relative (struct NESEmu *);
+void cmp_indirect_y (struct NESEmu *);
+void cmp_zeropage_x (struct NESEmu *);
+void dec_zeropage_x (struct NESEmu *);
+void cld_implied (struct NESEmu *);
+void cmp_absolute_y (struct NESEmu *);
+void cmp_absolute_x (struct NESEmu *);
+void dec_absolute_x (struct NESEmu *);
+void cpx_immediate (struct NESEmu *);
+void sbc_indirect_x (struct NESEmu *);
+void cpx_zeropage (struct NESEmu *);
+void sbc_zeropage (struct NESEmu *);
+void inc_zeropage (struct NESEmu *);
+void inx_implied (struct NESEmu *);
+void sbc_immediate (struct NESEmu *);
+void nop_implied (struct NESEmu *);
+void cpx_absolute (struct NESEmu *);
+void sbc_absolute (struct NESEmu *);
+void inc_absolute (struct NESEmu *);
+void beq_relative (struct NESEmu *);
+void sbc_indirect_y (struct NESEmu *);
+void sbc_zeropage_x (struct NESEmu *);
+void inc_zeropage_x (struct NESEmu *);
+void sed_implied (struct NESEmu *);
+void sbc_absolute_y (struct NESEmu *);
+void sbc_absolute_x (struct NESEmu *);
+void inc_absolute_x (struct NESEmu *);
+
+static handler_opcode *pnes_handler = NULL;
+
+void nes_emu_init (struct NESEmu *emu)
+{
+	size_t sz_nes_emu = sizeof (struct NESEmu);
+
+	memset (emu, 0, sz_nes_emu);
+
+
+	if (!is_init_global_func) {
+		DEFINE_STATIC_STRUCT_NES_HANDLER ()
+			ADD_HANDLER (brk_implied)		/* 0x00 */
+			ADD_HANDLER (ora_indirect_x)		/* 0x01 */
+			ADD_HANDLER (invalid_opcode)		/* 0x02 */
+			ADD_HANDLER (invalid_opcode)		/* 0x03 */
+			ADD_HANDLER (invalid_opcode)		/* 0x04 */
+			ADD_HANDLER (ora_zeropage)		/* 0x05 */
+			ADD_HANDLER (asl_zeropage)		/* 0x06 */
+			ADD_HANDLER (invalid_opcode)		/* 0x07 */
+			ADD_HANDLER (php_implied)		/* 0x08 */
+			ADD_HANDLER (ora_immediate)		/* 0x09 */
+			ADD_HANDLER (asl_accumulator)		/* 0x0a */
+			ADD_HANDLER (invalid_opcode)		/* 0x0b */
+			ADD_HANDLER (invalid_opcode)		/* 0x0c */
+			ADD_HANDLER (ora_absolute)		/* 0x0d */
+			ADD_HANDLER (asl_absolute)		/* 0x0e */
+			ADD_HANDLER (invalid_opcode)		/* 0x0f */
+			ADD_HANDLER (bpl_relative)		/* 0x10 */
+			ADD_HANDLER (ora_indirect_y)		/* 0x11 */
+			ADD_HANDLER (invalid_opcode)		/* 0x12 */
+			ADD_HANDLER (invalid_opcode)		/* 0x13 */
+			ADD_HANDLER (invalid_opcode)		/* 0x14 */
+			ADD_HANDLER (ora_zeropage_x)		/* 0x15 */
+			ADD_HANDLER (asl_zeropage_x)		/* 0x16 */
+			ADD_HANDLER (invalid_opcode)		/* 0x17 */
+			ADD_HANDLER (clc_implied)		/* 0x18 */
+			ADD_HANDLER (ora_absolute_y)		/* 0x19 */
+			ADD_HANDLER (invalid_opcode)		/* 0x1a */
+			ADD_HANDLER (invalid_opcode)		/* 0x1b */
+			ADD_HANDLER (invalid_opcode)		/* 0x1c */
+			ADD_HANDLER (ora_absolute_x)		/* 0x1d */
+			ADD_HANDLER (asl_absolute_x)		/* 0x1e */
+			ADD_HANDLER (invalid_opcode)		/* 0x1f */
+			ADD_HANDLER (jsr_absolute)		/* 0x20 */
+			ADD_HANDLER (and_indirect_x)		/* 0x21 */
+			ADD_HANDLER (invalid_opcode)		/* 0x22 */
+			ADD_HANDLER (invalid_opcode)		/* 0x23 */
+			ADD_HANDLER (bit_zeropage)		/* 0x24 */
+			ADD_HANDLER (and_zeropage)		/* 0x25 */
+			ADD_HANDLER (rol_zeropage)		/* 0x26 */
+			ADD_HANDLER (invalid_opcode)		/* 0x27 */
+			ADD_HANDLER (plp_implied)		/* 0x28 */
+			ADD_HANDLER (and_immediate)		/* 0x29 */
+			ADD_HANDLER (rol_accumulator)		/* 0x2a */
+			ADD_HANDLER (invalid_opcode)		/* 0x2b */
+			ADD_HANDLER (bit_absolute)		/* 0x2c */
+			ADD_HANDLER (and_absolute)		/* 0x2d */
+			ADD_HANDLER (rol_absolute)		/* 0x2e */
+			ADD_HANDLER (invalid_opcode)		/* 0x2f */
+			ADD_HANDLER (bmi_relative)		/* 0x30 */
+			ADD_HANDLER (and_indirect_y)		/* 0x31 */
+			ADD_HANDLER (invalid_opcode)		/* 0x32 */
+			ADD_HANDLER (invalid_opcode)		/* 0x33 */
+			ADD_HANDLER (invalid_opcode)		/* 0x34 */
+			ADD_HANDLER (and_zeropage_x)		/* 0x35 */
+			ADD_HANDLER (rol_zeropage_x)		/* 0x36 */
+			ADD_HANDLER (invalid_opcode)		/* 0x37 */
+			ADD_HANDLER (sec_implied)		/* 0x38 */
+			ADD_HANDLER (and_absolute_y)		/* 0x39 */
+			ADD_HANDLER (invalid_opcode)		/* 0x3a */
+			ADD_HANDLER (invalid_opcode)		/* 0x3b */
+			ADD_HANDLER (invalid_opcode)		/* 0x3c */
+			ADD_HANDLER (and_absolute_x)		/* 0x3d */
+			ADD_HANDLER (rol_absolute_x)		/* 0x3e */
+			ADD_HANDLER (invalid_opcode)		/* 0x3f */
+			ADD_HANDLER (rti_implied)		/* 0x40 */
+			ADD_HANDLER (eor_indirect_x)		/* 0x41 */
+			ADD_HANDLER (invalid_opcode)		/* 0x42 */
+			ADD_HANDLER (invalid_opcode)		/* 0x43 */
+			ADD_HANDLER (invalid_opcode)		/* 0x44 */
+			ADD_HANDLER (eor_zeropage)		/* 0x45 */
+			ADD_HANDLER (lsr_zeropage)		/* 0x46 */
+			ADD_HANDLER (invalid_opcode)		/* 0x47 */
+			ADD_HANDLER (pha_implied)		/* 0x48 */
+			ADD_HANDLER (eor_immediate)		/* 0x49 */
+			ADD_HANDLER (lsr_accumulator)		/* 0x4a */
+			ADD_HANDLER (invalid_opcode)		/* 0x4b */
+			ADD_HANDLER (jmp_absolute)		/* 0x4c */
+			ADD_HANDLER (eor_absolute)		/* 0x4d */
+			ADD_HANDLER (lsr_absolute)		/* 0x4e */
+			ADD_HANDLER (invalid_opcode)		/* 0x4f */
+			ADD_HANDLER (bvc_relative)		/* 0x50 */
+			ADD_HANDLER (eor_indirect_y)		/* 0x51 */
+			ADD_HANDLER (invalid_opcode)		/* 0x52 */
+			ADD_HANDLER (invalid_opcode)		/* 0x53 */
+			ADD_HANDLER (invalid_opcode)		/* 0x54 */
+			ADD_HANDLER (eor_zeropage_x)		/* 0x55 */
+			ADD_HANDLER (lsr_zeropage_x)		/* 0x56 */
+			ADD_HANDLER (invalid_opcode)		/* 0x57 */
+			ADD_HANDLER (cli_implied)		/* 0x58 */
+			ADD_HANDLER (eor_absolute_y)		/* 0x59 */
+			ADD_HANDLER (invalid_opcode)		/* 0x5a */
+			ADD_HANDLER (invalid_opcode)		/* 0x5b */
+			ADD_HANDLER (invalid_opcode)		/* 0x5c */
+			ADD_HANDLER (eor_absolute_x)		/* 0x5d */
+			ADD_HANDLER (lsr_absolute_x)		/* 0x5e */
+			ADD_HANDLER (invalid_opcode)		/* 0x5f */
+			ADD_HANDLER (rts_implied)		/* 0x60 */
+			ADD_HANDLER (adc_indirect_x)		/* 0x61 */
+			ADD_HANDLER (invalid_opcode)		/* 0x62 */
+			ADD_HANDLER (invalid_opcode)		/* 0x63 */
+			ADD_HANDLER (invalid_opcode)		/* 0x64 */
+			ADD_HANDLER (adc_zeropage_x)		/* 0x65 */
+			ADD_HANDLER (ror_zeropage)		/* 0x66 */
+			ADD_HANDLER (invalid_opcode)		/* 0x67 */
+			ADD_HANDLER (pla_implied)		/* 0x68 */
+			ADD_HANDLER (adc_immediate)		/* 0x69 */
+			ADD_HANDLER (ror_accumulator)		/* 0x6a */
+			ADD_HANDLER (invalid_opcode)		/* 0x6b */
+			ADD_HANDLER (jmp_indirect)		/* 0x6c */
+			ADD_HANDLER (adc_absolute)		/* 0x6d */
+			ADD_HANDLER (ror_absolute)		/* 0x6e */
+			ADD_HANDLER (invalid_opcode)		/* 0x6f */
+			ADD_HANDLER (bvs_relative)		/* 0x70 */
+			ADD_HANDLER (adc_indirect_y)		/* 0x71 */
+			ADD_HANDLER (invalid_opcode)		/* 0x72 */
+			ADD_HANDLER (invalid_opcode)		/* 0x73 */
+			ADD_HANDLER (invalid_opcode)		/* 0x74 */
+			ADD_HANDLER (adc_zeropage_x)		/* 0x75 */
+			ADD_HANDLER (ror_zeropage_x)		/* 0x76 */
+			ADD_HANDLER (invalid_opcode)		/* 0x77 */
+			ADD_HANDLER (sei_implied)		/* 0x78 */
+			ADD_HANDLER (adc_absolute_y)		/* 0x79 */
+			ADD_HANDLER (invalid_opcode)		/* 0x7a */
+			ADD_HANDLER (invalid_opcode)		/* 0x7b */
+			ADD_HANDLER (invalid_opcode)		/* 0x7c */
+			ADD_HANDLER (adc_absolute_x)		/* 0x7d */
+			ADD_HANDLER (ror_absolute_x)		/* 0x7e */
+			ADD_HANDLER (invalid_opcode)		/* 0x7f */
+			ADD_HANDLER (invalid_opcode)		/* 0x80 */
+			ADD_HANDLER (sta_indirect_x)		/* 0x81 */
+			ADD_HANDLER (invalid_opcode)		/* 0x82 */
+			ADD_HANDLER (invalid_opcode)		/* 0x83 */
+			ADD_HANDLER (sty_zeropage)		/* 0x84 */
+			ADD_HANDLER (sta_zeropage)		/* 0x85 */
+			ADD_HANDLER (stx_zeropage)		/* 0x86 */
+			ADD_HANDLER (invalid_opcode)		/* 0x87 */
+			ADD_HANDLER (dey_implied)		/* 0x88 */
+			ADD_HANDLER (invalid_opcode)		/* 0x89 */
+			ADD_HANDLER (txa_implied)		/* 0x8a */
+			ADD_HANDLER (invalid_opcode)		/* 0x8b */
+			ADD_HANDLER (sty_absolute)		/* 0x8c */
+			ADD_HANDLER (sta_absolute)		/* 0x8d */
+			ADD_HANDLER (stx_absolute)		/* 0x8e */
+			ADD_HANDLER (invalid_opcode)		/* 0x8f */
+			ADD_HANDLER (bcc_relative)		/* 0x90 */
+			ADD_HANDLER (sta_indirect_y)		/* 0x91 */
+			ADD_HANDLER (invalid_opcode)		/* 0x92 */
+			ADD_HANDLER (invalid_opcode)		/* 0x93 */
+			ADD_HANDLER (sty_zeropage_x)		/* 0x94 */
+			ADD_HANDLER (sta_zeropage_x)		/* 0x95 */
+			ADD_HANDLER (stx_zeropage_y)		/* 0x96 */
+			ADD_HANDLER (invalid_opcode)		/* 0x97 */
+			ADD_HANDLER (tya_implied)		/* 0x98 */
+			ADD_HANDLER (sta_absolute_y)		/* 0x99 */
+			ADD_HANDLER (txs_implied)		/* 0x9a */
+			ADD_HANDLER (invalid_opcode)		/* 0x9b */
+			ADD_HANDLER (invalid_opcode)		/* 0x9c */
+			ADD_HANDLER (sta_absolute_x)		/* 0x9d */
+			ADD_HANDLER (invalid_opcode)		/* 0x9e */
+			ADD_HANDLER (invalid_opcode)		/* 0x9f */
+			ADD_HANDLER (ldy_immediate)		/* 0xa0 */
+			ADD_HANDLER (lda_indirect_x)		/* 0xa1 */
+			ADD_HANDLER (ldx_immediate)		/* 0xa2 */
+			ADD_HANDLER (invalid_opcode)		/* 0xa3 */
+			ADD_HANDLER (ldy_zeropage)		/* 0xa4 */
+			ADD_HANDLER (lda_zeropage)		/* 0xa5 */
+			ADD_HANDLER (ldx_zeropage)		/* 0xa6 */
+			ADD_HANDLER (invalid_opcode)		/* 0xa7 */
+			ADD_HANDLER (tay_implied)		/* 0xa8 */
+			ADD_HANDLER (lda_immediate)		/* 0xa9 */
+			ADD_HANDLER (tax_implied)		/* 0xaa */
+			ADD_HANDLER (invalid_opcode)		/* 0xab */
+			ADD_HANDLER (ldy_absolute)		/* 0xac */
+			ADD_HANDLER (lda_absolute)		/* 0xad */
+			ADD_HANDLER (ldx_absolute)		/* 0xae */
+			ADD_HANDLER (invalid_opcode)		/* 0xaf */
+			ADD_HANDLER (bcs_relative)		/* 0xb0 */
+			ADD_HANDLER (lda_indirect_y)		/* 0xb1 */
+			ADD_HANDLER (invalid_opcode)		/* 0xb2 */
+			ADD_HANDLER (invalid_opcode)		/* 0xb3 */
+			ADD_HANDLER (ldy_zeropage_x)		/* 0xb4 */
+			ADD_HANDLER (lda_zeropage_x)		/* 0xb5 */
+			ADD_HANDLER (ldx_zeropage_y)		/* 0xb6 */
+			ADD_HANDLER (invalid_opcode)		/* 0xb7 */
+			ADD_HANDLER (clv_implied)		/* 0xb8 */
+			ADD_HANDLER (lda_absolute_y)		/* 0xb9 */
+			ADD_HANDLER (tsx_implied)		/* 0xba */
+			ADD_HANDLER (invalid_opcode)		/* 0xbb */
+			ADD_HANDLER (ldy_absolute_x)		/* 0xbc */
+			ADD_HANDLER (lda_absolute_x)		/* 0xbd */
+			ADD_HANDLER (ldx_absolute_y)		/* 0xbe */
+			ADD_HANDLER (invalid_opcode)		/* 0xbf */
+			ADD_HANDLER (cpy_immediate)		/* 0xc0 */
+			ADD_HANDLER (cmp_indirect_x)		/* 0xc1 */
+			ADD_HANDLER (invalid_opcode)		/* 0xc2 */
+			ADD_HANDLER (invalid_opcode)		/* 0xc3 */
+			ADD_HANDLER (cpy_zeropage)		/* 0xc4 */
+			ADD_HANDLER (cmp_zeropage)		/* 0xc5 */
+			ADD_HANDLER (dec_zeropage)		/* 0xc6 */
+			ADD_HANDLER (invalid_opcode)		/* 0xc7 */
+			ADD_HANDLER (iny_implied)		/* 0xc8 */
+			ADD_HANDLER (cmp_immediate)		/* 0xc9 */
+			ADD_HANDLER (dex_implied)		/* 0xca */
+			ADD_HANDLER (invalid_opcode)		/* 0xcb */
+			ADD_HANDLER (cpy_absolute)		/* 0xcc */
+			ADD_HANDLER (cmp_absolute)		/* 0xcd */
+			ADD_HANDLER (dec_absolute)		/* 0xce */
+			ADD_HANDLER (invalid_opcode)		/* 0xcf */
+			ADD_HANDLER (bne_relative)		/* 0xd0 */
+			ADD_HANDLER (cmp_indirect_y)		/* 0xd1 */
+			ADD_HANDLER (invalid_opcode)		/* 0xd2 */
+			ADD_HANDLER (invalid_opcode)		/* 0xd3 */
+			ADD_HANDLER (invalid_opcode)		/* 0xd4 */
+			ADD_HANDLER (cmp_zeropage_x)		/* 0xd5 */
+			ADD_HANDLER (dec_zeropage_x)		/* 0xd6 */
+			ADD_HANDLER (invalid_opcode)		/* 0xd7 */
+			ADD_HANDLER (cld_implied)		/* 0xd8 */
+			ADD_HANDLER (cmp_absolute_y)		/* 0xd9 */
+			ADD_HANDLER (invalid_opcode)		/* 0xda */
+			ADD_HANDLER (invalid_opcode)		/* 0xdb */
+			ADD_HANDLER (invalid_opcode)		/* 0xdc */
+			ADD_HANDLER (cmp_absolute_x)		/* 0xdd */
+			ADD_HANDLER (dec_absolute_x)		/* 0xde */
+			ADD_HANDLER (invalid_opcode)		/* 0xdf */
+			ADD_HANDLER (cpx_immediate)		/* 0xe0 */
+			ADD_HANDLER (sbc_indirect_x)		/* 0xe1 */
+			ADD_HANDLER (invalid_opcode)		/* 0xe2 */
+			ADD_HANDLER (invalid_opcode)		/* 0xe3 */
+			ADD_HANDLER (cpx_zeropage)		/* 0xe4 */
+			ADD_HANDLER (sbc_zeropage)		/* 0xe5 */
+			ADD_HANDLER (inc_zeropage)		/* 0xe6 */
+			ADD_HANDLER (invalid_opcode)		/* 0xe7 */
+			ADD_HANDLER (inx_implied)		/* 0xe8 */
+			ADD_HANDLER (sbc_immediate)		/* 0xe9 */
+			ADD_HANDLER (nop_implied)		/* 0xea */
+			ADD_HANDLER (invalid_opcode)		/* 0xeb */
+			ADD_HANDLER (cpx_absolute)		/* 0xec */
+			ADD_HANDLER (sbc_absolute)		/* 0xed */
+			ADD_HANDLER (inc_absolute)		/* 0xee */
+			ADD_HANDLER (invalid_opcode)		/* 0xef */
+			ADD_HANDLER (beq_relative)		/* 0xf0 */
+			ADD_HANDLER (sbc_indirect_y)		/* 0xf1 */
+			ADD_HANDLER (invalid_opcode)		/* 0xf2 */
+			ADD_HANDLER (invalid_opcode)		/* 0xf3 */
+			ADD_HANDLER (invalid_opcode)		/* 0xf4 */
+			ADD_HANDLER (sbc_zeropage_x)		/* 0xf5 */
+			ADD_HANDLER (inc_zeropage_x)		/* 0xf6 */
+			ADD_HANDLER (invalid_opcode)		/* 0xf7 */
+			ADD_HANDLER (sed_implied)		/* 0xf8 */
+			ADD_HANDLER (sbc_absolute_y)		/* 0xf9 */
+			ADD_HANDLER (invalid_opcode)		/* 0xfa */
+			ADD_HANDLER (invalid_opcode)		/* 0xfb */
+			ADD_HANDLER (invalid_opcode)		/* 0xfc */
+			ADD_HANDLER (sbc_absolute_x)		/* 0xfd */
+			ADD_HANDLER (inc_absolute_x)		/* 0xfe */
+			ADD_HANDLER (invalid_opcode)		/* 0xff */
+		END_DEFINE_STATIC_STRUCT ()
+
+		pnes_handler = nes_handler;
+	}
+}
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
 
     for (uint32_t count = 0; count < count_instructions; count++) {
-
-        switch (emu->buf[emu->cpu.PC]) {
-        case ASL_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_asl_zeropage, asl, 2, 5, 0);
-            break;
-        case ASL_ACCUMULATOR:
-            calc_addr (emu, accumulator, flags_asl_accumulator, asl, 1, 2, 0);
-            break;
-        case ASL_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_asl_zeropage_x, asl, 2, 6, 0);
-            break;
-        case ASL_ABSOLUTE:
-            calc_addr (emu, absolute, flags_asl_absolute, asl, 3, 6, 0);
-            break;
-        case ASL_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_asl_absolute_x, asl, 3, 7, 0);
-            break;
-        case ADC_IMMEDIATE:
-            calc_addr (emu, immediate, flags_adc_imm, adc, 2, 2, 0);
-            break;
-        case ADC_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_adc_zeropage, adc, 2, 3, 0);
-            break;
-        case ADC_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_adc_zeropage_x, adc, 2, 4, 0);
-            break;
-        case ADC_ABSOLUTE:
-            calc_addr (emu, absolute, flags_adc_absolute, adc, 3, 4, 0);
-            break;
-        case ADC_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_adc_absolute_x, adc, 3, 4, 1);
-            break;
-        case ADC_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, flags_adc_absolute_y, adc, 3, 4, 1);
-            break;
-        case ADC_INDIRECT_X:
-            calc_addr (emu, indirect_x, flags_adc_indirect_x, adc, 2, 6, 0);
-            break;
-        case ADC_INDIRECT_Y:
-            calc_addr (emu, indirect_y, flags_adc_indirect_y, adc, 2, 5, 1);
-            break;
-        case AND_IMMEDIATE:
-            calc_addr (emu, immediate, flags_and_imm, _and, 2, 2, 0);
-            break;
-        case AND_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_and_zeropage, _and, 2, 3, 0);
-            break;
-        case AND_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_and_zeropage_x, _and, 2, 4, 0);
-            break;
-        case AND_ABSOLUTE:
-            calc_addr (emu, absolute, flags_and_absolute, _and, 3, 4, 0);
-            break;
-        case AND_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_and_absolute_x, _and, 3, 4, 1);
-            break;
-        case AND_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, flags_and_absolute_y, _and, 3, 4, 1);
-            break;
-        case AND_INDIRECT_X:
-            calc_addr (emu, indirect_x, flags_and_indirect_x, _and, 2, 6, 0);
-            break;
-        case AND_INDIRECT_Y:
-            calc_addr (emu, indirect_y, flags_and_indirect_y, _and, 2, 5, 1);
-            break;
-        case BCC_RELATIVE:
-            calc_addr (emu, NULL, NULL, bcc, 2, 2, 2); /* +1 if branch succeeds, +2 if to a new page */
-            break;
-        case BCS_RELATIVE:
-            calc_addr (emu, NULL, NULL, bcs, 2, 2, 2); /* +1 if branch succeeds, +2 if to a new page */
-            break;
-        case BIT_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_bit_zeropage, bit, 2, 3, 0);
-            break;
-        case BIT_ABSOLUTE:
-            calc_addr (emu, absolute, flags_bit_absolute, bit, 3, 4, 0);
-            break;
-        case BMI_RELATIVE:
-            calc_addr (emu, NULL, NULL, bmi, 2, 2, 2);
-            break;
-        case BNE_RELATIVE:
-            calc_addr (emu, NULL, NULL, bne, 2, 2, 2);
-            break;
-        case BRK_IMPLIED:
-            calc_addr (emu, NULL, NULL, brk, 1, 7, 0);
-            break;
-        case BVC_RELATIVE:
-            calc_addr (emu, NULL, NULL, bvc, 2, 2, 2);
-            break;
-        case BVS_RELATIVE:
-            calc_addr (emu, NULL, NULL, bvs, 2, 2, 2);
-            break;
-        case CLC_IMPLIED:
-            calc_addr (emu, NULL, NULL, clc, 1, 2, 0);
-            break;
-        case CLD_IMPLIED:
-            calc_addr (emu, NULL, NULL, cld, 1, 2, 0);
-            break;
-        case CLI_IMPLIED:
-            calc_addr (emu, NULL, NULL, cli, 1, 2, 0);
-            break;
-        case CLV_IMPLIED:
-            calc_addr (emu, NULL, NULL, clv, 1, 2, 0);
-            break;
-        case CMP_IMMEDIATE:
-            calc_addr (emu, immediate, flags_cmp_imm, cmp, 2, 2, 0);
-            break;
-        case CMP_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_cmp_zeropage, cmp, 2, 3, 0);
-            break;
-        case CMP_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_cmp_zeropage_x, cmp, 2, 4, 0);
-            break;
-        case CMP_ABSOLUTE:
-            calc_addr (emu, absolute, flags_cmp_absolute, cmp, 3, 4, 0);
-            break;
-        case CMP_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_cmp_absolute_x, cmp, 3, 4, 1);
-            break;
-        case CMP_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, flags_cmp_absolute_y, cmp, 3, 4, 1);
-            break;
-        case CMP_INDIRECT_X:
-            calc_addr (emu, indirect_x, flags_cmp_indirect_x, cmp, 2, 6, 0);
-            break;
-        case CMP_INDIRECT_Y:
-            calc_addr (emu, indirect_y, flags_cmp_indirect_y, cmp, 2, 5, 1);
-            break;
-	case CPX_IMMEDIATE:
-            calc_addr (emu, immediate, flags_cpx_imm, cpx, 2, 2, 0);
-            break;
-        case CPX_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_cpx_zeropage, cpx, 2, 3, 0);
-            break;
-        case CPX_ABSOLUTE:
-            calc_addr (emu, absolute, flags_cpx_absolute, cpx, 3, 4, 0);
-            break;
-	case CPY_IMMEDIATE:
-            calc_addr (emu, immediate, flags_cpy_imm, cpy, 2, 2, 0);
-            break;
-        case CPY_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_cpy_zeropage, cpy, 2, 3, 0);
-            break;
-        case CPY_ABSOLUTE:
-            calc_addr (emu, absolute, flags_cpy_absolute, cpy, 3, 4, 0);
-            break;
-        case DEC_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_dec_zeropage, dec, 2, 5, 0);
-            break;
-        case DEC_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_dec_zeropage_x, dec, 2, 6, 0);
-            break;
-        case DEC_ABSOLUTE:
-            calc_addr (emu, absolute, flags_dec_absolute, dec, 3, 6, 0);
-            break;
-        case DEC_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_dec_absolute_x, dec, 3, 7, 0);
-            break;
-        case DEX_IMPLIED:
-            calc_addr (emu, NULL, NULL, dex, 1, 2, 0);
-            break;
-        case DEY_IMPLIED:
-            calc_addr (emu, NULL, NULL, dey, 1, 2, 0);
-            break;
-        case EOR_IMMEDIATE:
-            calc_addr (emu, immediate, flags_eor_imm, eor, 2, 2, 0);
-            break;
-        case EOR_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_eor_zeropage, eor, 2, 3, 0);
-            break;
-        case EOR_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_eor_zeropage_x, eor, 2, 4, 0);
-            break;
-        case EOR_ABSOLUTE:
-            calc_addr (emu, absolute, flags_eor_absolute, eor, 3, 4, 0);
-            break;
-        case EOR_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_eor_absolute_x, eor, 3, 4, 1);
-            break;
-        case EOR_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, flags_eor_absolute_y, eor, 3, 4, 1);
-            break;
-        case EOR_INDIRECT_X:
-            calc_addr (emu, indirect_x, flags_eor_indirect_x, eor, 2, 6, 0);
-            break;
-        case EOR_INDIRECT_Y:
-            calc_addr (emu, indirect_y, flags_eor_indirect_y, eor, 2, 5, 1);
-            break;
-        case INC_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_inc_zeropage, inc, 2, 5, 0);
-            break;
-        case INC_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_inc_zeropage_x, inc, 2, 6, 0);
-            break;
-        case INC_ABSOLUTE:
-            calc_addr (emu, absolute, flags_inc_absolute, inc, 3, 6, 0);
-            break;
-        case INC_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_inc_absolute_x, inc, 3, 7, 0);
-            break;
-        case INX_IMPLIED:
-            calc_addr (emu, NULL, NULL, inx, 1, 2, 0);
-            break;
-        case INY_IMPLIED:
-            calc_addr (emu, NULL, NULL, iny, 1, 2, 0);
-            break;
-	case JMP_ABSOLUTE:
-            calc_addr (emu, absolute, NULL, jmp, 3, 3, 0);
-            break;
-	case JMP_INDIRECT:
-            calc_addr (emu, indirect, NULL, jmp, 3, 3, 0);
-            break;
-	case JSR_ABSOLUTE:
-	    calc_addr (emu, absolute, NULL, jsr, 3, 6, 0);
-	    break;
-        case LDA_IMMEDIATE:
-            calc_addr (emu, immediate, flags_lda_imm, lda, 2, 2, 0);
-            break;
-        case LDA_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_lda_zeropage, lda, 2, 3, 0);
-            break;
-        case LDA_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_lda_zeropage_x, lda, 2, 4, 0);
-            break;
-        case LDA_ABSOLUTE:
-            calc_addr (emu, absolute, flags_lda_absolute, lda, 3, 4, 0);
-            break;
-        case LDA_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_lda_absolute_x, lda, 3, 4, 1);
-            break;
-        case LDA_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, flags_lda_absolute_y, lda, 3, 4, 1);
-            break;
-        case LDA_INDIRECT_X:
-            calc_addr (emu, indirect_x, flags_lda_indirect_x, lda, 2, 6, 0);
-            break;
-        case LDA_INDIRECT_Y:
-            calc_addr (emu, indirect_y, flags_lda_indirect_y, lda, 2, 5, 1);
-            break;
-        case LDX_IMMEDIATE:
-            calc_addr (emu, immediate, flags_ldx_imm, ldx, 2, 2, 0);
-            break;
-        case LDX_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_ldx_zeropage, ldx, 2, 3, 0);
-            break;
-        case LDX_ZEROPAGE_Y:
-            calc_addr (emu, zeropage_y, flags_ldx_zeropage_y, ldx, 2, 4, 0);
-            break;
-        case LDX_ABSOLUTE:
-            calc_addr (emu, absolute, flags_ldx_absolute, ldx, 3, 4, 0);
-            break;
-        case LDX_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, flags_ldx_absolute_y, ldx, 3, 4, 1);
-            break;
-        case LDY_IMMEDIATE:
-            calc_addr (emu, immediate, flags_ldy_imm, ldx, 2, 2, 0);
-            break;
-        case LDY_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_ldy_zeropage, ldy, 2, 3, 0);
-            break;
-        case LDY_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_ldy_zeropage_x, ldy, 2, 4, 0);
-            break;
-        case LDY_ABSOLUTE:
-            calc_addr (emu, absolute, flags_ldy_absolute, ldy, 3, 4, 0);
-            break;
-	case LDY_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_ldy_absolute_x, ldy, 3, 4, 1);
-            break;
-	case LSR_ACCUMULATOR:
-            calc_addr (emu, accumulator, flags_lsr_accumulator, lsr, 1, 2, 0);
-	    break;
-        case LSR_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_lsr_zeropage, lsr, 2, 3, 0);
-            break;
-        case LSR_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_lsr_zeropage_x, lsr, 2, 4, 0);
-            break;
-        case LSR_ABSOLUTE:
-            calc_addr (emu, absolute, flags_lsr_absolute, lsr, 3, 4, 0);
-            break;
-	case LSR_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_lsr_absolute_x, lsr, 3, 4, 1);
-            break;
-	case NOP_IMPLIED:
-            calc_addr (emu, NULL, NULL, nop, 1, 2, 0);
-	    break;
-        case ORA_IMMEDIATE:
-            calc_addr (emu, immediate, flags_ora_imm, ora, 2, 2, 0);
-            break;
-        case ORA_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_ora_zeropage, ora, 2, 3, 0);
-            break;
-        case ORA_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_ora_zeropage_x, ora, 2, 4, 0);
-            break;
-        case ORA_ABSOLUTE:
-            calc_addr (emu, absolute, flags_ora_absolute, ora, 3, 4, 0);
-            break;
-        case ORA_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_ora_absolute_x, ora, 3, 4, 1);
-            break;
-        case ORA_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, flags_ora_absolute_y, ora, 3, 4, 1);
-            break;
-        case ORA_INDIRECT_X:
-            calc_addr (emu, indirect_x, flags_ora_indirect_x, ora, 2, 6, 0);
-            break;
-        case ORA_INDIRECT_Y:
-            calc_addr (emu, indirect_y, flags_ora_indirect_y, ora, 2, 5, 1);
-            break;
-	case PHA_IMPLIED:
-            calc_addr (emu, NULL, NULL, pha, 1, 3, 0);
-	    break;
-	case PHP_IMPLIED:
-            calc_addr (emu, NULL, NULL, php, 1, 3, 0);
-	    break;
-	case PLA_IMPLIED:
-            calc_addr (emu, NULL, NULL, pla, 1, 4, 0);
-	    break;
-	case PLP_IMPLIED:
-            calc_addr (emu, NULL, NULL, plp, 1, 4, 0);
-	    break;
-	case ROL_ACCUMULATOR:
-            calc_addr (emu, accumulator, flags_rol_accumulator, rol, 1, 2, 0);
-	    break;
-        case ROL_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_rol_zeropage, rol, 2, 5, 0);
-            break;
-        case ROL_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_rol_zeropage_x, rol, 2, 6, 0);
-            break;
-        case ROL_ABSOLUTE:
-            calc_addr (emu, absolute, flags_rol_absolute, rol, 3, 6, 0);
-            break;
-	case ROL_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_rol_absolute_x, rol, 3, 7, 0);
-            break;
-	case ROR_ACCUMULATOR:
-            calc_addr (emu, accumulator, flags_ror_accumulator, ror, 1, 2, 0);
-	    break;
-        case ROR_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_ror_zeropage, ror, 2, 5, 0);
-            break;
-        case ROR_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_ror_zeropage_x, ror, 2, 6, 0);
-            break;
-        case ROR_ABSOLUTE:
-            calc_addr (emu, absolute, flags_ror_absolute, ror, 3, 6, 0);
-            break;
-	case ROR_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_ror_absolute_x, ror, 3, 7, 0);
-            break;
-	case RTI_IMPLIED:
-            calc_addr (emu, NULL, NULL, rti, 1, 6, 0);
-            break;
-	case RTS_IMPLIED:
-            calc_addr (emu, NULL, NULL, rts, 1, 6, 0);
-            break;
-        case SBC_IMMEDIATE:
-            calc_addr (emu, immediate, flags_sbc_imm, sbc, 2, 2, 0);
-            break;
-        case SBC_ZEROPAGE:
-            calc_addr (emu, zeropage, flags_sbc_zeropage, sbc, 2, 3, 0);
-            break;
-        case SBC_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, flags_sbc_zeropage_x, sbc, 2, 4, 0);
-            break;
-        case SBC_ABSOLUTE:
-            calc_addr (emu, absolute, flags_sbc_absolute, sbc, 3, 4, 0);
-            break;
-        case SBC_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, flags_sbc_absolute_x, sbc, 3, 4, 1);
-            break;
-        case SBC_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, flags_sbc_absolute_y, sbc, 3, 4, 1);
-            break;
-        case SBC_INDIRECT_X:
-            calc_addr (emu, indirect_x, flags_sbc_indirect_x, sbc, 2, 6, 0);
-            break;
-        case SBC_INDIRECT_Y:
-            calc_addr (emu, indirect_y, flags_sbc_indirect_y, sbc, 2, 5, 1);
-            break;
-	case SEC_IMPLIED:
-            calc_addr (emu, NULL, NULL, sec, 1, 2, 0);
-            break;
-	case SED_IMPLIED:
-            calc_addr (emu, NULL, NULL, sed, 1, 2, 0);
-            break;
-	case SEI_IMPLIED:
-            calc_addr (emu, NULL, NULL, sei, 1, 2, 0);
-            break;
-        case STA_ZEROPAGE:
-            calc_addr (emu, zeropage, NULL, sta, 2, 3, 0);
-            break;
-        case STA_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, NULL, sta, 2, 4, 0);
-            break;
-        case STA_ABSOLUTE:
-            calc_addr (emu, absolute, NULL, sta, 3, 4, 0);
-            break;
-        case STA_ABSOLUTE_X:
-            calc_addr (emu, absolute_x, NULL, sta, 3, 5, 0);
-            break;
-        case STA_ABSOLUTE_Y:
-            calc_addr (emu, absolute_y, NULL, sta, 3, 5, 0);
-            break;
-        case STA_INDIRECT_X:
-            calc_addr (emu, indirect_x, NULL, sta, 2, 6, 0);
-            break;
-        case STA_INDIRECT_Y:
-            calc_addr (emu, indirect_y, NULL, sta, 2, 6, 0);
-            break;
-        case STX_ZEROPAGE:
-            calc_addr (emu, zeropage, NULL, stx, 2, 3, 0);
-            break;
-        case STX_ZEROPAGE_Y:
-            calc_addr (emu, zeropage_y, NULL, stx, 2, 4, 0);
-            break;
-        case STX_ABSOLUTE:
-            calc_addr (emu, absolute, NULL, stx, 3, 4, 0);
-            break;
-        case STY_ZEROPAGE:
-            calc_addr (emu, zeropage, NULL, sty, 2, 3, 0);
-            break;
-        case STY_ZEROPAGE_X:
-            calc_addr (emu, zeropage_x, NULL, sty, 2, 4, 0);
-            break;
-        case STY_ABSOLUTE:
-            calc_addr (emu, absolute, NULL, sty, 3, 4, 0);
-            break;
-	case TAX_IMPLIED:
-            calc_addr (emu, NULL, flags_tax_implied, tax, 1, 2, 0);
-            break;
-	case TAY_IMPLIED:
-            calc_addr (emu, NULL, flags_tay_implied, tay, 1, 2, 0);
-            break;
-	case TSX_IMPLIED:
-            calc_addr (emu, NULL, flags_tsx_implied, tsx, 1, 2, 0);
-            break;
-	case TXA_IMPLIED:
-            calc_addr (emu, NULL, flags_txa_implied, txa, 1, 2, 0);
-            break;
-	case TXS_IMPLIED:
-            calc_addr (emu, NULL, NULL, txs, 1, 2, 0);
-            break;
-	case TYA_IMPLIED:
-            calc_addr (emu, NULL, flags_tya_implied, tya, 1, 2, 0);
-            break;
-        }
+	pnes_handler [emu->buf[emu->cpu.PC]] (emu);
     }
 }

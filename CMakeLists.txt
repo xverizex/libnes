@@ -6,9 +6,7 @@ project(nes_emu LANGUAGES C)
 
 add_executable(nes_emu
     cpunes.h cpunes.c
-    flags.h flags.c
-    exec.h exec.c
-    op_name.h)
+    handlers.c)
 
 target_include_directories(nes_emu PRIVATE
     "."
