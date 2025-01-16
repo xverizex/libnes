@@ -27,6 +27,10 @@ struct NESEmu {
     uint8_t *buf;
 };
 
+struct NESCallbacks {
+	uint32_t (*init) (struct NESEmu *emu, void *_other_data);
+};
 
+void nes_emu_init (struct NESEmu *emu, struct NESCallbacks *clbk);
 
 #endif // CPUNES_H

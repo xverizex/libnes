@@ -171,7 +171,7 @@ void inc_absolute_x (struct NESEmu *);
 
 static handler_opcode *pnes_handler = NULL;
 
-void nes_emu_init (struct NESEmu *emu)
+void nes_emu_init (struct NESEmu *emu, struct NESCallbacks *clbk)
 {
 	size_t sz_nes_emu = sizeof (struct NESEmu);
 
