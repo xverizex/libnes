@@ -171,12 +171,44 @@ void inc_absolute_x (struct NESEmu *);
 
 static handler_opcode *pnes_handler = NULL;
 
+static void set_dump_format (struct NESEmu *emu)
+{
+	uint8_t *d = emu->dump;
+
+	if (d[0] == 'N' && d[1] == 'E' && d[2] == 'S' && d[3] == 0x1a) {
+		emu->fmt = FORMAT_INES;
+
+		if ((d[7] & 0x0c) == 0x08) {
+			emu->fmt = FORMAT_NES20;
+		}
+	}
+}
+
+static void parse_header (struct NESEmu *emu)
+{
+	uint8_t *d = emu->dump;
+
+	emu->sz_prg_rom = d[4] * 16384;
+	emu->sz_chr_rom = d[5] == 0? 8192: d[5] * 8192;
+	emu->mapper = (d[6] >> 4) | (d[7] & 0xf0); 
+	emu->sz_prg_ram = d[8] * 8192;
+}
+
 void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk)
 {
 	size_t sz_nes_emu = sizeof (struct NESEmu);
 
 	memset (emu, 0, sz_nes_emu);
 
+	emu->dump = buffer;
+	emu->sz_dump = sz;
+
+	set_dump_format (emu);
+	parse_header (emu);
+
+	emu->cpu.PC = 0xfffc;
+	emu->cpu.S = 0xfd;
+	emu->cpu.P |= STATUS_FLAG_IF;
 
 	if (!is_init_global_func) {
 		DEFINE_STATIC_STRUCT_NES_HANDLER ()

@@ -11,6 +11,19 @@
 #define STATUS_FLAG_VF        (1 << 6)
 #define STATUS_FLAG_NF        (1 << 7)
 
+enum {
+	FORMAT_UNKNOWN,
+	FORMAT_INES,
+	FORMAT_NES20,
+	N_FORMAT
+};
+
+enum {
+	NAME_TABLE_HORIZONTAL_ARRANGEMENT,
+	NAME_TABLE_VERTICAL_ARRANGEMENT,
+	N_NAME_TABLE
+};
+
 struct CPUNes {
     uint8_t A;
     uint8_t X;
@@ -24,7 +37,15 @@ struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
 
-    uint8_t *buf;
+    uint8_t *dump;
+    uint32_t sz_dump;
+
+    uint32_t fmt_dump;
+
+    uint32_t sz_prg_rom;
+    uint32_t sz_chr_rom;
+    uint32_t sz_prg_ram;
+    uint8_t mapper;
 };
 
 struct NESCallbacks {
