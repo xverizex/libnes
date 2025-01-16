@@ -31,7 +31,7 @@ struct NESCallbacks {
 	uint32_t (*init) (struct NESEmu *emu, void *_other_data);
 };
 
-void nes_emu_init (struct NESEmu *emu, struct NESCallbacks *clbk);
+void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk);
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions);
 
 #endif // CPUNES_H
