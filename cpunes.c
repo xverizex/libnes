@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 static uint32_t is_init_global_func;
 
@@ -176,10 +177,10 @@ static void set_dump_format (struct NESEmu *emu)
 	uint8_t *d = emu->dump;
 
 	if (d[0] == 'N' && d[1] == 'E' && d[2] == 'S' && d[3] == 0x1a) {
-		emu->fmt = FORMAT_INES;
+		emu->fmt_dump = FORMAT_INES;
 
 		if ((d[7] & 0x0c) == 0x08) {
-			emu->fmt = FORMAT_NES20;
+			emu->fmt_dump = FORMAT_NES20;
 		}
 	}
 }
@@ -209,6 +210,16 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	emu->cpu.PC = 0xfffc;
 	emu->cpu.S = 0xfd;
 	emu->cpu.P |= STATUS_FLAG_IF;
+
+	uint16_t pos_handler = 0xa + emu->sz_prg_rom;
+
+	emu->nmi_handler = *(uint16_t *) &buffer[pos_handler];
+	emu->reset_handler = *(uint16_t *) &buffer[pos_handler + 2];
+	emu->irq_handler = *(uint16_t *) &buffer[pos_handler + 4];
+
+	memcpy (&emu->mem[0x8000], &buffer[16], emu->sz_prg_rom);
+
+	emu->cpu.PC = emu->reset_handler;
 
 	if (!is_init_global_func) {
 		DEFINE_STATIC_STRUCT_NES_HANDLER ()
@@ -480,6 +491,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
 
     for (uint32_t count = 0; count < count_instructions; count++) {
-	pnes_handler [emu->buf[emu->cpu.PC]] (emu);
+	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
     }
 }

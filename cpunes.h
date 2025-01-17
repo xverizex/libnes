@@ -46,6 +46,12 @@ struct NESEmu {
     uint32_t sz_chr_rom;
     uint32_t sz_prg_ram;
     uint8_t mapper;
+
+    uint16_t nmi_handler;
+    uint16_t reset_handler;
+    uint16_t irq_handler;
+
+    uint8_t mem[0x10000];
 };
 
 struct NESCallbacks {

@@ -13,7 +13,7 @@ uint16_t indirect (struct NESEmu *emu);
 uint16_t indirect_x (struct NESEmu *emu);
 uint16_t indirect_y (struct NESEmu *emu);
 
-static void wait_cycles (struct NESEmu *emu, uint32_t addr, uint32_t cycles)
+static void wait_cycles (struct NESEmu *emu, uint16_t addr, uint32_t cycles, uint32_t is_page)
 {
 
 }
@@ -25,42 +25,42 @@ uint16_t accumulator (struct NESEmu *emu)
 
 uint16_t immediate (struct NESEmu *emu)
 {
-    return emu->buf[emu->cpu.PC + 1];
+    return emu->mem[emu->cpu.PC + 1];
 }
 
 uint16_t absolute (struct NESEmu *emu)
 {
-    uint16_t addr = *(uint16_t *) &emu->buf[emu->cpu.PC + 1];
+    uint16_t addr = *(uint16_t *) &emu->mem[emu->cpu.PC + 1];
     return addr;
 }
 
 uint16_t zeropage (struct NESEmu *emu)
 {
-    uint8_t addr = emu->buf[emu->cpu.PC + 1];
+    uint8_t addr = emu->mem[emu->cpu.PC + 1];
     return addr;
 }
 
 uint16_t zeropage_x (struct NESEmu *emu)
 {
-    uint8_t addr = emu->buf[emu->cpu.PC + 1] + emu->cpu.X;
+    uint8_t addr = emu->mem[emu->cpu.PC + 1] + emu->cpu.X;
     return addr;
 }
 
 uint16_t zeropage_y (struct NESEmu *emu)
 {
-    uint8_t addr = emu->buf[emu->cpu.PC + 1] + emu->cpu.Y;
+    uint8_t addr = emu->mem[emu->cpu.PC + 1] + emu->cpu.Y;
     return addr;
 }
 
 uint16_t absolute_x (struct NESEmu *emu)
 {
-    uint16_t addr = *((uint16_t *) &emu->buf[emu->cpu.PC + 1]) + emu->cpu.X;
+    uint16_t addr = *((uint16_t *) &emu->mem[emu->cpu.PC + 1]) + emu->cpu.X;
     return addr;
 }
 
 uint16_t absolute_y (struct NESEmu *emu)
 {
-    uint16_t addr = *((uint16_t *) &emu->buf[emu->cpu.PC + 1]) + emu->cpu.Y;
+    uint16_t addr = *((uint16_t *) &emu->mem[emu->cpu.PC + 1]) + emu->cpu.Y;
     return addr;
 }
 
@@ -71,8 +71,8 @@ uint16_t indirect (struct NESEmu *emu)
 
 uint16_t indirect_x (struct NESEmu *emu)
 {
-    uint8_t addr = emu->buf[emu->cpu.PC + 1];
-    uint16_t indirect = *((uint16_t *) &emu->buf[emu->cpu.X]);
+    uint8_t addr = emu->mem[emu->cpu.PC + 1];
+    uint16_t indirect = *((uint16_t *) &emu->mem[emu->cpu.X]);
     uint16_t fulladdr = addr + indirect;
 
     return fulladdr;
@@ -80,8 +80,8 @@ uint16_t indirect_x (struct NESEmu *emu)
 
 uint16_t indirect_y (struct NESEmu *emu)
 {
-    uint8_t zeroaddr = emu->buf[emu->cpu.PC + 1];
-    uint16_t addr = *((uint16_t *) &emu->buf[zeroaddr]);
+    uint8_t zeroaddr = emu->mem[emu->cpu.PC + 1];
+    uint16_t addr = *((uint16_t *) &emu->mem[zeroaddr]);
     uint16_t fulladdr = addr + emu->cpu.Y;
 
     return fulladdr;
@@ -89,12 +89,12 @@ uint16_t indirect_y (struct NESEmu *emu)
 
 void adc (struct NESEmu *emu, uint16_t addr)
 {
-    emu->cpu.A += emu->buf[addr];
+    emu->cpu.A += emu->mem[addr];
 }
 
 void _and (struct NESEmu *emu, uint16_t addr)
 {
-    emu->cpu.A &= emu->buf[addr];
+    emu->cpu.A &= emu->mem[addr];
 }
 
 void asl (struct NESEmu *emu, uint16_t addr)
@@ -109,7 +109,7 @@ void bcc (struct NESEmu *emu, uint16_t addr)
     if (emu->cpu.P & STATUS_FLAG_CF) {
     } else {
         emu->is_branch = 1;
-        emu->cpu.PC += (int8_t) emu->buf[emu->cpu.PC + 1];
+        emu->cpu.PC += (int8_t) emu->mem[emu->cpu.PC + 1];
     }
 }
 
@@ -118,7 +118,7 @@ void bcs (struct NESEmu *emu, uint16_t addr)
     (void) addr;
     if (emu->cpu.P & STATUS_FLAG_CF) {
         emu->is_branch = 1;
-        emu->cpu.PC += (int8_t) emu->buf[emu->cpu.PC + 1];
+        emu->cpu.PC += (int8_t) emu->mem[emu->cpu.PC + 1];
     }
 }
 
@@ -128,7 +128,7 @@ void beq (struct NESEmu *emu, uint16_t addr)
     if (emu->cpu.P & STATUS_FLAG_ZF) {
     } else {
         emu->is_branch = 1;
-        emu->cpu.PC += (int8_t) emu->buf[emu->cpu.PC + 1];
+        emu->cpu.PC += (int8_t) emu->mem[emu->cpu.PC + 1];
     }
 }
 
@@ -201,7 +201,15 @@ void bvs_relative (struct NESEmu *) {}
 void adc_indirect_y (struct NESEmu *) {}
 void adc_zeropage_x (struct NESEmu *) {}
 void ror_zeropage_x (struct NESEmu *) {}
-void sei_implied (struct NESEmu *) {}
+
+void sei_implied (struct NESEmu *emu) 
+{
+	emu->cpu.P &= (STATUS_FLAG_IF);
+	emu->cpu.PC++;
+
+	wait_cycles (emu, 0, 2, 0);
+}
+
 void adc_absolute_y (struct NESEmu *) {}
 void adc_absolute_x (struct NESEmu *) {}
 void ror_absolute_x (struct NESEmu *) {}
@@ -213,7 +221,81 @@ void dey_implied (struct NESEmu *) {}
 void txa_implied (struct NESEmu *) {}
 void sty_absolute (struct NESEmu *) {}
 void sta_absolute (struct NESEmu *) {}
-void stx_absolute (struct NESEmu *) {}
+
+static void internal_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void mirror_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void nes_ppu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void nes_apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void cartridge_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void cartridge_rom_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+	if (high < 0x40) {
+		if (high < 0x20) {
+			if (high < 0x08) {
+				internal_ram_addr (emu, low, high);
+			} else {
+				mirror_addr (emu, low, high);
+			}
+		} else if (high == 0x20) {
+			if (low < 0x08) {
+				nes_ppu_addr (emu, low, high);
+			} else {
+				mirror_addr (emu, low, high);
+			}
+		}
+	} else {
+		if (high == 0x40) {
+			if (low < 0x18) {
+				nes_apu_addr (emu, low, high);
+			} else if (low < 0x20) {
+				apu_addr (emu, low, high);
+			}
+			/* unmapped. Available for cartidge use. */
+		} else if (high < 80) {
+			cartridge_ram_addr (emu, low, high);
+		} else {
+			cartridge_rom_addr (emu, low, high);
+		}
+	}
+}
+
+void stx_absolute (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->PC++;
+
+	uint8_t low = emu->mem[cpu->PC++];
+	uint8_t high = emu->mem[cpu->PC++];
+
+	work_addr (emu, low, high);
+
+	wait_cycles (emu, 0, 4, 0);
+}
+
 void bcc_relative (struct NESEmu *) {}
 void sta_indirect_y (struct NESEmu *) {}
 void sty_zeropage_x (struct NESEmu *) {}
@@ -225,7 +307,26 @@ void txs_implied (struct NESEmu *) {}
 void sta_absolute_x (struct NESEmu *) {}
 void ldy_immediate (struct NESEmu *) {}
 void lda_indirect_x (struct NESEmu *) {}
-void ldx_immediate (struct NESEmu *) {}
+
+void ldx_immediate (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->PC++;
+	uint8_t p = emu->mem[emu->cpu.PC];
+	if (p == 0) {
+		cpu->P |= (STATUS_FLAG_ZF);
+	}
+	if (p >= 0x80) {
+		cpu->P |= (STATUS_FLAG_NF);
+	}
+	cpu->X = emu->mem[cpu->PC];
+
+	wait_cycles (emu, 0, 2, 0);
+
+	cpu->PC++;
+}
+
 void ldy_zeropage (struct NESEmu *) {}
 void lda_zeropage (struct NESEmu *) {}
 void ldx_zeropage (struct NESEmu *) {}
@@ -261,7 +362,16 @@ void bne_relative (struct NESEmu *) {}
 void cmp_indirect_y (struct NESEmu *) {}
 void cmp_zeropage_x (struct NESEmu *) {}
 void dec_zeropage_x (struct NESEmu *) {}
-void cld_implied (struct NESEmu *) {}
+
+void cld_implied (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_DF);
+
+	wait_cycles (emu, 0, 2, 0);
+
+	emu->cpu.PC++;
+}
+
 void cmp_absolute_y (struct NESEmu *) {}
 void cmp_absolute_x (struct NESEmu *) {}
 void dec_absolute_x (struct NESEmu *) {}
