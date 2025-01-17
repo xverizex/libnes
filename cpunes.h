@@ -12,6 +12,18 @@
 #define STATUS_FLAG_NF        (1 << 7)
 
 enum {
+	PPUCTRL,
+	PPUMASK,
+	PPUSTATUS,
+	OAMADDR,
+	OAMDATA,
+	PPUSCROLL,
+	PPUADDR,
+	PPUDATA,
+	N_PPUMANAGE
+};
+
+enum {
 	FORMAT_UNKNOWN,
 	FORMAT_INES,
 	FORMAT_NES20,
@@ -33,6 +45,10 @@ struct CPUNes {
     uint8_t P;
 };
 
+struct NESEmu;
+
+typedef void (*ppu_manager) (struct NESEmu *, uint8_t *r, uint8_t is_write);
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
@@ -50,6 +66,8 @@ struct NESEmu {
     uint16_t nmi_handler;
     uint16_t reset_handler;
     uint16_t irq_handler;
+
+    ppu_manager *ppu_handler;
 
     uint8_t mem[0x10000];
 };

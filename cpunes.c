@@ -8,14 +8,20 @@ static uint32_t is_init_global_func;
 
 typedef void (*handler_opcode) (struct NESEmu *emu);
 
-#define DEFINE_STATIC_STRUCT_NES_HANDLER() \
+#define DEFINE_STATIC_FUNC_NES_HANDLER() \
 	static handler_opcode nes_handler[256] = {
 
-#define END_DEFINE_STATIC_STRUCT() \
+#define END_DEFINE_STATIC_FUNC() \
 	};
 
 #define ADD_HANDLER(func) \
 	func,
+
+#define DEFINE_STATIC_PPU_HANDLER() \
+	static ppu_manager ppu_handler[N_PPUMANAGE] = {
+
+#define END_DEFINE_STATIC_PPU_HANDLER() \
+	};
 
 void invalid_opcode (struct NESEmu *);
 void brk_implied (struct NESEmu *);
@@ -170,6 +176,15 @@ void sbc_absolute_y (struct NESEmu *);
 void sbc_absolute_x (struct NESEmu *);
 void inc_absolute_x (struct NESEmu *);
 
+void ppu_ctrl (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+void oam_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+void oam_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+void ppu_scroll (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+void ppu_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+void ppu_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+
 static handler_opcode *pnes_handler = NULL;
 
 static void set_dump_format (struct NESEmu *emu)
@@ -222,7 +237,20 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	emu->cpu.PC = emu->reset_handler;
 
 	if (!is_init_global_func) {
-		DEFINE_STATIC_STRUCT_NES_HANDLER ()
+		DEFINE_STATIC_PPU_HANDLER ()
+			ADD_HANDLER (ppu_ctrl)
+			ADD_HANDLER (ppu_mask)
+			ADD_HANDLER (ppu_status)
+			ADD_HANDLER (oam_addr)
+			ADD_HANDLER (oam_data)
+			ADD_HANDLER (ppu_scroll)
+			ADD_HANDLER (ppu_addr)
+			ADD_HANDLER (ppu_data)
+		END_DEFINE_STATIC_PPU_HANDLER ()
+
+		emu->ppu_handler = ppu_handler;
+
+		DEFINE_STATIC_FUNC_NES_HANDLER ()
 			ADD_HANDLER (brk_implied)		/* 0x00 */
 			ADD_HANDLER (ora_indirect_x)		/* 0x01 */
 			ADD_HANDLER (invalid_opcode)		/* 0x02 */
@@ -479,7 +507,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 			ADD_HANDLER (sbc_absolute_x)		/* 0xfd */
 			ADD_HANDLER (inc_absolute_x)		/* 0xfe */
 			ADD_HANDLER (invalid_opcode)		/* 0xff */
-		END_DEFINE_STATIC_STRUCT ()
+		END_DEFINE_STATIC_FUNC ()
 
 		pnes_handler = nes_handler;
 

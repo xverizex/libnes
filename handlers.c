@@ -13,6 +13,101 @@ uint16_t indirect (struct NESEmu *emu);
 uint16_t indirect_x (struct NESEmu *emu);
 uint16_t indirect_y (struct NESEmu *emu);
 
+void ppu_ctrl (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+{
+}
+
+void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+{
+}
+
+void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+{
+}
+
+void oam_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+{
+}
+
+void oam_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+{
+}
+
+void ppu_scroll (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+{
+}
+
+void ppu_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+{
+}
+
+void ppu_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+{
+}
+
+static void internal_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void mirror_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+
+static void nes_ppu_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r, uint8_t is_write)
+{
+	if (low <= 7)
+		emu->ppu_handler[low] (emu, r, is_write);
+}
+
+static void nes_apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void cartridge_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void cartridge_rom_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+{
+}
+
+static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r, uint8_t is_write)
+{
+	if (high < 0x40) {
+		if (high < 0x20) {
+			if (high < 0x08) {
+				internal_ram_addr (emu, low, high);
+			} else {
+				mirror_addr (emu, low, high);
+			}
+		} else if (high == 0x20) {
+			if (low < 0x08) {
+				nes_ppu_addr (emu, low, high, r, is_write);
+			} else {
+				mirror_addr (emu, low, high);
+			}
+		}
+	} else {
+		if (high == 0x40) {
+			if (low < 0x18) {
+				nes_apu_addr (emu, low, high);
+			} else if (low < 0x20) {
+				apu_addr (emu, low, high);
+			}
+			/* unmapped. Available for cartidge use. */
+		} else if (high < 80) {
+			cartridge_ram_addr (emu, low, high);
+		} else {
+			cartridge_rom_addr (emu, low, high);
+		}
+	}
+}
+
 static void wait_cycles (struct NESEmu *emu, uint16_t addr, uint32_t cycles, uint32_t is_page)
 {
 
@@ -158,7 +253,11 @@ void rol_zeropage (struct NESEmu *) {}
 void plp_implied (struct NESEmu *) {}
 void and_immediate (struct NESEmu *) {}
 void rol_accumulator (struct NESEmu *) {}
-void bit_absolute (struct NESEmu *) {}
+
+void bit_absolute (struct NESEmu *) 
+{
+}
+
 void and_absolute (struct NESEmu *) {}
 void rol_absolute (struct NESEmu *) {}
 void bmi_relative (struct NESEmu *) {}
@@ -219,68 +318,40 @@ void sta_zeropage (struct NESEmu *) {}
 void stx_zeropage (struct NESEmu *) {}
 void dey_implied (struct NESEmu *) {}
 void txa_implied (struct NESEmu *) {}
-void sty_absolute (struct NESEmu *) {}
-void sta_absolute (struct NESEmu *) {}
 
-static void internal_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+void sty_absolute (struct NESEmu *emu) 
 {
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->PC++;
+
+	uint8_t low = emu->mem[cpu->PC++];
+	uint8_t high = emu->mem[cpu->PC++];
+
+	uint8_t *r = &cpu->Y;
+
+	work_addr (emu, low, high, r, 1);
+
+	wait_cycles (emu, 0, 4, 0);
 }
 
-static void mirror_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
+void sta_absolute (struct NESEmu *emu) 
 {
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->PC++;
+
+	uint8_t low = emu->mem[cpu->PC++];
+	uint8_t high = emu->mem[cpu->PC++];
+
+	uint8_t *r = &cpu->A;
+
+	work_addr (emu, low, high, r, 1);
+
+	wait_cycles (emu, 0, 4, 0);
 }
 
-static void nes_ppu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
 
-static void nes_apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void cartridge_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void cartridge_rom_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-	if (high < 0x40) {
-		if (high < 0x20) {
-			if (high < 0x08) {
-				internal_ram_addr (emu, low, high);
-			} else {
-				mirror_addr (emu, low, high);
-			}
-		} else if (high == 0x20) {
-			if (low < 0x08) {
-				nes_ppu_addr (emu, low, high);
-			} else {
-				mirror_addr (emu, low, high);
-			}
-		}
-	} else {
-		if (high == 0x40) {
-			if (low < 0x18) {
-				nes_apu_addr (emu, low, high);
-			} else if (low < 0x20) {
-				apu_addr (emu, low, high);
-			}
-			/* unmapped. Available for cartidge use. */
-		} else if (high < 80) {
-			cartridge_ram_addr (emu, low, high);
-		} else {
-			cartridge_rom_addr (emu, low, high);
-		}
-	}
-}
 
 void stx_absolute (struct NESEmu *emu) 
 {
@@ -291,7 +362,9 @@ void stx_absolute (struct NESEmu *emu)
 	uint8_t low = emu->mem[cpu->PC++];
 	uint8_t high = emu->mem[cpu->PC++];
 
-	work_addr (emu, low, high);
+	uint8_t *r = &cpu->X;
+
+	work_addr (emu, low, high, r, 1);
 
 	wait_cycles (emu, 0, 4, 0);
 }
@@ -313,14 +386,14 @@ void ldx_immediate (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->PC++;
-	uint8_t p = emu->mem[emu->cpu.PC];
-	if (p == 0) {
+	uint8_t imm_byte = emu->mem[emu->cpu.PC];
+	if (imm_byte == 0) {
 		cpu->P |= (STATUS_FLAG_ZF);
 	}
-	if (p >= 0x80) {
+	if (imm_byte >= 0x80) {
 		cpu->P |= (STATUS_FLAG_NF);
 	}
-	cpu->X = emu->mem[cpu->PC];
+	cpu->X = imm_byte;
 
 	wait_cycles (emu, 0, 2, 0);
 
@@ -331,7 +404,26 @@ void ldy_zeropage (struct NESEmu *) {}
 void lda_zeropage (struct NESEmu *) {}
 void ldx_zeropage (struct NESEmu *) {}
 void tay_implied (struct NESEmu *) {}
-void lda_immediate (struct NESEmu *) {}
+
+void lda_immediate (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->PC++;
+	uint8_t imm_byte = emu->mem[emu->cpu.PC];
+	if (imm_byte == 0) {
+		cpu->P |= (STATUS_FLAG_ZF);
+	}
+	if (imm_byte >= 0x80) {
+		cpu->P |= (STATUS_FLAG_NF);
+	}
+	cpu->A = imm_byte;
+
+	wait_cycles (emu, 0, 2, 0);
+
+	cpu->PC++;
+}
+
 void tax_implied (struct NESEmu *) {}
 void ldy_absolute (struct NESEmu *) {}
 void lda_absolute (struct NESEmu *) {}
