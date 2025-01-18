@@ -214,7 +214,19 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 {
 	size_t sz_nes_emu = sizeof (struct NESEmu);
 
-	memset (emu, 0, sz_nes_emu);
+	uint32_t dword_size = sz_nes_emu >> 2; /* div by 4 */
+	uint32_t *ptr_dword_emu = (uint32_t *) emu;
+	for (uint32_t i = 0; i < sz_nes_emu; i++) {
+		*ptr_dword_emu = 0;
+		ptr_dword_emu++;
+	}
+	uint32_t last_sz = sz_nes_emu & 0x3;
+	if (last_sz) {
+		uint8_t *last_byte_emu = (uint8_t *) ptr_dword_emu;
+		for (uint32_t i = 0; i < last_sz; i++) {
+			last_byte_emu[i] = 0;
+		}
+	}
 
 	emu->dump = buffer;
 	emu->sz_dump = sz;
