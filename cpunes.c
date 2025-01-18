@@ -176,14 +176,14 @@ void sbc_absolute_y (struct NESEmu *);
 void sbc_absolute_x (struct NESEmu *);
 void inc_absolute_x (struct NESEmu *);
 
-void ppu_ctrl (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
-void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
-void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
-void oam_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
-void oam_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
-void ppu_scroll (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
-void ppu_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
-void ppu_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write);
+void ppu_ctrl (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
+void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
+void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
+void oam_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
+void oam_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
+void ppu_scroll (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
+void ppu_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
+void ppu_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
 
 static handler_opcode *pnes_handler = NULL;
 

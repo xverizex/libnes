@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 #include <cpunes.h>
 
 uint16_t accumulator (struct NESEmu *emu);
@@ -13,39 +14,41 @@ uint16_t indirect (struct NESEmu *emu);
 uint16_t indirect_x (struct NESEmu *emu);
 uint16_t indirect_y (struct NESEmu *emu);
 
-void ppu_ctrl (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+void ppu_ctrl (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 }
 
-void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 }
 
-void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 	if (is_write)
 		return;
 
-
+	if (returned_reg) {
+		*returned_reg = 0x40;
+	}
 }
 
-void oam_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+void oam_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 }
 
-void oam_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+void oam_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 }
 
-void ppu_scroll (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+void ppu_scroll (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 }
 
-void ppu_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+void ppu_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 }
 
-void ppu_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
+void ppu_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 }
 
@@ -58,10 +61,10 @@ static void mirror_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
 }
 
 
-static void nes_ppu_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r, uint8_t is_write)
+static void nes_ppu_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 	if (low <= 7)
-		emu->ppu_handler[low] (emu, r, is_write);
+		emu->ppu_handler[low] (emu, r, is_write, returned_reg);
 }
 
 static void nes_apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
@@ -80,7 +83,7 @@ static void cartridge_rom_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
 {
 }
 
-static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r, uint8_t is_write)
+static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
 	if (high < 0x40) {
 		if (high < 0x20) {
@@ -91,7 +94,7 @@ static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r
 			}
 		} else if (high == 0x20) {
 			if (low < 0x08) {
-				nes_ppu_addr (emu, low, high, r, is_write);
+				nes_ppu_addr (emu, low, high, r, is_write, returned_reg);
 			} else {
 				mirror_addr (emu, low, high);
 			}
@@ -241,7 +244,11 @@ void ora_immediate (struct NESEmu *) {}
 void asl_accumulator (struct NESEmu *) {}
 void ora_absolute (struct NESEmu *) {}
 void asl_absolute (struct NESEmu *) {}
-void bpl_relative (struct NESEmu *) {}
+
+void bpl_relative (struct NESEmu *emu) 
+{
+}
+
 void ora_indirect_y (struct NESEmu *) {}
 void ora_zeropage_x (struct NESEmu *) {}
 void asl_zeropage_x (struct NESEmu *) {}
@@ -267,7 +274,17 @@ void bit_absolute (struct NESEmu *emu)
 	uint8_t low = emu->mem[cpu->PC++];
 	uint8_t high = emu->mem[cpu->PC++];
 
-	work_addr (emu, low, high, NULL, 0);
+	uint8_t returned_reg = 0;
+
+	work_addr (emu, low, high, NULL, 0, &returned_reg);
+
+	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_VF|STATUS_FLAG_ZF);
+
+	cpu->P |= (returned_reg & 0xc0);
+
+	if ((cpu->A & returned_reg) == 0) {
+		cpu->P |= (STATUS_FLAG_ZF);
+	}
 
 	wait_cycles (emu, 0, 4, 0);
 }
@@ -344,7 +361,7 @@ void sty_absolute (struct NESEmu *emu)
 
 	uint8_t *r = &cpu->Y;
 
-	work_addr (emu, low, high, r, 1);
+	work_addr (emu, low, high, r, 1, NULL);
 
 	wait_cycles (emu, 0, 4, 0);
 }
@@ -360,7 +377,7 @@ void sta_absolute (struct NESEmu *emu)
 
 	uint8_t *r = &cpu->A;
 
-	work_addr (emu, low, high, r, 1);
+	work_addr (emu, low, high, r, 1, NULL);
 
 	wait_cycles (emu, 0, 4, 0);
 }
@@ -378,7 +395,7 @@ void stx_absolute (struct NESEmu *emu)
 
 	uint8_t *r = &cpu->X;
 
-	work_addr (emu, low, high, r, 1);
+	work_addr (emu, low, high, r, 1, NULL);
 
 	wait_cycles (emu, 0, 4, 0);
 }

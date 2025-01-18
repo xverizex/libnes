@@ -47,7 +47,7 @@ struct CPUNes {
 
 struct NESEmu;
 
-typedef void (*ppu_manager) (struct NESEmu *, uint8_t *r, uint8_t is_write);
+typedef void (*ppu_manager) (struct NESEmu *, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
 
 struct NESEmu {
     struct CPUNes cpu;
