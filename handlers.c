@@ -23,6 +23,10 @@ void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
 
 void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
 {
+	if (is_write)
+		return;
+
+
 }
 
 void oam_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write)
@@ -254,8 +258,18 @@ void plp_implied (struct NESEmu *) {}
 void and_immediate (struct NESEmu *) {}
 void rol_accumulator (struct NESEmu *) {}
 
-void bit_absolute (struct NESEmu *) 
+void bit_absolute (struct NESEmu *emu) 
 {
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->PC++;
+
+	uint8_t low = emu->mem[cpu->PC++];
+	uint8_t high = emu->mem[cpu->PC++];
+
+	work_addr (emu, low, high, NULL, 0);
+
+	wait_cycles (emu, 0, 4, 0);
 }
 
 void and_absolute (struct NESEmu *) {}
