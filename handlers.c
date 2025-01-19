@@ -115,9 +115,30 @@ static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r
 	}
 }
 
-static void wait_cycles (struct NESEmu *emu, uint16_t addr, uint32_t cycles, uint32_t is_page)
+static void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 
+}
+
+static inline void set_ext_cycles (struct CPUNes *cpu, int8_t offset, uint16_t new_offset, uint32_t *ext_cycles)
+{
+	*ext_cycles = 1;
+
+	if (offset < 0) {
+		uint8_t c = cpu->PC;
+		uint8_t n = new_offset;
+		
+		if (c < n) {
+			*ext_cycles = 2;
+		}
+	} else if (offset > 0) {
+		uint8_t c = cpu->PC;
+		uint8_t n = new_offset;
+		
+		if (c > n) {
+			*ext_cycles = 2;
+		}
+	}
 }
 
 uint16_t accumulator (struct NESEmu *emu)
@@ -245,8 +266,22 @@ void asl_accumulator (struct NESEmu *) {}
 void ora_absolute (struct NESEmu *) {}
 void asl_absolute (struct NESEmu *) {}
 
+
 void bpl_relative (struct NESEmu *emu) 
 {
+	struct CPUNes *cpu = &emu->cpu;
+
+	int8_t offset = emu->mem[cpu->PC + 1];
+
+	uint16_t new_offset = cpu->PC + offset;
+
+	uint32_t ext_cycles;
+
+	set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
+
+	cpu->PC = new_offset;
+
+	wait_cycles (emu, 2 + ext_cycles);
 }
 
 void ora_indirect_y (struct NESEmu *) {}
@@ -286,7 +321,7 @@ void bit_absolute (struct NESEmu *emu)
 		cpu->P |= (STATUS_FLAG_ZF);
 	}
 
-	wait_cycles (emu, 0, 4, 0);
+	wait_cycles (emu, 4);
 }
 
 void and_absolute (struct NESEmu *) {}
@@ -306,7 +341,20 @@ void lsr_zeropage (struct NESEmu *) {}
 void pha_implied (struct NESEmu *) {}
 void eor_immediate (struct NESEmu *) {}
 void lsr_accumulator (struct NESEmu *) {}
-void jmp_absolute (struct NESEmu *) {}
+
+void jmp_absolute (struct NESEmu *emu)
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->PC++;
+
+	uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC];
+
+	cpu->PC = new_offset;
+
+	wait_cycles (emu, 3);
+}
+
 void eor_absolute (struct NESEmu *) {}
 void lsr_absolute (struct NESEmu *) {}
 void bvc_relative (struct NESEmu *) {}
@@ -337,7 +385,7 @@ void sei_implied (struct NESEmu *emu)
 	emu->cpu.P &= (STATUS_FLAG_IF);
 	emu->cpu.PC++;
 
-	wait_cycles (emu, 0, 2, 0);
+	wait_cycles (emu, 2);
 }
 
 void adc_absolute_y (struct NESEmu *) {}
@@ -363,7 +411,7 @@ void sty_absolute (struct NESEmu *emu)
 
 	work_addr (emu, low, high, r, 1, NULL);
 
-	wait_cycles (emu, 0, 4, 0);
+	wait_cycles (emu, 4);
 }
 
 void sta_absolute (struct NESEmu *emu) 
@@ -379,7 +427,7 @@ void sta_absolute (struct NESEmu *emu)
 
 	work_addr (emu, low, high, r, 1, NULL);
 
-	wait_cycles (emu, 0, 4, 0);
+	wait_cycles (emu, 4);
 }
 
 
@@ -397,7 +445,7 @@ void stx_absolute (struct NESEmu *emu)
 
 	work_addr (emu, low, high, r, 1, NULL);
 
-	wait_cycles (emu, 0, 4, 0);
+	wait_cycles (emu, 4);
 }
 
 void bcc_relative (struct NESEmu *) {}
@@ -426,7 +474,7 @@ void ldx_immediate (struct NESEmu *emu)
 	}
 	cpu->X = imm_byte;
 
-	wait_cycles (emu, 0, 2, 0);
+	wait_cycles (emu, 2);
 
 	cpu->PC++;
 }
@@ -450,7 +498,7 @@ void lda_immediate (struct NESEmu *emu)
 	}
 	cpu->A = imm_byte;
 
-	wait_cycles (emu, 0, 2, 0);
+	wait_cycles (emu, 2);
 
 	cpu->PC++;
 }
@@ -490,7 +538,7 @@ void cld_implied (struct NESEmu *emu)
 {
 	emu->cpu.P &= ~(STATUS_FLAG_DF);
 
-	wait_cycles (emu, 0, 2, 0);
+	wait_cycles (emu, 2);
 
 	emu->cpu.PC++;
 }
