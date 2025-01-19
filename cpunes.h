@@ -69,11 +69,16 @@ struct NESEmu {
 
     ppu_manager *ppu_handler;
 
+    float last_cycles;
+    float capasity_time;
+
     uint8_t mem[0x10000];
 };
 
 struct NESCallbacks {
 	uint32_t (*init) (struct NESEmu *emu, void *_other_data);
+	float (*calc_time_float) (struct NESEmu *emu, void *_other_data);
+	uint64_t (*calc_time_uint64) (struct NESEmu *emu, void *_other_data);
 };
 
 void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk);

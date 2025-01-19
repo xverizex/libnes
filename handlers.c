@@ -117,7 +117,7 @@ static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r
 
 static void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
-
+	emu->last_cycles = (float) cycles * 0.000601465f;
 }
 
 static inline void set_ext_cycles (struct CPUNes *cpu, int8_t offset, uint16_t new_offset, uint32_t *ext_cycles)
