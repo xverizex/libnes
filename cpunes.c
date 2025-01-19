@@ -216,7 +216,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 	uint32_t dword_size = sz_nes_emu >> 2; /* div by 4 */
 	uint32_t *ptr_dword_emu = (uint32_t *) emu;
-	for (uint32_t i = 0; i < sz_nes_emu; i++) {
+	for (uint32_t i = 0; i < dword_size; i++) {
 		*ptr_dword_emu = 0;
 		ptr_dword_emu++;
 	}
