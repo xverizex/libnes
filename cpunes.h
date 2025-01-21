@@ -52,7 +52,7 @@ typedef void (*ppu_manager) (struct NESEmu *, uint8_t *r, uint8_t is_write, uint
 struct NESCallbacks {
 	uint32_t (*init) (struct NESEmu *emu, void *_other_data);
 	float (*calc_time_float) (struct NESEmu *emu, void *_other_data);
-	uint64_t (*calc_time_uint64) (struct NESEmu *emu, void *_other_data);
+	void (*calc_time_uint64) (struct NESEmu *emu, void *_other_data);
 	void (*print_debug) (struct NESEmu *emu, void *_other_data);
 };
 
@@ -76,7 +76,8 @@ struct NESEmu {
 
     ppu_manager *ppu_handler;
 
-    float last_cycles;
+    float last_cycles_float;
+    int64_t last_cycles_int64;
     float capasity_time;
 
     uint8_t is_debug_list;

@@ -552,7 +552,15 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		return;
 	}
 
-    for (uint32_t count = 0; count < count_instructions; count++) {
-	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
-    }
+	if (emu->cb->calc_time_uint64) {
+		emu->cb->calc_time_uint64 (emu, NULL);
+		if (emu->last_cycles_int64 > 0) {
+			return;
+		}
+		emu->last_cycles_int64 = 0;
+	}
+
+	for (uint32_t count = 0; count < count_instructions; count++) {
+		pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+    	}
 }
