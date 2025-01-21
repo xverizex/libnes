@@ -266,14 +266,126 @@ void asl_accumulator (struct NESEmu *) {}
 void ora_absolute (struct NESEmu *) {}
 void asl_absolute (struct NESEmu *) {}
 
+static uint8_t hex_number_str (uint8_t n)
+{
+	if (n >= 0 && n <= 9) {
+		return n + '0';
+	}
+
+	if (n >= 10 && n <= 15) {
+		return (n - 10) + 'A';
+	}
+}
+
+static uint8_t hex_up_half (uint8_t n)
+{
+	n = n >> 4;
+
+	return hex_number_str (n);
+}
+
+static uint8_t hex_down_half (uint8_t n)
+{
+	n = n & 0xf;
+
+	return hex_number_str (n);
+}
+
+static uint8_t *show_debug_info (struct NESEmu *emu, uint32_t count, char *op)
+{
+	uint32_t tcount = 0;
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint8_t *pl = emu->line;
+	if (emu->is_show_address) {
+		*pl++ = hex_up_half (cpu->PC >> 8);
+		*pl++ = hex_down_half (cpu->PC >> 8);
+		*pl++ = hex_up_half (cpu->PC & 0xff);
+		*pl++ = hex_down_half (cpu->PC & 0xff);
+		*pl++ = ':';
+		*pl++ = ' ';
+	}
+	if (emu->is_show_bytes) {
+		for (uint16_t i = 0; i < count; i++) {
+			tcount++;
+			*pl++ = hex_up_half (emu->mem[emu->cpu.PC + i]);
+			*pl++ = hex_down_half (emu->mem[emu->cpu.PC + i]);
+			*pl++ = ' ';
+		}
+
+	}
+
+	while (tcount < 3) {
+		*pl++ = ' ';
+		*pl++ = ' ';
+		*pl++ = ' ';
+		tcount++;
+	}
+	while (*op != 0) {
+		*pl++ = *op++;
+	}
+
+	*pl++ = ' ' ;
+
+	return pl;
+}
+#if 0
+	/* lst */
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		int8_t offset = emu->mem[cpu->PC + 1];
+		uint16_t new_offset = cpu->PC + offset;
+
+		uint8_t *pl = show_debug_info (emu, 2, "BPL");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xf);
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		return;
+	}
+#endif
 
 void bpl_relative (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		int8_t offset = emu->mem[cpu->PC + 1];
+		uint16_t new_offset;
+
+		if (offset < 0) {
+			uint8_t off = 0xff - offset - 1;
+			new_offset = cpu->PC - off;
+		} else {
+			new_offset = cpu->PC + offset;
+		}
+
+		uint8_t *pl = show_debug_info (emu, 2, "BPL");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 2;
+		return;
+	}
+
 	struct CPUNes *cpu = &emu->cpu;
 
 	int8_t offset = emu->mem[cpu->PC + 1];
 
-	uint16_t new_offset = cpu->PC + offset;
+	uint16_t new_offset;
+
+	if (offset < 0) {
+		uint8_t off = 0xff - offset - 1;
+		new_offset = cpu->PC - off;
+	} else {
+		new_offset = cpu->PC + offset;
+	}
 
 	uint32_t ext_cycles;
 
@@ -302,6 +414,23 @@ void rol_accumulator (struct NESEmu *) {}
 
 void bit_absolute (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 3, "BIT");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = '$';
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 3;
+		return;
+	}
+
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->PC++;
@@ -334,7 +463,19 @@ void sec_implied (struct NESEmu *) {}
 void and_absolute_y (struct NESEmu *) {}
 void and_absolute_x (struct NESEmu *) {}
 void rol_absolute_x (struct NESEmu *) {}
-void rti_implied (struct NESEmu *) {}
+
+void rti_implied (struct NESEmu *emu) 
+{
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		int8_t offset = emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 2, "RTI");
+		*pl = 0;
+		cpu->PC++;
+		return;
+	}
+}
 void eor_indirect_x (struct NESEmu *) {}
 void eor_zeropage (struct NESEmu *) {}
 void lsr_zeropage (struct NESEmu *) {}
@@ -344,6 +485,22 @@ void lsr_accumulator (struct NESEmu *) {}
 
 void jmp_absolute (struct NESEmu *emu)
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 3, "JMP");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 3;
+		return;
+	}
+
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->PC++;
@@ -382,6 +539,15 @@ void ror_zeropage_x (struct NESEmu *) {}
 
 void sei_implied (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+
+		uint8_t *pl = show_debug_info (emu, 1, "SEI");
+		*pl = 0;
+		cpu->PC++;
+		return;
+	}
+
 	emu->cpu.P &= (STATUS_FLAG_IF);
 	emu->cpu.PC++;
 
@@ -400,6 +566,23 @@ void txa_implied (struct NESEmu *) {}
 
 void sty_absolute (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 3, "STY");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = '$';
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 2;
+		return;
+	}
+
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->PC++;
@@ -416,6 +599,23 @@ void sty_absolute (struct NESEmu *emu)
 
 void sta_absolute (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 3, "STA");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = '$';
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 3;
+		return;
+	}
+
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->PC++;
@@ -434,6 +634,23 @@ void sta_absolute (struct NESEmu *emu)
 
 void stx_absolute (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 3, "STX");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = '$';
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 3;
+		return;
+	}
+
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->PC++;
@@ -462,6 +679,21 @@ void lda_indirect_x (struct NESEmu *) {}
 
 void ldx_immediate (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		int8_t offset = emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 2, "LDX");
+		uint8_t number = (offset & 0xff);
+		*pl++ = '#';
+		*pl++ = '$';
+		*pl++ = hex_up_half (number);
+		*pl++ = hex_down_half (number);
+		*pl = 0;
+		cpu->PC += 2;
+		return;
+	}
+
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->PC++;
@@ -486,6 +718,21 @@ void tay_implied (struct NESEmu *) {}
 
 void lda_immediate (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		int8_t offset = emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 2, "LDA");
+		uint8_t number = (offset & 0xff);
+		*pl++ = '#';
+		*pl++ = '$';
+		*pl++ = hex_up_half (number);
+		*pl++ = hex_down_half (number);
+		*pl = 0;
+		cpu->PC += 2;
+		return;
+	}
+
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->PC++;
@@ -506,7 +753,27 @@ void lda_immediate (struct NESEmu *emu)
 void tax_implied (struct NESEmu *) {}
 void ldy_absolute (struct NESEmu *) {}
 void lda_absolute (struct NESEmu *) {}
-void ldx_absolute (struct NESEmu *) {}
+
+void ldx_absolute (struct NESEmu *emu)
+{
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 3, "LDX");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = '$';
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 3;
+		return;
+	}
+}
+
 void bcs_relative (struct NESEmu *) {}
 void lda_indirect_y (struct NESEmu *) {}
 void ldy_zeropage_x (struct NESEmu *) {}
@@ -536,6 +803,14 @@ void dec_zeropage_x (struct NESEmu *) {}
 
 void cld_implied (struct NESEmu *emu) 
 {
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint8_t *pl = show_debug_info (emu, 1, "CLD");
+		*pl = 0;
+		cpu->PC++;
+		return;
+	}
+
 	emu->cpu.P &= ~(STATUS_FLAG_DF);
 
 	wait_cycles (emu, 2);

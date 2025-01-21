@@ -228,6 +228,8 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 		}
 	}
 
+	emu->cb = clbk;
+
 	emu->dump = buffer;
 	emu->sz_dump = sz;
 
@@ -529,6 +531,26 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
+	if (emu->is_debug_list) {
+		uint16_t tmp_pc = emu->cpu.PC;
+
+    		for (uint16_t off = 0x8000; off < 0xffff;) {
+
+			pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+
+			if (off == emu->cpu.PC)
+				break;
+
+			if (emu->cb && emu->cb->print_debug) {
+				emu->cb->print_debug (emu, NULL);
+			}
+
+			off = emu->cpu.PC;
+    		}
+
+		emu->cpu.PC = tmp_pc;
+		return;
+	}
 
     for (uint32_t count = 0; count < count_instructions; count++) {
 	pnes_handler [emu->mem[emu->cpu.PC]] (emu);

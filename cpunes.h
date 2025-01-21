@@ -49,6 +49,13 @@ struct NESEmu;
 
 typedef void (*ppu_manager) (struct NESEmu *, uint8_t *r, uint8_t is_write, uint8_t *returned_reg);
 
+struct NESCallbacks {
+	uint32_t (*init) (struct NESEmu *emu, void *_other_data);
+	float (*calc_time_float) (struct NESEmu *emu, void *_other_data);
+	uint64_t (*calc_time_uint64) (struct NESEmu *emu, void *_other_data);
+	void (*print_debug) (struct NESEmu *emu, void *_other_data);
+};
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
@@ -72,14 +79,17 @@ struct NESEmu {
     float last_cycles;
     float capasity_time;
 
+    uint8_t is_debug_list;
+    uint8_t is_show_address;
+    uint8_t is_show_bytes;
+
+    char line[32];
+
+    struct NESCallbacks *cb;
+
     uint8_t mem[0x10000];
 };
 
-struct NESCallbacks {
-	uint32_t (*init) (struct NESEmu *emu, void *_other_data);
-	float (*calc_time_float) (struct NESEmu *emu, void *_other_data);
-	uint64_t (*calc_time_uint64) (struct NESEmu *emu, void *_other_data);
-};
 
 void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk);
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions);
