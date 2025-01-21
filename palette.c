@@ -1,6 +1,7 @@
 #include <stdint.h>
+#include <cpunes.h>
 
-guint32 colours_2c02[64] = {
+static uint32_t colors_2c02[64] = {
   0x626262, // 00
   0xae2e00, // 01
   0xc32706, // 02
@@ -66,3 +67,14 @@ guint32 colours_2c02[64] = {
   0x000000, // 3e
   0x000000  // 3f
 };
+
+void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b)
+{
+	uint8_t color = emu->mem[emu->addr];
+
+	uint32_t c = colors_2c02[color];
+
+	*r = ((c >> 16) & 0xff) / 255.f;
+	*g = ((c >>  8) & 0xff) / 255.f;
+	*b = ((c >>  0) & 0xff) / 255.f;
+}

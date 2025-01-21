@@ -95,7 +95,7 @@ struct NESEmu {
 
     char line[32];
 
-    uint8_t addr_off = 0;
+    uint8_t addr_off;
     uint16_t addr;
 
     uint8_t ppu_mask;
@@ -105,6 +105,7 @@ struct NESEmu {
     uint8_t mem[0x10000];
 };
 
+void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);
 
 void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk);
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions);

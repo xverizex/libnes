@@ -400,9 +400,13 @@ void bpl_relative (struct NESEmu *emu)
 
 	uint32_t ext_cycles;
 
-	set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
+	if (emu->cpu.P & STATUS_FLAG_NF) {
+		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
 
-	cpu->PC = new_offset;
+		cpu->PC = new_offset;
+	} else {
+		cpu->PC += 2;
+	}
 
 	wait_cycles (emu, 2 + ext_cycles);
 }
@@ -783,6 +787,14 @@ void ldx_absolute (struct NESEmu *emu)
 		cpu->PC += 3;
 		return;
 	}
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+	cpu->X = emu->mem[addr];
+
+	emu->cpu.PC += 3;
 }
 
 void bcs_relative (struct NESEmu *) {}

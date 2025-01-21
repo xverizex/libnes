@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-I.
 LDFLAGS=-fPIC -shared -g
-SOURCES=cpunes.c handlers.c
+SOURCES=cpunes.c handlers.c palette.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=libnes.so
 LIB_DIR=/usr/local/lib64
