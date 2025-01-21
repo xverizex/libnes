@@ -56,6 +56,15 @@ struct NESCallbacks {
 	void (*print_debug) (struct NESEmu *emu, void *_other_data);
 };
 
+#define MASK_IS_NORMAL_GRAYSCALE_RENDER			(1 << 0)
+#define MASK_IS_BACKGROUND_SHOW_LEFTMOST		(1 << 1)
+#define MASK_IS_SPRITE_SHOW_LEFTMOST			(1 << 2)
+#define MASK_IS_BACKGROUND_RENDER			(1 << 3)
+#define MASK_IS_SPRITE_RENDER				(1 << 4)
+#define MASK_IS_EMPHASIZE_RED				(1 << 5)
+#define MASK_IS_EMPHASIZE_GREEN				(1 << 6)
+#define MASK_IS_EMPHASIZE_BLUE				(1 << 7)
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
@@ -85,6 +94,11 @@ struct NESEmu {
     uint8_t is_show_bytes;
 
     char line[32];
+
+    uint8_t addr_off = 0;
+    uint16_t addr;
+
+    uint8_t ppu_mask;
 
     struct NESCallbacks *cb;
 

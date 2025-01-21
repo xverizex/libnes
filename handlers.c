@@ -20,6 +20,7 @@ void ppu_ctrl (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *return
 
 void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
+	emu->ppu_mask = *r;
 }
 
 void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
@@ -28,7 +29,7 @@ void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *retu
 		return;
 
 	if (returned_reg) {
-		*returned_reg = 0x40;
+		*returned_reg = 0x00;
 	}
 }
 
@@ -46,10 +47,19 @@ void ppu_scroll (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *retu
 
 void ppu_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
+	if (emu->addr_off == 0) {
+		emu->addr = 0;
+		emu->addr |= (*r << 8) & 0xff00;
+		emu->addr_off++;
+	} else {
+		emu->addr |= *r & 0xff;
+		emu->addr_off = 0;
+	}
 }
 
 void ppu_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
 {
+	emu->mem[emu->addr] = *r;
 }
 
 static void internal_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
