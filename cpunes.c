@@ -533,6 +533,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
 	if (emu->is_debug_list) {
 		uint16_t tmp_pc = emu->cpu.PC;
+		emu->cpu.PC = 0x8000;
 
     		for (uint16_t off = 0x8000; off < 0xffff;) {
 
@@ -560,7 +561,5 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		emu->last_cycles_int64 = 0;
 	}
 
-	for (uint32_t count = 0; count < count_instructions; count++) {
-		pnes_handler [emu->mem[emu->cpu.PC]] (emu);
-    	}
+	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
 }

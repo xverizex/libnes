@@ -471,7 +471,7 @@ void rti_implied (struct NESEmu *emu)
 		struct CPUNes *cpu = &emu->cpu;
 		int8_t offset = emu->mem[cpu->PC + 1];
 
-		uint8_t *pl = show_debug_info (emu, 2, "RTI");
+		uint8_t *pl = show_debug_info (emu, 1, "RTI");
 		*pl = 0;
 		cpu->PC++;
 		return;
