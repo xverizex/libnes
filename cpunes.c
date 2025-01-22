@@ -240,6 +240,9 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	emu->cpu.S = 0x100;
 	emu->cpu.P |= STATUS_FLAG_IF;
 
+	emu->width = 256;
+	emu->height = 240;
+
 	uint16_t pos_handler = 0xa + emu->sz_prg_rom;
 
 	emu->nmi_handler = *(uint16_t *) &buffer[pos_handler];

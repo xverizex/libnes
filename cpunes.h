@@ -106,6 +106,11 @@ struct NESEmu {
 
     uint8_t ppu_mask;
 
+    uint16_t width;
+    uint16_t height;
+
+    void *_render_data;
+
     struct NESCallbacks *cb;
 
     uint8_t mem[0x10000];
