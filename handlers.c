@@ -722,7 +722,16 @@ void cmp_indirect_x (struct NESEmu *) {}
 void cpy_zeropage (struct NESEmu *) {}
 void cmp_zeropage (struct NESEmu *) {}
 void dec_zeropage (struct NESEmu *) {}
-void iny_implied (struct NESEmu *) {}
+
+void iny_implied (struct NESEmu *) 
+{
+	emu->cpu->Y++;
+
+	emu->cpu->PC++;
+
+	wait_cycles (emu, 2);
+}
+
 void cmp_immediate (struct NESEmu *) {}
 void dex_implied (struct NESEmu *) {}
 void cpy_absolute (struct NESEmu *) {}
@@ -758,7 +767,16 @@ void sbc_indirect_x (struct NESEmu *) {}
 void cpx_zeropage (struct NESEmu *) {}
 void sbc_zeropage (struct NESEmu *) {}
 void inc_zeropage (struct NESEmu *) {}
-void inx_implied (struct NESEmu *) {}
+
+void inx_implied (struct NESEmu *emu)
+{
+	emu->cpu->X++;
+
+	emu->cpu->PC++;
+
+	wait_cycles (emu, 2);
+}
+
 void sbc_immediate (struct NESEmu *) {}
 void nop_implied (struct NESEmu *) {}
 void cpx_absolute (struct NESEmu *) {}
