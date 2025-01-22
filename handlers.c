@@ -32,6 +32,14 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 }
 
+static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
+{
+	if (addr == 0x2002) {
+		emu->addr_off = 0;
+	}
+	*r = emu->mem[addr];
+}
+
 static void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 	emu->last_cycles_float = (float) cycles * 0.000601465f;
@@ -752,7 +760,7 @@ void ldy_absolute (struct NESEmu *emu)
 
 	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
 
-	cpu->Y = emu->mem[addr];
+	read_from_address (emu, addr, &cpu->Y);
 
 	emu->cpu.PC += 3;
 
@@ -782,7 +790,7 @@ void lda_absolute (struct NESEmu *emu)
 
 	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
 
-	cpu->A = emu->mem[addr];
+	read_from_address (emu, addr, &cpu->A);
 
 	emu->cpu.PC += 3;
 
@@ -812,7 +820,7 @@ void ldx_absolute (struct NESEmu *emu)
 
 	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
 
-	cpu->X = emu->mem[addr];
+	read_from_address (emu, addr, &cpu->X);
 
 	emu->cpu.PC += 3;
 
