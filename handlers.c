@@ -25,6 +25,8 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->addr |= *r & 0xff;
 			emu->addr_off = 0;
 		}
+	} else if (addr == 0x2007) {
+		emu->mem[emu->addr] = *r;
 	} else {
 		emu->mem[addr] = *r;
 	}
