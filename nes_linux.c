@@ -110,14 +110,6 @@ static const char *frag_shader_str =
 "}\n"
 ;
 
-struct render_linux_data {
-	uint32_t program;
-	float ortho[16];
-	float transform[16];
-	float scale[16];
-	float model[16];
-	uint32_t sampler;
-};
 
 static void math_scale (float *e, float sc)
 {
@@ -206,6 +198,24 @@ static uint32_t compile_shader (const char *vert_str, const char *frag_str)
 	return shader;
 }
 
+#define SPRITE_COUNT             (16 * 16)
+
+struct render_linux_data {
+	uint32_t program;
+	float ortho[16];
+	float transform[16];
+	float scale[16];
+	float model[16];
+	uint32_t id_ortho;
+	uint32_t id_transform;
+	uint32_t id_scale;
+	uint32_t id_model;
+	uint32_t id_sampler;
+	uint32_t texture;
+	uint32_t *sprites[SPRITE_COUNT];
+	uint8_t sprite_bits[SPRITE_COUNT][2];
+};
+
 static void init_space (struct NESEmu *emu, struct render_linux_data *r)
 {
 	math_ortho_rh (r->ortho, 0, emu->width, emu->height, 0, -1, 10);
@@ -214,12 +224,25 @@ static void init_space (struct NESEmu *emu, struct render_linux_data *r)
 	math_scale (r->scale, 1.f);
 }
 
+static void init_sprite_array (struct NESEmu *emu, struct render_linux_data *r)
+{
+	uint32_t count = SPRITE_COUNT;
+	
+	uint32_t count_bytes = sizeof (uint32_t) * 8 * 8;
+	for (uint32_t i = 0; i < count; i++) {
+		r->sprites[i] = malloc (count_bytes);
+		memset (r->sprites[i], 0, count_bytes);
+	}	
+}
+
+
 void linux_opengl_init (struct NESEmu *emu, void *_other_data)
 {
 	struct render_linux_data *r = malloc (sizeof (struct render_linux_data));
 	memset (r, 0, sizeof (struct render_linux_data));
 	r->program = compile_shader (vert_shader_str, frag_shader_str);
 	init_space (r);
+	init_sprite_array (r);
 
 	emu->_render_data = r;
 }
