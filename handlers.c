@@ -18,7 +18,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	if (addr == PPUMASK) {
 		emu->mem[addr] = *r;
-		if (*r & MASK_IS_BACKGROUND_RENDER) {
+		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
 			emu->cb->ppu_mask (emu, NULL);
 		}
 
