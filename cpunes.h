@@ -12,7 +12,7 @@
 #define STATUS_FLAG_NF        (1 << 7)
 
 enum {
-	PPUCTRL,
+	PPUCTRL = 0x2000,
 	PPUMASK,
 	PPUSTATUS,
 	OAMADDR,
@@ -82,8 +82,6 @@ struct NESEmu {
     uint16_t nmi_handler;
     uint16_t reset_handler;
     uint16_t irq_handler;
-
-    ppu_manager *ppu_handler;
 
     float last_cycles_float;
     int64_t last_cycles_int64;

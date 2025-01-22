@@ -14,114 +14,19 @@ uint16_t indirect (struct NESEmu *emu);
 uint16_t indirect_x (struct NESEmu *emu);
 uint16_t indirect_y (struct NESEmu *emu);
 
-void ppu_ctrl (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
+static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
-}
-
-void ppu_mask (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-	emu->ppu_mask = *r;
-}
-
-void ppu_status (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-	if (is_write)
-		return;
-
-	if (returned_reg) {
-		*returned_reg = 0x00;
-	}
-}
-
-void oam_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-}
-
-void oam_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-}
-
-void ppu_scroll (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-}
-
-void ppu_addr (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-	if (emu->addr_off == 0) {
-		emu->addr = 0;
-		emu->addr |= (*r << 8) & 0xff00;
-		emu->addr_off++;
-	} else {
-		emu->addr |= *r & 0xff;
-		emu->addr_off = 0;
-	}
-}
-
-void ppu_data (struct NESEmu *emu, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-	emu->mem[emu->addr] = *r;
-}
-
-static void internal_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void mirror_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-
-static void nes_ppu_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-	if (low <= 7)
-		emu->ppu_handler[low] (emu, r, is_write, returned_reg);
-}
-
-static void nes_apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void apu_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void cartridge_ram_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void cartridge_rom_addr (struct NESEmu *emu, uint8_t low, uint8_t high)
-{
-}
-
-static void work_addr (struct NESEmu *emu, uint8_t low, uint8_t high, uint8_t *r, uint8_t is_write, uint8_t *returned_reg)
-{
-	if (high < 0x40) {
-		if (high < 0x20) {
-			if (high < 0x08) {
-				internal_ram_addr (emu, low, high);
-			} else {
-				mirror_addr (emu, low, high);
-			}
-		} else if (high == 0x20) {
-			if (low < 0x08) {
-				nes_ppu_addr (emu, low, high, r, is_write, returned_reg);
-			} else {
-				mirror_addr (emu, low, high);
-			}
-		}
-	} else {
-		if (high == 0x40) {
-			if (low < 0x18) {
-				nes_apu_addr (emu, low, high);
-			} else if (low < 0x20) {
-				apu_addr (emu, low, high);
-			}
-			/* unmapped. Available for cartidge use. */
-		} else if (high < 80) {
-			cartridge_ram_addr (emu, low, high);
+	if (addr == 0x2006) {
+		if (emu->addr_off == 0) {
+			emu->addr = 0;
+			emu->addr |= (*r << 8) & 0xff00;
+			emu->addr_off++;
 		} else {
-			cartridge_rom_addr (emu, low, high);
+			emu->addr |= *r & 0xff;
+			emu->addr_off = 0;
 		}
+	} else {
+		emu->mem[addr] = *r;
 	}
 }
 
@@ -450,12 +355,13 @@ void bit_absolute (struct NESEmu *emu)
 
 	cpu->PC++;
 
-	uint8_t low = emu->mem[cpu->PC++];
-	uint8_t high = emu->mem[cpu->PC++];
-
 	uint8_t returned_reg = 0;
 
-	work_addr (emu, low, high, NULL, 0, &returned_reg);
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC];
+
+	returned_reg = emu->mem[addr];
+
+	cpu->PC += 2;
 
 	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_VF|STATUS_FLAG_ZF);
 
@@ -602,12 +508,13 @@ void sty_absolute (struct NESEmu *emu)
 
 	cpu->PC++;
 
-	uint8_t low = emu->mem[cpu->PC++];
-	uint8_t high = emu->mem[cpu->PC++];
-
 	uint8_t *r = &cpu->Y;
 
-	work_addr (emu, low, high, r, 1, NULL);
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC];
+
+	write_to_address (emu, addr, r);
+
+	cpu->PC += 2;
 
 	wait_cycles (emu, 4);
 }
@@ -635,14 +542,15 @@ void sta_absolute (struct NESEmu *emu)
 
 	cpu->PC++;
 
-	uint8_t low = emu->mem[cpu->PC++];
-	uint8_t high = emu->mem[cpu->PC++];
-
 	uint8_t *r = &cpu->A;
 
-	work_addr (emu, low, high, r, 1, NULL);
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC];
+
+	write_to_address (emu, addr, r);
 
 	wait_cycles (emu, 4);
+
+	cpu->PC += 2;
 }
 
 
@@ -670,12 +578,13 @@ void stx_absolute (struct NESEmu *emu)
 
 	cpu->PC++;
 
-	uint8_t low = emu->mem[cpu->PC++];
-	uint8_t high = emu->mem[cpu->PC++];
-
 	uint8_t *r = &cpu->X;
 
-	work_addr (emu, low, high, r, 1, NULL);
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC];
+
+	write_to_address (emu, addr, r);
+
+	cpu->PC += 2;
 
 	wait_cycles (emu, 4);
 }

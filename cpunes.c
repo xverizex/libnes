@@ -251,18 +251,6 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	emu->cpu.PC = emu->reset_handler;
 
 	if (!is_init_global_func) {
-		DEFINE_STATIC_PPU_HANDLER ()
-			ADD_HANDLER (ppu_ctrl)			/* 0x00 */
-			ADD_HANDLER (ppu_mask)			/* 0x01 */
-			ADD_HANDLER (ppu_status)		/* 0x02 */
-			ADD_HANDLER (oam_addr)			/* 0x03 */
-			ADD_HANDLER (oam_data)			/* 0x04 */
-			ADD_HANDLER (ppu_scroll)		/* 0x05 */
-			ADD_HANDLER (ppu_addr)			/* 0x06 */
-			ADD_HANDLER (ppu_data)			/* 0x07 */
-		END_DEFINE_STATIC_PPU_HANDLER ()
-
-		emu->ppu_handler = ppu_handler;
 
 		DEFINE_STATIC_FUNC_NES_HANDLER ()
 			ADD_HANDLER (brk_implied)		/* 0x00 */
