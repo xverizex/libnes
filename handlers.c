@@ -483,7 +483,17 @@ void sty_zeropage (struct NESEmu *) {}
 void sta_zeropage (struct NESEmu *) {}
 void stx_zeropage (struct NESEmu *) {}
 void dey_implied (struct NESEmu *) {}
-void txa_implied (struct NESEmu *) {}
+
+void txa_implied (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->A = cpu->X;
+
+	emu->cpu.PC += 1;
+
+	wait_cycles (emu, 2);
+}
 
 void sty_absolute (struct NESEmu *emu) 
 {
@@ -594,9 +604,31 @@ void sta_indirect_y (struct NESEmu *) {}
 void sty_zeropage_x (struct NESEmu *) {}
 void sta_zeropage_x (struct NESEmu *) {}
 void stx_zeropage_y (struct NESEmu *) {}
-void tya_implied (struct NESEmu *) {}
+
+void tya_implied (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->A = cpu->Y;
+
+	emu->cpu.PC += 1;
+
+	wait_cycles (emu, 2);
+}
+
 void sta_absolute_y (struct NESEmu *) {}
-void txs_implied (struct NESEmu *) {}
+
+void txs_implied (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	emu->mem[cpu->S] = cpu->X;
+
+	emu->cpu.PC += 1;
+
+	wait_cycles (emu, 2);
+}
+
 void sta_absolute_x (struct NESEmu *) {}
 void ldy_immediate (struct NESEmu *) {}
 void lda_indirect_x (struct NESEmu *) {}
@@ -638,7 +670,17 @@ void ldx_immediate (struct NESEmu *emu)
 void ldy_zeropage (struct NESEmu *) {}
 void lda_zeropage (struct NESEmu *) {}
 void ldx_zeropage (struct NESEmu *) {}
-void tay_implied (struct NESEmu *) {}
+
+void tay_implied (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->Y = cpu->A;
+
+	emu->cpu.PC += 1;
+
+	wait_cycles (emu, 2);
+}
 
 void lda_immediate (struct NESEmu *emu) 
 {
@@ -674,9 +716,76 @@ void lda_immediate (struct NESEmu *emu)
 	cpu->PC++;
 }
 
-void tax_implied (struct NESEmu *) {}
-void ldy_absolute (struct NESEmu *) {}
-void lda_absolute (struct NESEmu *) {}
+void tax_implied (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->X = cpu->A;
+
+	emu->cpu.PC += 1;
+
+	wait_cycles (emu, 2);
+}
+
+void ldy_absolute (struct NESEmu *emu) 
+{
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 3, "LDY");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = '$';
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 3;
+		return;
+	}
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+	cpu->Y = emu->mem[addr];
+
+	emu->cpu.PC += 3;
+
+	wait_cycles (emu, 4);
+}
+
+void lda_absolute (struct NESEmu *emu) 
+{
+	if (emu->is_debug_list) {
+		struct CPUNes *cpu = &emu->cpu;
+		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+		uint8_t *pl = show_debug_info (emu, 3, "LDA");
+		uint8_t up = (new_offset >> 8) & 0xff;
+		uint8_t down = (new_offset & 0xff);
+		*pl++ = '$';
+		*pl++ = hex_up_half (up);
+		*pl++ = hex_down_half (up);
+		*pl++ = hex_up_half (down);
+		*pl++ = hex_down_half (down);
+		*pl = 0;
+		cpu->PC += 3;
+		return;
+	}
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
+
+	cpu->A = emu->mem[addr];
+
+	emu->cpu.PC += 3;
+
+	wait_cycles (emu, 4);
+}
 
 void ldx_absolute (struct NESEmu *emu)
 {
@@ -704,6 +813,8 @@ void ldx_absolute (struct NESEmu *emu)
 	cpu->X = emu->mem[addr];
 
 	emu->cpu.PC += 3;
+
+	wait_cycles (emu, 4);
 }
 
 void bcs_relative (struct NESEmu *) {}
@@ -713,7 +824,18 @@ void lda_zeropage_x (struct NESEmu *) {}
 void ldx_zeropage_y (struct NESEmu *) {}
 void clv_implied (struct NESEmu *) {}
 void lda_absolute_y (struct NESEmu *) {}
-void tsx_implied (struct NESEmu *) {}
+
+void tsx_implied (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->X = emu->mem[cpu->S];
+
+	emu->cpu.PC += 1;
+
+	wait_cycles (emu, 2);
+}
+
 void ldy_absolute_x (struct NESEmu *) {}
 void lda_absolute_x (struct NESEmu *) {}
 void ldx_absolute_y (struct NESEmu *) {}
@@ -723,11 +845,11 @@ void cpy_zeropage (struct NESEmu *) {}
 void cmp_zeropage (struct NESEmu *) {}
 void dec_zeropage (struct NESEmu *) {}
 
-void iny_implied (struct NESEmu *) 
+void iny_implied (struct NESEmu *emu) 
 {
-	emu->cpu->Y++;
+	emu->cpu.Y++;
 
-	emu->cpu->PC++;
+	emu->cpu.PC++;
 
 	wait_cycles (emu, 2);
 }
@@ -770,9 +892,9 @@ void inc_zeropage (struct NESEmu *) {}
 
 void inx_implied (struct NESEmu *emu)
 {
-	emu->cpu->X++;
+	emu->cpu.X++;
 
-	emu->cpu->PC++;
+	emu->cpu.PC++;
 
 	wait_cycles (emu, 2);
 }
