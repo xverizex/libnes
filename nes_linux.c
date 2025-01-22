@@ -3,6 +3,7 @@
 #include <sys/time.h>
 #include <stdio.h>
 #include <cpunes.h>
+#include <GLES3/gl3.h>
 
 void linux_wait_cycles (struct NESEmu *emu)
 {
@@ -26,6 +27,15 @@ void linux_wait_cycles (struct NESEmu *emu)
 #endif
 }
 
+void linux_clear_screen (struct NESEmu *emu, void *_other_data)
+{
+	float r, g, b;
+	nes_get_colors_background_clear (emu, &r, &g, &b);
+
+	glClearColor (r, g, b, 1.0f);
+	glClear (GL_COLOR_BUFFER_BIT);
+}
+
 void linux_calc_time_uint64 (struct NESEmu *emu, void *_other_data)
 {
     struct timeval tv;
@@ -45,4 +55,5 @@ void linux_init_callbacks (struct NESCallbacks *cb)
 {
 	cb->print_debug = linux_print_debug;
 	cb->calc_time_uint64 = linux_calc_time_uint64;
+	cb->ppu_mask = linux_clear_screen;
 }

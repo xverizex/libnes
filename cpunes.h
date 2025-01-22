@@ -54,6 +54,7 @@ struct NESCallbacks {
 	float (*calc_time_float) (struct NESEmu *emu, void *_other_data);
 	void (*calc_time_uint64) (struct NESEmu *emu, void *_other_data);
 	void (*print_debug) (struct NESEmu *emu, void *_other_data);
+	void (*ppu_mask) (struct NESEmu *emu, void *_other_data);
 };
 
 #define MASK_IS_NORMAL_GRAYSCALE_RENDER			(1 << 0)

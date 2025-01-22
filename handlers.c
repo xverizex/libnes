@@ -16,7 +16,13 @@ uint16_t indirect_y (struct NESEmu *emu);
 
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
-	if (addr == 0x2006) {
+	if (addr == PPUMASK) {
+		emu->mem[addr] = *r;
+		if (*r & MASK_IS_BACKGROUND_RENDER) {
+			emu->cb->ppu_mask (emu, NULL);
+		}
+
+	} if (addr == PPUADDR) {
 		if (emu->addr_off == 0) {
 			emu->addr = 0;
 			emu->addr |= (*r << 8) & 0xff00;
@@ -25,8 +31,8 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->addr |= *r & 0xff;
 			emu->addr_off = 0;
 		}
-	} else if (addr == 0x2007) {
-		emu->mem[emu->addr] = *r;
+	} else if (addr == PPUDATA) {
+		emu->mem[emu->addr++] = *r;
 	} else {
 		emu->mem[addr] = *r;
 	}
