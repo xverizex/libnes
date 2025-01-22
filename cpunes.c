@@ -237,7 +237,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	parse_header (emu);
 
 	emu->cpu.PC = 0xfffc;
-	emu->cpu.S = 0xfd;
+	emu->cpu.S = 0x100;
 	emu->cpu.P |= STATUS_FLAG_IF;
 
 	uint16_t pos_handler = 0xa + emu->sz_prg_rom;
@@ -539,6 +539,14 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 
 		emu->cpu.PC = tmp_pc;
 		return;
+	}
+
+	if (emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+		if (emu->cb->calc_nmi) {
+			if (emu->cb->calc_nmi (emu, NULL)) {
+				emu->cb->render (emu, NULL);
+			}
+		}
 	}
 
 	if (emu->cb->calc_time_uint64) {

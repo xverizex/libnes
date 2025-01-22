@@ -11,6 +11,8 @@
 #define STATUS_FLAG_VF        (1 << 6)
 #define STATUS_FLAG_NF        (1 << 7)
 
+#define PPUCTRL_VBLANK_NMI    (1 << 7)
+
 enum {
 	PPUCTRL = 0x2000,
 	PPUMASK,
@@ -20,6 +22,7 @@ enum {
 	PPUSCROLL,
 	PPUADDR,
 	PPUDATA,
+	OAMDMA = 0x4014,
 	N_PPUMANAGE
 };
 
@@ -41,7 +44,7 @@ struct CPUNes {
     uint8_t X;
     uint8_t Y;
     uint16_t PC;
-    uint8_t S;
+    uint16_t S;
     uint8_t P;
 };
 
@@ -55,6 +58,8 @@ struct NESCallbacks {
 	void (*calc_time_uint64) (struct NESEmu *emu, void *_other_data);
 	void (*print_debug) (struct NESEmu *emu, void *_other_data);
 	void (*ppu_mask) (struct NESEmu *emu, void *_other_data);
+	uint32_t (*calc_nmi) (struct NESEmu *emu, void *_other_data);
+	void (*render) (struct NESEmu *emu, void *_other_data);
 };
 
 #define MASK_IS_NORMAL_GRAYSCALE_RENDER			(1 << 0)
@@ -87,6 +92,8 @@ struct NESEmu {
     float last_cycles_float;
     int64_t last_cycles_int64;
     float capasity_time;
+
+    uint64_t start_time_nmi;
 
     uint8_t is_debug_list;
     uint8_t is_show_address;
