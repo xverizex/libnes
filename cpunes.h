@@ -116,6 +116,7 @@ struct NESEmu {
 
     struct NESCallbacks *cb;
 
+    uint16_t ram[0x500];
     uint8_t mem[0x10000];
 };
 

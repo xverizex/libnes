@@ -16,6 +16,11 @@ uint16_t indirect_y (struct NESEmu *emu);
 
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
+	if (addr >= 0 && addr <= 0x500) {
+		emu->ram[addr] = *r;
+		return;
+	}
+
 	if (addr == PPUMASK) {
 		emu->mem[addr] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
@@ -43,7 +48,11 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	if (addr == 0x2002) {
 		emu->addr_off = 0;
 	}
-	*r = emu->mem[addr];
+	if (addr >= 0 && addr <= 0x500) {
+		*r = emu->ram[addr];
+	} else {
+		*r = emu->mem[addr];
+	}
 }
 
 static void wait_cycles (struct NESEmu *emu, uint32_t cycles)
