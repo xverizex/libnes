@@ -518,6 +518,10 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 		is_init_global_func = 1;
 	}
+
+	if (emu->cb && emu->cb->init) {
+		emu->cb->init (emu, NULL);
+	}
 }
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
@@ -543,11 +547,14 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		emu->cpu.PC = tmp_pc;
 		return;
 	}
-
-	if (emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+	
+	if (emu->is_nmi_works) {
+	} else if (emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 		if (emu->cb->calc_nmi) {
-			if (emu->cb->calc_nmi (emu, NULL)) {
-				emu->cb->render (emu, NULL);
+			emu->is_nmi_works = emu->cb->calc_nmi (emu, NULL);
+			if (emu->is_nmi_works) {
+				emu->latest_exec = emu->cpu.PC;
+				emu->cpu.PC = emu->nmi_handler;
 			}
 		}
 	}
@@ -561,4 +568,8 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 	}
 
 	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+
+	if (emu->latest_exec == emu->cpu.PC) {
+		emu->cb->render (emu, NULL);
+	}
 }

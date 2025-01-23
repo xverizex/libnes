@@ -412,6 +412,8 @@ void rti_implied (struct NESEmu *emu)
 		cpu->PC++;
 		return;
 	}
+
+	emu->cpu.PC = emu->latest_exec;
 }
 void eor_indirect_x (struct NESEmu *) {}
 void eor_zeropage (struct NESEmu *) {}

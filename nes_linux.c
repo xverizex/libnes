@@ -5,6 +5,7 @@
 #include <cpunes.h>
 #include <string.h>
 #include <GLES3/gl3.h>
+#include <stdlib.h>
 
 void linux_wait_cycles (struct NESEmu *emu)
 {
@@ -213,7 +214,11 @@ struct render_linux_data {
 	uint32_t id_sampler;
 	uint32_t texture;
 	uint32_t *sprites[SPRITE_COUNT];
-	uint8_t sprite_bits[SPRITE_COUNT][2];
+	uint8_t sprite_bits[SPRITE_COUNT][16];
+	uint32_t sprite_texture[SPRITE_COUNT];
+	uint8_t sprite_bits_one[16];
+	uint32_t vao;
+	uint32_t vbo;
 };
 
 static void init_space (struct NESEmu *emu, struct render_linux_data *r)
@@ -235,16 +240,185 @@ static void init_sprite_array (struct NESEmu *emu, struct render_linux_data *r)
 	}	
 }
 
+static void init_textures (uint32_t *tex, uint32_t tex_width, uint32_t tex_height)
+{
+	uint32_t count = SPRITE_COUNT;
+
+	glGenTextures (count, tex);
+
+	for (uint32_t i = 0; i < count; i++) {
+		glBindTexture (GL_TEXTURE_2D, tex[i]);
+		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, tex_width, tex_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		glBindTexture (GL_TEXTURE_2D, 0);
+	}
+}
+
+static void init_vao (struct NESEmu *emu, struct render_linux_data *r)
+{
+	float w = 8;
+	float h = 8;
+
+#if 1
+    float vertices[] = {
+             0.f,    0.f,  0.f, 0.f, 0.f,
+             0.0f,     h,  0.f, 0.f, 1.f,
+                w,   0.f,  0.f, 1.f, 0.f,
+                w,   0.f,  0.f, 1.f, 0.f,
+                w,     h,  0.f, 1.f, 1.f,
+              0.f,     h,  0.f, 0.f, 1.f
+    };
+#else
+    float vertices[] = {
+         0.f,    0.f,  0.f, 0.f, 1.f,
+         0.0f,     h,  0.f, 0.f, 0.f,
+            w,   0.f,  0.f, 1.f, 1.f,
+            w,   0.f,  0.f, 1.f, 1.f,
+            w,     h,  0.f, 1.f, 0.f,
+          0.f,     h,  0.f, 0.f, 0.f
+    };
+#endif
+
+    float *v = vertices;
+
+    uint32_t vao, vbo;
+
+    glGenVertexArrays (1, &vao);
+    glGenBuffers (1, &vbo);
+    glBindVertexArray (vao);
+    glBindBuffer (GL_ARRAY_BUFFER, vbo);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), (void *) 0);
+    glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), (void *) (3 * sizeof (float)));
+
+    glEnableVertexAttribArray (0);
+    glEnableVertexAttribArray (1);
+
+    glBindVertexArray (0);
+
+    r->vao = vao;
+    r->vbo = vbo;
+}
+
+static void init_id (struct NESEmu *emu, struct render_linux_data *r)
+{
+	glUseProgram (r->program);
+
+	r->id_ortho = glGetUniformLocation (r->program, "Ortho");
+	r->id_transform = glGetUniformLocation (r->program, "Transform");
+	r->id_scale = glGetUniformLocation (r->program, "Scale");
+	r->id_model = glGetUniformLocation (r->program, "Model");
+	r->id_sampler = glGetUniformLocation (r->program, "Texture0");
+
+	glUseProgram (0);
+}
 
 void linux_opengl_init (struct NESEmu *emu, void *_other_data)
 {
 	struct render_linux_data *r = malloc (sizeof (struct render_linux_data));
 	memset (r, 0, sizeof (struct render_linux_data));
 	r->program = compile_shader (vert_shader_str, frag_shader_str);
-	init_space (r);
-	init_sprite_array (r);
+	init_space (emu, r);
+	init_sprite_array (emu, r);
+	init_textures (r->sprite_texture, 8, 8);
+	init_vao (emu, r);
+	init_id (emu, r);
 
 	emu->_render_data = r;
+}
+
+/*
+ * 1. get palette +
+ * 2. get char data texture +
+ * 3. fill texture buffer +
+ */
+
+uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
+
+static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture)
+{
+	uint16_t addr_palette = 0x3f00;
+	uint8_t p[4][4];
+	for (int i = 0; i < 4; i++) {
+		p[i][0] = emu->mem[addr_palette + 0];
+		p[i][1] = emu->mem[addr_palette + 1];
+		p[i][2] = emu->mem[addr_palette + 2];
+		p[i][3] = emu->mem[addr_palette + 3];
+
+		addr_palette += 4;
+	}
+
+	uint16_t addr = 16 + emu->sz_prg_rom + 0x8000;
+
+
+	uint8_t *ptr = &emu->mem[addr];
+	ptr += id_texture * 8;
+
+	memcpy (r->sprite_bits_one, ptr, 16);
+
+	uint8_t s = 0x80;
+
+	uint32_t *sp = r->sprites[id_texture];
+
+	for (int i = 0; i < 8; i++) {
+		uint8_t ix = 7;
+		uint8_t low = r->sprite_bits_one[i + 0];
+		uint8_t high = r->sprite_bits_one[i + 8];
+
+		for (int ii = 0; ii < 8; ii++) {
+			uint8_t n = ((low & s) >> ix) & 0x1;
+			n += ((high & s) >> ix) & 0x1;
+			*sp++ = palette_get_color (emu, n);
+		}
+	}
+
+	glBindTexture (GL_TEXTURE_2D, r->sprite_texture[id_texture]);
+
+	glTexSubImage2D (GL_TEXTURE_2D, r->sprite_texture[id_texture], 0, 0, 8, 8, GL_RGB, GL_UNSIGNED_BYTE, r->sprites[id_texture]);
+
+	glBindTexture (GL_TEXTURE_2D, 0);
+}
+
+void linux_opengl_render (struct NESEmu *emu, void *_other_data)
+{
+	struct render_linux_data *r = emu->_render_data;
+	uint16_t idx = 0;
+
+	glUseProgram (r->program);
+
+	glBindVertexArray (r->vao);
+
+	for (int i = 0; i < 256; i++) {
+
+		uint8_t px = emu->mem[0x200 + idx + 3];
+		uint8_t py = emu->mem[0x200 + idx + 0];
+		uint8_t flags = emu->mem[0x200 + idx + 2];
+		uint8_t id_texture = emu->mem[0x200 + idx + 1];
+
+		math_translate (r->transform, px, py, 0.f);
+
+		build_texture (emu, r, id_texture);
+
+		glActiveTexture (GL_TEXTURE0);
+		glBindTexture (GL_TEXTURE_2D, r->sprite_texture[id_texture]);
+		glUniform1i (r->id_sampler, 0);
+
+		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
+		glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
+		glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
+		glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
+
+		glEnableVertexAttribArray (0);
+		glEnableVertexAttribArray (1);
+
+		glDrawArrays (GL_TRIANGLES, 0, 6);
+
+		idx += 4;
+	}
 }
 
 void linux_init_callbacks (struct NESCallbacks *cb)
