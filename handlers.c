@@ -1209,7 +1209,11 @@ void cpx_zeropage (struct NESEmu *emu)
 }
 
 void sbc_zeropage (struct NESEmu *) {}
-void inc_zeropage (struct NESEmu *) {}
+
+void inc_zeropage (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->ram[zeropage(emu)], ++emu->ram[zeropage (emu)], =, 5, 0, 2);
+}
 
 void inx_implied (struct NESEmu *emu)
 {
@@ -1232,15 +1236,28 @@ void cpx_absolute (struct NESEmu *emu)
 	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - emu->mem[absolute (emu)], |, 4, 0, 3);
 }
 void sbc_absolute (struct NESEmu *) {}
-void inc_absolute (struct NESEmu *) {}
+
+void inc_absolute (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute(emu)], ++emu->mem[absolute (emu)], =, 6, 0, 3);
+}
+
 void beq_relative (struct NESEmu *) {}
 void sbc_indirect_y (struct NESEmu *) {}
 void sbc_zeropage_x (struct NESEmu *) {}
-void inc_zeropage_x (struct NESEmu *) {}
+
+void inc_zeropage_x (struct NESEmu *emu) {
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->ram[zeropage_x(emu)], ++emu->ram[zeropage_x (emu)], =, 6, 0, 2);
+}
+
 void sed_implied (struct NESEmu *) {}
 void sbc_absolute_y (struct NESEmu *) {}
 void sbc_absolute_x (struct NESEmu *) {}
-void inc_absolute_x (struct NESEmu *) {}
+
+void inc_absolute_x (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute_x(emu)], ++emu->mem[absolute_x (emu)], =, 7, 0, 3);
+}
 
 #if 0
 void calc_addr (struct NESEmu *emu,
