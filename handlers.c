@@ -50,6 +50,18 @@
 	emu->cpu.PC += _bytes; \
 }
 
+#define LD_ACTS(_flags, reg, get_addr, cycles, is_off, _bytes) { \
+	struct CPUNes *cpu = &emu->cpu; \
+	uint8_t flags = _flags; \
+	uint8_t ret = 0; \
+	uint16_t addr = get_addr; \
+	read_from_address (emu, addr, &reg); \
+	cpu->P &= ~(flags); \
+	CHECK_FLAGS (flags, reg, ret); \
+	wait_cycles (emu, cycles); \
+	emu->cpu.PC += _bytes; \
+}
+
 #define BIT_ACTS(_flags, mem, cycles, is_off, _bytes) { \
 	struct CPUNes *cpu = &emu->cpu; \
 	uint8_t returned_reg = 0; \
@@ -64,7 +76,7 @@
 }
 
 uint16_t accumulator (struct NESEmu *emu);
-uint16_t immediate (struct NESEmu *emu);
+uint8_t immediate (struct NESEmu *emu);
 uint16_t absolute (struct NESEmu *emu);
 uint16_t zeropage (struct NESEmu *emu);
 uint16_t zeropage_x (struct NESEmu *emu);
@@ -148,7 +160,7 @@ uint16_t accumulator (struct NESEmu *emu)
     return 0;
 }
 
-uint16_t immediate (struct NESEmu *emu)
+uint8_t immediate (struct NESEmu *emu)
 {
     return emu->mem[emu->cpu.PC + 1];
 }
@@ -275,7 +287,7 @@ void php_implied (struct NESEmu *) {}
 
 void ora_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A | emu->mem[cpu->PC + 1], =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A | immediate (emu), =, 2, 0, 2);
 }
 void asl_accumulator (struct NESEmu *) {}
 void ora_absolute (struct NESEmu *) {}
@@ -451,7 +463,7 @@ void plp_implied (struct NESEmu *) {}
 
 void and_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[cpu->PC + 1], =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & immediate (emu), =, 2, 0, 2);
 }
 void rol_accumulator (struct NESEmu *) {}
 
@@ -509,7 +521,7 @@ void pha_implied (struct NESEmu *) {}
 
 void eor_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[cpu->PC + 1], =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ immediate (emu), =, 2, 0, 2);
 }
 void lsr_accumulator (struct NESEmu *) {}
 
@@ -584,7 +596,7 @@ void pla_implied (struct NESEmu *) {}
 
 void adc_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->mem[cpu->PC + 1], =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + immediate (emu), =, 2, 0, 2);
 }
 
 void ror_accumulator (struct NESEmu *) {}
@@ -864,10 +876,13 @@ void sta_absolute_x (struct NESEmu *) {}
 
 void ldy_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->Y, emu->mem[cpu->PC + 1], =, 2, 0, 2);
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->Y, immediate (emu), 2, 0, 2);
 }
 
-void lda_indirect_x (struct NESEmu *) {}
+void lda_indirect_x (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, indirect_x (emu), 6, 0, 2);
+}
 
 void ldx_immediate (struct NESEmu *emu) 
 {
@@ -886,29 +901,23 @@ void ldx_immediate (struct NESEmu *emu)
 		return;
 	}
 
-	REPETITIVE_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->X, emu->mem[cpu->PC + 1], =, 2, 0, 2);
-#if 0
-	struct CPUNes *cpu = &emu->cpu;
-
-	cpu->PC++;
-	uint8_t imm_byte = emu->mem[emu->cpu.PC];
-	if (imm_byte == 0) {
-		cpu->P |= (STATUS_FLAG_ZF);
-	}
-	if (imm_byte >= 0x80) {
-		cpu->P |= (STATUS_FLAG_NF);
-	}
-	cpu->X = imm_byte;
-
-	wait_cycles (emu, 2);
-
-	cpu->PC++;
-#endif
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->X, immediate (emu), 2, 0, 2);
 }
 
-void ldy_zeropage (struct NESEmu *) {}
-void lda_zeropage (struct NESEmu *) {}
-void ldx_zeropage (struct NESEmu *) {}
+void ldy_zeropage (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->Y, zeropage (emu), 3, 0, 2);
+}
+
+void lda_zeropage (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, zeropage (emu), 3, 0, 2);
+}
+
+void ldx_zeropage (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->X, zeropage (emu), 3, 0, 2);
+}
 
 void tay_implied (struct NESEmu *emu) 
 {
@@ -938,24 +947,7 @@ void lda_immediate (struct NESEmu *emu)
 		return;
 	}
 
-	REPETITIVE_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, emu->mem[cpu->PC + 1], =, 2, 0, 2);
-#if 0
-	struct CPUNes *cpu = &emu->cpu;
-
-	cpu->PC++;
-	uint8_t imm_byte = emu->mem[emu->cpu.PC];
-	if (imm_byte == 0) {
-		cpu->P |= (STATUS_FLAG_ZF);
-	}
-	if (imm_byte >= 0x80) {
-		cpu->P |= (STATUS_FLAG_NF);
-	}
-	cpu->A = imm_byte;
-
-	wait_cycles (emu, 2);
-
-	cpu->PC++;
-#endif
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, immediate (emu), 2, 0, 2);
 }
 
 void tax_implied (struct NESEmu *emu) 
@@ -988,15 +980,7 @@ void ldy_absolute (struct NESEmu *emu)
 		return;
 	}
 
-	struct CPUNes *cpu = &emu->cpu;
-
-	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
-
-	read_from_address (emu, addr, &cpu->Y);
-
-	emu->cpu.PC += 3;
-
-	wait_cycles (emu, 4);
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->Y, absolute (emu), 4, 0, 3);
 }
 
 void lda_absolute (struct NESEmu *emu) 
@@ -1018,15 +1002,7 @@ void lda_absolute (struct NESEmu *emu)
 		return;
 	}
 
-	struct CPUNes *cpu = &emu->cpu;
-
-	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
-
-	read_from_address (emu, addr, &cpu->A);
-
-	emu->cpu.PC += 3;
-
-	wait_cycles (emu, 4);
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, absolute (emu), 4, 0, 3);
 }
 
 void ldx_absolute (struct NESEmu *emu)
@@ -1048,22 +1024,29 @@ void ldx_absolute (struct NESEmu *emu)
 		return;
 	}
 
-	struct CPUNes *cpu = &emu->cpu;
-
-	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
-
-	read_from_address (emu, addr, &cpu->X);
-
-	emu->cpu.PC += 3;
-
-	wait_cycles (emu, 4);
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->X, absolute (emu), 4, 0, 3);
 }
 
 void bcs_relative (struct NESEmu *) {}
-void lda_indirect_y (struct NESEmu *) {}
-void ldy_zeropage_x (struct NESEmu *) {}
-void lda_zeropage_x (struct NESEmu *) {}
-void ldx_zeropage_y (struct NESEmu *) {}
+
+void lda_indirect_y (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, indirect_y (emu), 5, 1, 2);
+}
+void ldy_zeropage_x (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->Y, zeropage_x (emu), 4, 0, 2);
+}
+
+void lda_zeropage_x (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, zeropage_x (emu), 4, 0, 2);
+}
+
+void ldx_zeropage_y (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->X, zeropage_y (emu), 4, 0, 2);
+}
 
 void clv_implied (struct NESEmu *emu) 
 {
@@ -1074,7 +1057,10 @@ void clv_implied (struct NESEmu *emu)
 	emu->cpu.PC++;
 }
 
-void lda_absolute_y (struct NESEmu *) {}
+void lda_absolute_y (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, absolute_y (emu), 4, 1, 3);
+}
 
 void tsx_implied (struct NESEmu *emu) 
 {
@@ -1087,13 +1073,24 @@ void tsx_implied (struct NESEmu *emu)
 	wait_cycles (emu, 2);
 }
 
-void ldy_absolute_x (struct NESEmu *) {}
-void lda_absolute_x (struct NESEmu *) {}
-void ldx_absolute_y (struct NESEmu *) {}
+void ldy_absolute_x (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->Y, absolute_x (emu), 4, 1, 3);
+}
+
+void lda_absolute_x (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, absolute_x (emu), 4, 1, 3);
+}
+
+void ldx_absolute_y (struct NESEmu *emu) 
+{
+	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->X, absolute_y (emu), 4, 1, 3);
+}
 
 void cpy_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->Y, cpu->Y - emu->mem[cpu->PC + 1], |, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->Y, cpu->Y - immediate (emu), |, 2, 0, 2);
 }
 
 void cmp_indirect_x (struct NESEmu *emu) 
@@ -1127,7 +1124,7 @@ void iny_implied (struct NESEmu *emu)
 
 void cmp_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, cpu->A - emu->mem[cpu->PC + 1], |, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, cpu->A - immediate (emu), |, 2, 0, 2);
 }
 
 void dex_implied (struct NESEmu *) {}
@@ -1198,7 +1195,7 @@ void dec_absolute_x (struct NESEmu *emu)
 
 void cpx_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - emu->mem[cpu->PC + 1], |, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - immediate (emu), |, 2, 0, 2);
 }
 
 void sbc_indirect_x (struct NESEmu *) {}
@@ -1226,7 +1223,7 @@ void inx_implied (struct NESEmu *emu)
 
 void sbc_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[cpu->PC + 1] - emu->cpu.P & STATUS_FLAG_CF? 1: 0, =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - immediate (emu) - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 2, 0, 2);
 }
 
 void nop_implied (struct NESEmu *) {}
