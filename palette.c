@@ -74,9 +74,9 @@ void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, fl
 
 	uint32_t c = colors_2c02[color];
 
-	*r = ((c >> 16) & 0xff) / 255.f;
+	*r = ((c >>  0) & 0xff) / 255.f;
 	*g = ((c >>  8) & 0xff) / 255.f;
-	*b = ((c >>  0) & 0xff) / 255.f;
+	*b = ((c >> 16) & 0xff) / 255.f;
 }
 
 uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx)
