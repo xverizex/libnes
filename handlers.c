@@ -16,7 +16,7 @@ uint16_t indirect_y (struct NESEmu *emu);
 
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
-	if (addr >= 0 && addr <= 0x500) {
+	if (addr >= 0 && addr < 0x800) {
 		emu->ram[addr] = *r;
 		return;
 	}
@@ -48,7 +48,7 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	if (addr == 0x2002) {
 		emu->addr_off = 0;
 	}
-	if (addr >= 0 && addr <= 0x500) {
+	if (addr >= 0 && addr < 0x800) {
 		*r = emu->ram[addr];
 	} else {
 		*r = emu->mem[addr];
