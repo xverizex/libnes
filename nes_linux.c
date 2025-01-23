@@ -62,7 +62,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 30) {
+    if (diff_time >= 24) {
         emu->start_time_nmi = 0;
 	return 1;
     }

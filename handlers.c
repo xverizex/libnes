@@ -2,6 +2,22 @@
 #include <stddef.h>
 #include <cpunes.h>
 
+#define CHECK_FLAGS(flags, reg, ret) \
+{ \
+	if (flags & STATUS_FLAG_NF) { \
+		if (((int8_t) ret) < 0) \
+			cpu->P |= (STATUS_FLAG_NF); \
+	} \
+	if (flags & STATUS_FLAG_ZF) { \
+		if (ret == 0) \
+			cpu->P |= (STATUS_FLAG_ZF); \
+	} \
+	if (flags & STATUS_FLAG_CF) { \
+		if (ret < reg) \
+			cpu->P |= (STATUS_FLAG_CF); \
+	} \
+}
+
 uint16_t accumulator (struct NESEmu *emu);
 uint16_t immediate (struct NESEmu *emu);
 uint16_t absolute (struct NESEmu *emu);
@@ -471,18 +487,124 @@ void eor_absolute_y (struct NESEmu *) {}
 void eor_absolute_x (struct NESEmu *) {}
 void lsr_absolute_x (struct NESEmu *) {}
 void rts_implied (struct NESEmu *) {}
-void adc_indirect_x (struct NESEmu *) {}
-void adc_zeropage (struct NESEmu *) {}
+
+void adc_indirect_x (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF);
+	cpu->P &= ~(flags);
+
+	uint16_t addr = indirect_x (emu);
+	uint8_t ret = cpu->A + emu->mem[addr];
+	CHECK_FLAGS (flags, cpu->A, ret);
+
+	cpu->A = ret;
+
+	wait_cycles (emu, 6);
+
+	emu->cpu.PC += 2;
+
+}
+
+void adc_zeropage (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF);
+	cpu->P &= ~(flags);
+
+	uint8_t addr = zeropage (emu);
+	uint8_t ret = cpu->A + emu->ram[addr];
+	CHECK_FLAGS (flags, cpu->A, ret);
+
+	cpu->A = ret;
+
+	wait_cycles (emu, 3);
+
+	emu->cpu.PC += 2;
+}
+
 void ror_zeropage (struct NESEmu *) {}
 void pla_implied (struct NESEmu *) {}
-void adc_immediate (struct NESEmu *) {}
+
+
+
+void adc_immediate (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF);
+	cpu->P &= ~(flags);
+
+	uint8_t ret = cpu->A + emu->mem[cpu->PC + 1];
+	CHECK_FLAGS (flags, cpu->A, ret);
+
+	cpu->A = ret;
+
+	wait_cycles (emu, 2);
+
+	emu->cpu.PC += 2;
+}
+
 void ror_accumulator (struct NESEmu *) {}
 void jmp_indirect (struct NESEmu *) {}
-void adc_absolute (struct NESEmu *) {}
+
+void adc_absolute (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF);
+	cpu->P &= ~(flags);
+
+	uint16_t addr = absolute (emu);
+	uint8_t ret = cpu->A + emu->mem[addr];
+	CHECK_FLAGS (flags, cpu->A, ret);
+
+	cpu->A = ret;
+
+	wait_cycles (emu, 4);
+
+	cpu->PC += 3;
+}
+
 void ror_absolute (struct NESEmu *) {}
 void bvs_relative (struct NESEmu *) {}
-void adc_indirect_y (struct NESEmu *) {}
-void adc_zeropage_x (struct NESEmu *) {}
+
+void adc_indirect_y (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF);
+	cpu->P &= ~(flags);
+
+	uint16_t addr = indirect_y (emu);
+	uint8_t ret = cpu->A + emu->mem[addr];
+	CHECK_FLAGS (flags, cpu->A, ret);
+
+	cpu->A = ret;
+
+	uint8_t off = 0;
+	/*
+	 * TODO: cross
+	 */
+	wait_cycles (emu, 5 + off);
+
+	cpu->PC += 2;
+}
+
+void adc_zeropage_x (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF);
+	cpu->P &= ~(flags);
+
+	uint8_t addr = zeropage_x (emu);
+	uint8_t ret = cpu->A + emu->ram[addr];
+	CHECK_FLAGS (flags, cpu->A, ret);
+
+	cpu->A = ret;
+
+	wait_cycles (emu, 4);
+
+	cpu->PC += 2;
+}
+
 void ror_zeropage_x (struct NESEmu *) {}
 
 void sei_implied (struct NESEmu *emu) 
@@ -502,8 +624,47 @@ void sei_implied (struct NESEmu *emu)
 	wait_cycles (emu, 2);
 }
 
-void adc_absolute_y (struct NESEmu *) {}
-void adc_absolute_x (struct NESEmu *) {}
+void adc_absolute_y (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF);
+	cpu->P &= ~(flags);
+
+	uint8_t addr = absolute_x (emu);
+	uint8_t ret = cpu->A + emu->mem[addr];
+	CHECK_FLAGS (flags, cpu->A, ret);
+
+	cpu->A = ret;
+
+	uint8_t off = 0;
+	/*
+	 * TODO: cross page
+	 */
+	wait_cycles (emu, 4 + off);
+
+	cpu->PC += 3;
+}
+
+void adc_absolute_x (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF);
+	cpu->P &= ~(flags);
+
+	uint8_t addr = absolute_x (emu);
+	uint8_t ret = cpu->A + emu->ram[addr];
+	CHECK_FLAGS (flags, cpu->A, ret);
+
+	cpu->A = ret;
+
+	uint8_t off = 0;
+	/*
+	 * TODO: cross page
+	 */
+	wait_cycles (emu, 4 + off);
+
+	cpu->PC += 3;
+}
 void ror_absolute_x (struct NESEmu *) {}
 void sta_indirect_x (struct NESEmu *) {}
 void sty_zeropage (struct NESEmu *) {}
@@ -849,7 +1010,16 @@ void lda_indirect_y (struct NESEmu *) {}
 void ldy_zeropage_x (struct NESEmu *) {}
 void lda_zeropage_x (struct NESEmu *) {}
 void ldx_zeropage_y (struct NESEmu *) {}
-void clv_implied (struct NESEmu *) {}
+
+void clv_implied (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_VF);
+
+	wait_cycles (emu, 2);
+
+	emu->cpu.PC++;
+}
+
 void lda_absolute_y (struct NESEmu *) {}
 
 void tsx_implied (struct NESEmu *emu) 
@@ -867,9 +1037,54 @@ void ldy_absolute_x (struct NESEmu *) {}
 void lda_absolute_x (struct NESEmu *) {}
 void ldx_absolute_y (struct NESEmu *) {}
 void cpy_immediate (struct NESEmu *) {}
-void cmp_indirect_x (struct NESEmu *) {}
+
+void cmp_indirect_x (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF);
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = indirect_x (emu);
+	uint8_t ret = emu->cpu.A - emu->mem[addr];
+
+	if (emu->cpu.A < ret)
+		emu->cpu.P |= STATUS_FLAG_CF;
+
+	if (((int8_t) ret) < 0)
+		emu->cpu.P |= STATUS_FLAG_NF;
+
+	if (ret == 0)
+		emu->cpu.P |= STATUS_FLAG_ZF;
+
+	wait_cycles (emu, 6);
+
+	cpu->PC += 2;
+}
 void cpy_zeropage (struct NESEmu *) {}
-void cmp_zeropage (struct NESEmu *) {}
+
+void cmp_zeropage (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF);
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
+	uint8_t ret = emu->cpu.A - emu->ram[addr];
+
+	if (emu->cpu.A < ret)
+		emu->cpu.P |= STATUS_FLAG_CF;
+
+	if (((int8_t) ret) < 0)
+		emu->cpu.P |= STATUS_FLAG_NF;
+
+	if (ret == 0)
+		emu->cpu.P |= STATUS_FLAG_ZF;
+
+	wait_cycles (emu, 3);
+
+	cpu->PC += 2;
+}
+
 void dec_zeropage (struct NESEmu *) {}
 
 void iny_implied (struct NESEmu *emu) 
@@ -881,14 +1096,106 @@ void iny_implied (struct NESEmu *emu)
 	wait_cycles (emu, 2);
 }
 
-void cmp_immediate (struct NESEmu *) {}
+void cmp_immediate (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF);
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint8_t ret = emu->cpu.A - emu->mem[cpu->PC + 1];
+
+	if (emu->cpu.A < ret)
+		emu->cpu.P |= STATUS_FLAG_CF;
+
+	if (((int8_t) ret) < 0)
+		emu->cpu.P |= STATUS_FLAG_NF;
+
+	if (ret == 0)
+		emu->cpu.P |= STATUS_FLAG_ZF;
+
+	wait_cycles (emu, 2);
+
+	cpu->PC += 2;
+}
+
 void dex_implied (struct NESEmu *) {}
 void cpy_absolute (struct NESEmu *) {}
-void cmp_absolute (struct NESEmu *) {}
+
+void cmp_absolute (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF);
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC + 1];
+	uint8_t ret = emu->cpu.A - emu->mem[addr];
+
+	if (emu->cpu.A < ret)
+		emu->cpu.P |= STATUS_FLAG_CF;
+
+	if (((int8_t) ret) < 0)
+		emu->cpu.P |= STATUS_FLAG_NF;
+
+	if (ret == 0)
+		emu->cpu.P |= STATUS_FLAG_ZF;
+
+	wait_cycles (emu, 4);
+
+	cpu->PC += 3;
+}
+
 void dec_absolute (struct NESEmu *) {}
 void bne_relative (struct NESEmu *) {}
-void cmp_indirect_y (struct NESEmu *) {}
-void cmp_zeropage_x (struct NESEmu *) {}
+
+void cmp_indirect_y (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF);
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = indirect_y (emu);
+	uint8_t ret = emu->cpu.A - emu->mem[addr];
+
+	if (emu->cpu.A < ret)
+		emu->cpu.P |= STATUS_FLAG_CF;
+
+	if (((int8_t) ret) < 0)
+		emu->cpu.P |= STATUS_FLAG_NF;
+
+	if (ret == 0)
+		emu->cpu.P |= STATUS_FLAG_ZF;
+
+	uint8_t off = 0;
+	/*
+	 * TODO: page cross
+	 */
+	wait_cycles (emu, 5 + off);
+
+	cpu->PC += 2;
+}
+
+void cmp_zeropage_x (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF);
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = zeropage_x (emu);
+	uint8_t ret = emu->cpu.A - emu->ram[addr];
+
+	if (emu->cpu.A < ret)
+		emu->cpu.P |= STATUS_FLAG_CF;
+
+	if (((int8_t) ret) < 0)
+		emu->cpu.P |= STATUS_FLAG_NF;
+
+	if (ret == 0)
+		emu->cpu.P |= STATUS_FLAG_ZF;
+
+	wait_cycles (emu, 4);
+
+	cpu->PC += 2;
+}
 void dec_zeropage_x (struct NESEmu *) {}
 
 void cld_implied (struct NESEmu *emu) 
@@ -908,8 +1215,59 @@ void cld_implied (struct NESEmu *emu)
 	emu->cpu.PC++;
 }
 
-void cmp_absolute_y (struct NESEmu *) {}
-void cmp_absolute_x (struct NESEmu *) {}
+void cmp_absolute_y (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF);
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = absolute_y (emu);
+	uint8_t ret = emu->cpu.A - emu->mem[addr];
+
+	if (emu->cpu.A < ret)
+		emu->cpu.P |= STATUS_FLAG_CF;
+
+	if (((int8_t) ret) < 0)
+		emu->cpu.P |= STATUS_FLAG_NF;
+
+	if (ret == 0)
+		emu->cpu.P |= STATUS_FLAG_ZF;
+
+	uint8_t off = 0;
+	/*
+	 * TODO: page cross
+	 */
+	wait_cycles (emu, 4 + off);
+
+	cpu->PC += 3;
+}
+
+void cmp_absolute_x (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF);
+
+	struct CPUNes *cpu = &emu->cpu;
+
+	uint16_t addr = absolute_x (emu);
+	uint8_t ret = emu->cpu.A - emu->mem[addr];
+
+	if (emu->cpu.A < ret)
+		emu->cpu.P |= STATUS_FLAG_CF;
+
+	if (((int8_t) ret) < 0)
+		emu->cpu.P |= STATUS_FLAG_NF;
+
+	if (ret == 0)
+		emu->cpu.P |= STATUS_FLAG_ZF;
+
+	uint8_t off = 0;
+	/*
+	 * TODO: page cross
+	 */
+	wait_cycles (emu, 4 + off);
+
+	cpu->PC += 3;
+}
 void dec_absolute_x (struct NESEmu *) {}
 void cpx_immediate (struct NESEmu *) {}
 void sbc_indirect_x (struct NESEmu *) {}
