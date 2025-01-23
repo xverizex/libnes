@@ -62,8 +62,8 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 16) {
-        emu->start_time_nmi = ms;
+    if (diff_time >= 30) {
+        emu->start_time_nmi = 0;
 	return 1;
     }
 
@@ -187,7 +187,7 @@ static uint32_t create_shader (const char *shader_str, uint32_t type)
 static uint32_t compile_shader (const char *vert_str, const char *frag_str)
 {
 	uint32_t vertex_shader = create_shader (vert_str, GL_VERTEX_SHADER);
-	uint32_t fragment_shader = create_shader (frag_str, GL_VERTEX_SHADER);
+	uint32_t fragment_shader = create_shader (frag_str, GL_FRAGMENT_SHADER);
 	uint32_t shader = glCreateProgram ();
 	glAttachShader (shader, vertex_shader);
 	glAttachShader (shader, fragment_shader);
@@ -248,7 +248,7 @@ static void init_textures (uint32_t *tex, uint32_t tex_width, uint32_t tex_heigh
 
 	for (uint32_t i = 0; i < count; i++) {
 		glBindTexture (GL_TEXTURE_2D, tex[i]);
-		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, tex_width, tex_height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -339,6 +339,18 @@ void linux_opengl_init (struct NESEmu *emu, void *_other_data)
 
 uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
+void debug (uint8_t *mem)
+{
+	for (int i = 0; i < 512; i++) {
+		if (i > 0 && i % 16 == 0) {
+			printf ("\n");
+		}
+		printf ("%02x ", *mem++);
+	}
+	printf ("\n");
+	printf ("\n");
+}
+
 static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture)
 {
 	uint16_t addr_palette = 0x3f00;
@@ -352,33 +364,38 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 		addr_palette += 4;
 	}
 
-	uint16_t addr = 16 + emu->sz_prg_rom + 0x8000;
-
+	uint16_t addr = 0x0;
 
 	uint8_t *ptr = &emu->mem[addr];
-	ptr += id_texture * 8;
+	ptr += id_texture * 16; 
 
 	memcpy (r->sprite_bits_one, ptr, 16);
 
-	uint8_t s = 0x80;
 
-	uint32_t *sp = r->sprites[id_texture];
+	uint8_t *sp = (uint8_t *) r->sprites[id_texture];
 
 	for (int i = 0; i < 8; i++) {
-		uint8_t ix = 7;
+		uint8_t s = 0x80;
 		uint8_t low = r->sprite_bits_one[i + 0];
 		uint8_t high = r->sprite_bits_one[i + 8];
 
 		for (int ii = 0; ii < 8; ii++) {
-			uint8_t n = ((low & s) >> ix) & 0x1;
-			n += ((high & s) >> ix) & 0x1;
-			*sp++ = palette_get_color (emu, n);
+			uint8_t n = 0;
+			if (low & s) n = 1;
+			if (high & s) n |= 2;
+			uint32_t plt = palette_get_color (emu, p[0][n]);
+			*sp++ = (plt >>  0) & 0xff;
+			*sp++ = (plt >>  8) & 0xff;
+			*sp++ = (plt >> 16) & 0xff;
+			*sp++ = 0xff;
+			s >>= 1;
 		}
+
 	}
 
 	glBindTexture (GL_TEXTURE_2D, r->sprite_texture[id_texture]);
 
-	glTexSubImage2D (GL_TEXTURE_2D, r->sprite_texture[id_texture], 0, 0, 8, 8, GL_RGB, GL_UNSIGNED_BYTE, r->sprites[id_texture]);
+	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, r->sprites[id_texture]);
 
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
@@ -428,4 +445,5 @@ void linux_init_callbacks (struct NESCallbacks *cb)
 	cb->calc_time_uint64 = linux_calc_time_uint64;
 	cb->ppu_mask = linux_clear_screen;
 	cb->calc_nmi = linux_calc_time_nmi;
+	cb->render = linux_opengl_render;
 }
