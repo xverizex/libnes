@@ -669,7 +669,14 @@ void rti_implied (struct NESEmu *emu)
 	}
 #endif
 
-	emu->cpu.PC = emu->latest_exec;
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->P = emu->stack[cpu->S++];
+
+	cpu->PC = emu->stack[cpu->S++];
+	cpu->PC |= ((emu->stack[cpu->S++] << 8) & 0xff00);
+
+	wait_cycles (emu, 6);
 }
 
 void eor_indirect_x (struct NESEmu *emu) 
