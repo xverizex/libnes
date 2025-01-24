@@ -3,6 +3,20 @@
 #include <cpunes.h>
 #include <stdio.h>
 
+#define CHECK_FLAGS_LD(flags, reg) \
+{ \
+	if (flags & STATUS_FLAG_NF) { \
+		if (((int8_t) reg) < 0) { \
+			cpu->P |= (STATUS_FLAG_NF); \
+		} \
+	} \
+	if (flags & STATUS_FLAG_ZF) { \
+		if (reg == 0) { \
+			cpu->P |= (STATUS_FLAG_ZF); \
+		} \
+	} \
+}
+
 #define CHECK_FLAGS(flags, reg, ret) \
 { \
 	if (flags & STATUS_FLAG_NF) { \
@@ -123,7 +137,7 @@
 	read_from_address (emu, addr, &reg); \
 	ret = reg; \
 	cpu->P &= ~(flags); \
-	CHECK_FLAGS (flags, reg, ret); \
+	CHECK_FLAGS_LD (flags, reg); \
 	wait_cycles (emu, cycles); \
 	emu->cpu.PC += _bytes; \
 }
