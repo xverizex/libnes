@@ -304,6 +304,12 @@ void invalid_opcode (struct NESEmu *emu)
 
 void brk_implied (struct NESEmu *emu) 
 {
+	struct CPUNes *cpu = &emu->cpu;
+
+	emu->stack[cpu->S--] = (uint8_t) (cpu->PC & 0xff);
+	emu->stack[cpu->S--] = (uint8_t) ((cpu->PC >> 8) & 0xff);
+
+	wait_cycles (emu, 7);
 }
 
 void ora_indirect_x (struct NESEmu *emu) 
@@ -435,6 +441,7 @@ static uint8_t *show_debug_info (struct NESEmu *emu, uint32_t count, char *op)
 
 void bpl_relative (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		int8_t offset = emu->mem[cpu->PC + 1];
@@ -458,6 +465,7 @@ void bpl_relative (struct NESEmu *emu)
 		cpu->PC += 2;
 		return;
 	}
+#endif
 
 	struct CPUNes *cpu = &emu->cpu;
 
@@ -579,6 +587,7 @@ void rol_accumulator (struct NESEmu *emu)
 
 void bit_absolute (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
@@ -595,6 +604,7 @@ void bit_absolute (struct NESEmu *emu)
 		cpu->PC += 3;
 		return;
 	}
+#endif
 
 	BIT_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF, emu->mem[absolute (emu)], 4, 0, 3);
 }
@@ -645,6 +655,7 @@ void rol_absolute_x (struct NESEmu *emu)
 
 void rti_implied (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		int8_t offset = emu->mem[cpu->PC + 1];
@@ -654,6 +665,7 @@ void rti_implied (struct NESEmu *emu)
 		cpu->PC++;
 		return;
 	}
+#endif
 
 	emu->cpu.PC = emu->latest_exec;
 }
@@ -695,6 +707,7 @@ void lsr_accumulator (struct NESEmu *emu)
 
 void jmp_absolute (struct NESEmu *emu)
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
@@ -710,6 +723,7 @@ void jmp_absolute (struct NESEmu *emu)
 		cpu->PC += 3;
 		return;
 	}
+#endif
 
 	struct CPUNes *cpu = &emu->cpu;
 
@@ -964,6 +978,7 @@ void ror_zeropage_x (struct NESEmu *emu)
 
 void sei_implied (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 
@@ -972,6 +987,7 @@ void sei_implied (struct NESEmu *emu)
 		cpu->PC++;
 		return;
 	}
+#endif
 
 	emu->cpu.P &= (STATUS_FLAG_IF);
 	emu->cpu.PC++;
@@ -1063,6 +1079,7 @@ void txa_implied (struct NESEmu *emu)
 
 void sty_absolute (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
@@ -1079,12 +1096,14 @@ void sty_absolute (struct NESEmu *emu)
 		cpu->PC += 2;
 		return;
 	}
+#endif
 
 	ST_ACTS(cpu->Y, absolute (emu), 4, 0, 3);
 }
 
 void sta_absolute (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
@@ -1101,6 +1120,7 @@ void sta_absolute (struct NESEmu *emu)
 		cpu->PC += 3;
 		return;
 	}
+#endif
 
 	ST_ACTS(cpu->A, absolute (emu), 4, 0, 3);
 }
@@ -1109,6 +1129,7 @@ void sta_absolute (struct NESEmu *emu)
 
 void stx_absolute (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
@@ -1125,6 +1146,7 @@ void stx_absolute (struct NESEmu *emu)
 		cpu->PC += 3;
 		return;
 	}
+#endif
 
 	ST_ACTS(cpu->X, absolute (emu), 4, 0, 3);
 }
@@ -1220,6 +1242,7 @@ void lda_indirect_x (struct NESEmu *emu)
 
 void ldx_immediate (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		int8_t offset = emu->mem[cpu->PC + 1];
@@ -1234,6 +1257,7 @@ void ldx_immediate (struct NESEmu *emu)
 		cpu->PC += 2;
 		return;
 	}
+#endif
 
 	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->X, immediate (emu), 2, 0, 2);
 }
@@ -1266,6 +1290,7 @@ void tay_implied (struct NESEmu *emu)
 
 void lda_immediate (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		int8_t offset = emu->mem[cpu->PC + 1];
@@ -1280,6 +1305,7 @@ void lda_immediate (struct NESEmu *emu)
 		cpu->PC += 2;
 		return;
 	}
+#endif
 
 	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, immediate (emu), 2, 0, 2);
 }
@@ -1297,6 +1323,7 @@ void tax_implied (struct NESEmu *emu)
 
 void ldy_absolute (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
@@ -1313,12 +1340,14 @@ void ldy_absolute (struct NESEmu *emu)
 		cpu->PC += 3;
 		return;
 	}
+#endif
 
 	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->Y, absolute (emu), 4, 0, 3);
 }
 
 void lda_absolute (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
@@ -1335,12 +1364,14 @@ void lda_absolute (struct NESEmu *emu)
 		cpu->PC += 3;
 		return;
 	}
+#endif
 
 	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, absolute (emu), 4, 0, 3);
 }
 
 void ldx_absolute (struct NESEmu *emu)
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
@@ -1357,6 +1388,7 @@ void ldx_absolute (struct NESEmu *emu)
 		cpu->PC += 3;
 		return;
 	}
+#endif
 
 	LD_ACTS (STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->X, absolute (emu), 4, 0, 3);
 }
@@ -1552,6 +1584,7 @@ void dec_zeropage_x (struct NESEmu *emu)
 
 void cld_implied (struct NESEmu *emu) 
 {
+#if 0
 	if (emu->is_debug_list) {
 		struct CPUNes *cpu = &emu->cpu;
 		uint8_t *pl = show_debug_info (emu, 1, "CLD");
@@ -1559,6 +1592,7 @@ void cld_implied (struct NESEmu *emu)
 		cpu->PC++;
 		return;
 	}
+#endif
 
 	emu->cpu.P &= ~(STATUS_FLAG_DF);
 
