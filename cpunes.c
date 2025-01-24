@@ -527,8 +527,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
-	if (!emu->is_nmi_works)
-		printf ("%04x\n", emu->cpu.PC);
+	printf ("%04x\n", emu->cpu.PC);
 
 	if (emu->is_debug_list) {
 		uint16_t tmp_pc = emu->cpu.PC;
