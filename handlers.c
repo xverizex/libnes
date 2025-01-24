@@ -120,6 +120,15 @@
 	emu->cpu.PC += _bytes; \
 }
 
+#define ST_ACTS(reg, get_addr, cycles, is_off, _bytes) { \
+	struct CPUNes *cpu = &emu->cpu; \
+	uint8_t ret = 0; \
+	uint16_t addr = get_addr; \
+	write_to_address (emu, addr, &reg); \
+	wait_cycles (emu, cycles); \
+	emu->cpu.PC += _bytes; \
+}
+
 #define BIT_ACTS(_flags, mem, cycles, is_off, _bytes) { \
 	struct CPUNes *cpu = &emu->cpu; \
 	uint8_t returned_reg = 0; \
@@ -923,10 +932,25 @@ void ror_absolute_x (struct NESEmu *emu)
 	ROR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute_x (emu)], 7, 0, 3);
 }
 
-void sta_indirect_x (struct NESEmu *) {}
-void sty_zeropage (struct NESEmu *) {}
-void sta_zeropage (struct NESEmu *) {}
-void stx_zeropage (struct NESEmu *) {}
+void sta_indirect_x (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->A, indirect_x (emu), 6, 0, 2);
+}
+
+void sty_zeropage (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->Y, zeropage (emu), 3, 0, 2);
+}
+
+void sta_zeropage (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->A, zeropage (emu), 3, 0, 2);
+}
+void stx_zeropage (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->X, zeropage (emu), 3, 0, 2);
+}
+
 void dey_implied (struct NESEmu *) {}
 
 void txa_implied (struct NESEmu *emu) 
@@ -959,19 +983,7 @@ void sty_absolute (struct NESEmu *emu)
 		return;
 	}
 
-	struct CPUNes *cpu = &emu->cpu;
-
-	cpu->PC++;
-
-	uint8_t *r = &cpu->Y;
-
-	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC];
-
-	write_to_address (emu, addr, r);
-
-	cpu->PC += 2;
-
-	wait_cycles (emu, 4);
+	ST_ACTS(cpu->Y, absolute (emu), 4, 0, 3);
 }
 
 void sta_absolute (struct NESEmu *emu) 
@@ -993,19 +1005,7 @@ void sta_absolute (struct NESEmu *emu)
 		return;
 	}
 
-	struct CPUNes *cpu = &emu->cpu;
-
-	cpu->PC++;
-
-	uint8_t *r = &cpu->A;
-
-	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC];
-
-	write_to_address (emu, addr, r);
-
-	wait_cycles (emu, 4);
-
-	cpu->PC += 2;
+	ST_ACTS(cpu->A, absolute (emu), 4, 0, 3);
 }
 
 
@@ -1029,26 +1029,29 @@ void stx_absolute (struct NESEmu *emu)
 		return;
 	}
 
-	struct CPUNes *cpu = &emu->cpu;
-
-	cpu->PC++;
-
-	uint8_t *r = &cpu->X;
-
-	uint16_t addr = *(uint16_t *) &emu->mem[cpu->PC];
-
-	write_to_address (emu, addr, r);
-
-	cpu->PC += 2;
-
-	wait_cycles (emu, 4);
+	ST_ACTS(cpu->X, absolute (emu), 4, 0, 3);
 }
 
 void bcc_relative (struct NESEmu *) {}
-void sta_indirect_y (struct NESEmu *) {}
-void sty_zeropage_x (struct NESEmu *) {}
-void sta_zeropage_x (struct NESEmu *) {}
-void stx_zeropage_y (struct NESEmu *) {}
+
+void sta_indirect_y (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->A, indirect_y (emu), 6, 0, 2);
+}
+
+void sty_zeropage_x (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->Y, zeropage_x (emu), 4, 0, 2);
+}
+
+void sta_zeropage_x (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->X, zeropage_x (emu), 4, 0, 2);
+}
+void stx_zeropage_y (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->X, zeropage_y (emu), 4, 0, 2);
+}
 
 void tya_implied (struct NESEmu *emu) 
 {
@@ -1061,7 +1064,10 @@ void tya_implied (struct NESEmu *emu)
 	wait_cycles (emu, 2);
 }
 
-void sta_absolute_y (struct NESEmu *) {}
+void sta_absolute_y (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->A, absolute_y (emu), 5, 0, 3);
+}
 
 void txs_implied (struct NESEmu *emu) 
 {
@@ -1074,7 +1080,10 @@ void txs_implied (struct NESEmu *emu)
 	wait_cycles (emu, 2);
 }
 
-void sta_absolute_x (struct NESEmu *) {}
+void sta_absolute_x (struct NESEmu *emu) 
+{
+	ST_ACTS(cpu->A, absolute_x (emu), 5, 0, 3);
+}
 
 void ldy_immediate (struct NESEmu *emu) 
 {
