@@ -309,6 +309,8 @@ void brk_implied (struct NESEmu *emu)
 	emu->stack[cpu->S--] = (uint8_t) (cpu->PC & 0xff);
 	emu->stack[cpu->S--] = (uint8_t) ((cpu->PC >> 8) & 0xff);
 
+	cpu->P |= (STATUS_FLAG_IF);
+
 	wait_cycles (emu, 7);
 }
 
