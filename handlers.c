@@ -264,7 +264,8 @@ uint8_t immediate_val (struct NESEmu *emu)
 
 uint16_t absolute (struct NESEmu *emu)
 {
-    uint16_t addr = *(uint16_t *) &emu->mem[emu->cpu.PC + 1];
+    uint16_t addr = emu->mem[emu->cpu.PC + 1];
+    addr |= ((emu->mem[emu->cpu.PC + 2] << 8) & 0xff00);
     return addr;
 }
 
@@ -288,43 +289,83 @@ uint16_t zeropage_y (struct NESEmu *emu)
 
 uint16_t absolute_x (struct NESEmu *emu)
 {
-    uint16_t addr = *((uint16_t *) &emu->mem[emu->cpu.PC + 1]) + emu->cpu.X;
+    uint16_t addr = emu->mem[emu->cpu.PC + 1];
+    addr |= ((emu->mem[emu->cpu.PC + 2] << 8) & 0xff00);
+    addr += emu->cpu.X;
     return addr;
 }
 
 uint16_t absolute_y (struct NESEmu *emu)
 {
-    uint16_t addr = *((uint16_t *) &emu->mem[emu->cpu.PC + 1]) + emu->cpu.Y;
+    uint16_t addr = emu->mem[emu->cpu.PC + 1];
+    addr |= ((emu->mem[emu->cpu.PC + 2] << 8) & 0xff00);
+    addr += emu->cpu.Y;
     return addr;
 }
 
 uint16_t indirect (struct NESEmu *emu)
 {
-	uint16_t addr = *((uint16_t *) &emu->mem[emu->cpu.PC + 1]);
-	if (addr >= 0x0 && addr <= 0x800) {
-		addr = *((uint16_t *) &emu->ram[addr]);
-	} else {
-		addr = *((uint16_t *) &emu->mem[addr]);
+    	uint16_t addr = emu->mem[emu->cpu.PC + 1];
+    	addr |= ((emu->mem[emu->cpu.PC + 2] << 8) & 0xff00);
+
+	if (emu->cpu.PC == 0xc907) {
+		printf ("indirect addr: %04x\n", addr);
 	}
-	return addr;
+
+	uint16_t new_addr = 0;
+	if (addr >= 0x0 && addr <= 0x800) {
+    		new_addr = emu->ram[addr + 0];
+    		new_addr |= ((emu->ram[addr + 1] << 8) & 0xff00);
+	} else {
+    		new_addr = emu->mem[addr + 0];
+    		new_addr |= ((emu->mem[addr + 1] << 8) & 0xff00);
+	}
+
+	if (emu->cpu.PC == 0xc907) {
+		printf ("indirect new addr: %04x\n", new_addr);
+		printf ("memory: %x %x\n", emu->ram[addr + 0], emu->ram[addr + 1]);
+	}
+
+	return new_addr;
 }
 
 uint16_t indirect_x (struct NESEmu *emu)
 {
-    uint8_t addr = emu->mem[emu->cpu.PC + 1];
-    uint16_t indirect = *((uint16_t *) &emu->mem[emu->cpu.X]);
-    uint16_t fulladdr = addr + indirect;
+	uint8_t addr = emu->mem[emu->cpu.PC + 1];
+	uint16_t indirect = 0;
+	indirect = emu->ram[emu->cpu.X + 0];
+	indirect |= ((emu->ram[emu->cpu.X + 1] << 8) & 0xff00);
 
-    return fulladdr;
+	uint16_t fulladdr = 0;
+	fulladdr  = emu->mem[addr + indirect + 0];
+	fulladdr |= ((emu->mem[addr + indirect + 1] << 8) & 0xff00);
+
+	return fulladdr;
 }
 
 uint16_t indirect_y (struct NESEmu *emu)
 {
-    uint8_t zeroaddr = emu->mem[emu->cpu.PC + 1];
-    uint16_t addr = *((uint16_t *) &emu->mem[zeroaddr]);
-    uint16_t fulladdr = addr + emu->cpu.Y;
+	uint8_t zeroaddr = emu->mem[emu->cpu.PC + 1];
+	uint16_t addr = 0;
 
-    return fulladdr;
+	addr = emu->ram[zeroaddr + emu->cpu.Y + 0];
+	addr |= ((emu->ram[zeroaddr + emu->cpu.Y + 1] << 8) & 0xff00);
+
+	uint16_t fulladdr = emu->mem[addr + 0];
+	fulladdr |= ((emu->mem[addr + 1] << 8) & 0xff00);
+
+#if 0
+	printf ("indirect y: %x = %x; addr: %x; zeroaddr: %x, y: %x; mem: %02x %02x\n", 
+			zeroaddr, 
+			fulladdr, 
+			addr, 
+			zeroaddr, 
+			emu->cpu.Y, 
+			emu->ram[zeroaddr + emu->cpu.Y], 
+			emu->ram[zeroaddr + emu->cpu.Y + 1]);
+#endif
+
+	return fulladdr;
 }
 
 void invalid_opcode (struct NESEmu *emu) 
@@ -346,7 +387,7 @@ void brk_implied (struct NESEmu *emu)
 
 void ora_indirect_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[indirect_x(emu)], =, 6, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->ram[indirect_x(emu)], =, 6, 0, 2);
 }
 
 void ora_zeropage (struct NESEmu *emu) 
@@ -527,7 +568,7 @@ void bpl_relative (struct NESEmu *emu)
 
 void ora_indirect_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[indirect_y(emu)], =, 5, 1, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->ram[indirect_y(emu)], =, 5, 1, 2);
 }
 
 void ora_zeropage_x (struct NESEmu *emu) 
@@ -575,8 +616,11 @@ void jsr_absolute (struct NESEmu *emu)
 	emu->stack[--cpu->S] = (uint8_t) ((pc >> 8) & 0xff);
 	emu->stack[--cpu->S] = (uint8_t) (pc & 0xff);
 
+	uint16_t new_pc = 0;
 	printf ("cur pc: %x\n", cpu->PC);
-	cpu->PC = *(uint16_t *) &emu->mem[cpu->PC + 1];
+	new_pc = emu->mem[cpu->PC + 1];
+	new_pc |= (( emu->mem[cpu->PC + 2] << 8) & 0xff00);
+	cpu->PC = new_pc;
 	printf ("called pc: %x\n", cpu->PC);
 	printf ("returned pc: %x\n", pc);
 
@@ -585,7 +629,7 @@ void jsr_absolute (struct NESEmu *emu)
 
 void and_indirect_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[indirect_x (emu)], =, 6, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->ram[indirect_x (emu)], =, 6, 0, 2);
 }
 
 void bit_zeropage (struct NESEmu *emu) 
@@ -689,7 +733,7 @@ void bmi_relative (struct NESEmu *emu)
 
 void and_indirect_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[indirect_y (emu)], =, 5, 1, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->ram[indirect_y (emu)], =, 5, 1, 2);
 }
 
 void and_zeropage_x (struct NESEmu *emu) 
@@ -737,15 +781,18 @@ void rti_implied (struct NESEmu *emu)
 
 	cpu->P = emu->stack[cpu->S++];
 
-	cpu->PC = emu->stack[cpu->S++];
-	cpu->PC |= ((emu->stack[cpu->S++] << 8) & 0xff00);
+	uint16_t new_pc = 0;
+	new_pc = emu->stack[cpu->S++];
+	new_pc |= ((emu->stack[cpu->S++] << 8) & 0xff00);
+
+	cpu->PC = new_pc;
 
 	wait_cycles (emu, 6);
 }
 
 void eor_indirect_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[indirect_x (emu)], =, 5, 1, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->ram[indirect_x (emu)], =, 5, 1, 2);
 }
 
 void eor_zeropage (struct NESEmu *emu) 
@@ -802,7 +849,8 @@ void jmp_absolute (struct NESEmu *emu)
 
 	cpu->PC++;
 
-	uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC];
+	uint16_t new_offset = emu->mem[cpu->PC + 0];
+	new_offset |= ((emu->mem[cpu->PC + 1] << 8) & 0xff00);
 
 	cpu->PC = new_offset;
 
@@ -849,7 +897,7 @@ void bvc_relative (struct NESEmu *emu)
 
 void eor_indirect_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[indirect_y (emu)], =, 6, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->ram[indirect_y (emu)], =, 6, 0, 2);
 }
 
 void eor_zeropage_x (struct NESEmu *emu) 
@@ -896,7 +944,7 @@ void adc_indirect_x (struct NESEmu *emu)
 	cpu->P &= ~(flags);
 
 	uint16_t addr = indirect_x (emu);
-	uint8_t ret = cpu->A + emu->mem[addr];
+	uint8_t ret = cpu->A + emu->ram[addr];
 	CHECK_FLAGS (flags, cpu->A, ret);
 
 	cpu->A = ret;
@@ -1013,7 +1061,7 @@ void adc_indirect_y (struct NESEmu *emu)
 	cpu->P &= ~(flags);
 
 	uint16_t addr = indirect_y (emu);
-	uint8_t ret = cpu->A + emu->mem[addr];
+	uint8_t ret = cpu->A + emu->ram[addr];
 	CHECK_FLAGS (flags, cpu->A, ret);
 
 	cpu->A = ret;
@@ -1560,7 +1608,7 @@ void cpy_immediate (struct NESEmu *emu)
 
 void cmp_indirect_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - emu->mem[indirect_x (emu)], |, 6, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - emu->ram[indirect_x (emu)], |, 6, 0, 2);
 }
 
 void cpy_zeropage (struct NESEmu *emu) 
@@ -1642,7 +1690,7 @@ void bne_relative (struct NESEmu *emu)
 
 void cmp_indirect_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[indirect_y (emu)], |, 5, 1, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->ram[indirect_y (emu)], |, 5, 1, 2);
 }
 
 void cmp_zeropage_x (struct NESEmu *emu) 
@@ -1696,7 +1744,7 @@ void cpx_immediate (struct NESEmu *emu)
 
 void sbc_indirect_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->mem[indirect_x (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 6, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->ram[indirect_x (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 6, 0, 2);
 }
 
 void cpx_zeropage (struct NESEmu *emu) 
@@ -1779,7 +1827,7 @@ void beq_relative (struct NESEmu *emu)
 
 void sbc_indirect_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->mem[indirect_y (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 5, 1, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->ram[indirect_y (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 5, 1, 2);
 }
 
 void sbc_zeropage_x (struct NESEmu *emu) 

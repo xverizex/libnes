@@ -46,7 +46,7 @@ struct CPUNes {
     uint8_t X;
     uint8_t Y;
     uint16_t PC;
-    uint8_t S;
+    uint16_t S;
     uint8_t P;
 };
 
@@ -118,7 +118,7 @@ struct NESEmu {
 
     struct NESCallbacks *cb;
 
-    uint8_t stack[0x100];
+    uint8_t stack[0x301];
     uint16_t ram[0x801];
     uint8_t mem[0x10000];
 };

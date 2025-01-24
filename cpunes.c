@@ -237,7 +237,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	parse_header (emu);
 
 	emu->cpu.PC = 0xfffc;
-	emu->cpu.S = 0xff;
+	emu->cpu.S = 0x1ff;
 	emu->cpu.P |= STATUS_FLAG_IF;
 
 	emu->width = 256;
@@ -527,7 +527,24 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
-	printf ("%04x\n", emu->cpu.PC);
+	printf ("%04x ", emu->cpu.PC);
+	if (emu->cpu.PC == 0xc907) {
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+		printf ("\n");
+	}
 
 	if (emu->is_debug_list) {
 		uint16_t tmp_pc = emu->cpu.PC;
@@ -561,7 +578,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 				emu->stack[--emu->cpu.S] = emu->cpu.P;
 				emu->latest_exec = emu->cpu.PC;
 				emu->cpu.PC = emu->nmi_handler;
-				printf ("%04x\n", emu->cpu.PC);
+				printf ("%04x ", emu->cpu.PC);
 			}
 		}
 	}
@@ -576,7 +593,28 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 
 	uint16_t pc = emu->cpu.PC;
 
+	if (emu->cpu.PC == 0xc907) {
+		printf ("\n");
+	}
+
 	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+
+	printf ("; A = %02x X = %02x Y = %02x S = %04x P = %02x; %02x %02x %02x",
+			emu->cpu.A,
+			emu->cpu.X,
+			emu->cpu.Y,
+			emu->cpu.S,
+			emu->cpu.P,
+			emu->stack[emu->cpu.S + 0],
+			emu->stack[emu->cpu.S + 1],
+			emu->stack[emu->cpu.S + 2]
+			);
+
+	if (pc == 0xc907) {
+		exit (0);
+	} else {
+		printf ("\n");
+	}
 
 	switch (pc) {
 		case 0xc0a5:
