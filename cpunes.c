@@ -551,10 +551,8 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		return;
 	}
 	
-	printf ("ppu ctrl: %x\n", emu->mem[PPUCTRL]);
 	if (emu->is_nmi_works) {
 	} else if (emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
-		printf ("ctrl nmi\n");
 		if (emu->cb->calc_nmi) {
 			emu->is_nmi_works = emu->cb->calc_nmi (emu, NULL);
 			if (emu->is_nmi_works) {
@@ -563,7 +561,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 				emu->cpu.P = emu->stack[--emu->cpu.S];
 				emu->latest_exec = emu->cpu.PC;
 				emu->cpu.PC = emu->nmi_handler;
-				printf ("nmi call\n");
 			}
 		}
 	}
