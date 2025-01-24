@@ -364,7 +364,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 		addr_palette += 4;
 	}
 
-	uint16_t addr = 0x0;
+	uint16_t addr = ((emu->mem[PPUCTRL] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
 
 	uint8_t *ptr = &emu->mem[addr];
 	ptr += id_texture * 16; 

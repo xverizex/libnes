@@ -6,8 +6,9 @@
 #define CHECK_FLAGS(flags, reg, ret) \
 { \
 	if (flags & STATUS_FLAG_NF) { \
-		if (((int8_t) ret) < 0) \
+		if (((int8_t) ret) < 0) { \
 			cpu->P |= (STATUS_FLAG_NF); \
+		} \
 	} \
 	if (flags & STATUS_FLAG_ZF) { \
 		if (ret == 0) { \
@@ -120,6 +121,7 @@
 	uint8_t ret = 0; \
 	uint16_t addr = get_addr; \
 	read_from_address (emu, addr, &reg); \
+	ret = reg; \
 	cpu->P &= ~(flags); \
 	CHECK_FLAGS (flags, reg, ret); \
 	wait_cycles (emu, cycles); \
@@ -149,7 +151,7 @@
 }
 
 uint16_t accumulator (struct NESEmu *emu);
-uint8_t immediate (struct NESEmu *emu);
+uint16_t immediate (struct NESEmu *emu);
 uint16_t absolute (struct NESEmu *emu);
 uint16_t zeropage (struct NESEmu *emu);
 uint16_t zeropage_x (struct NESEmu *emu);
@@ -173,7 +175,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->cb->ppu_mask (emu, NULL);
 		}
 
-	} if (addr == PPUADDR) {
+	} else if (addr == PPUADDR) {
 		if (emu->addr_off == 0) {
 			emu->addr = 0;
 			emu->addr |= (*r << 8) & 0xff00;
@@ -192,7 +194,8 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	if (addr == 0x2002) {
-		emu->addr_off = 0;
+		*r = 0xc0;
+		return;
 	}
 	if (addr >= 0 && addr < 0x800) {
 		*r = emu->ram[addr];
@@ -233,9 +236,9 @@ uint16_t accumulator (struct NESEmu *emu)
     return 0;
 }
 
-uint8_t immediate (struct NESEmu *emu)
+uint16_t immediate (struct NESEmu *emu)
 {
-    return emu->mem[emu->cpu.PC + 1];
+    return (emu->cpu.PC + 1);
 }
 
 uint16_t absolute (struct NESEmu *emu)
@@ -308,8 +311,8 @@ void brk_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	emu->stack[cpu->S--] = (uint8_t) (cpu->PC & 0xff);
-	emu->stack[cpu->S--] = (uint8_t) ((cpu->PC >> 8) & 0xff);
+	emu->stack[--cpu->S] = (uint8_t) (cpu->PC & 0xff);
+	emu->stack[--cpu->S] = (uint8_t) ((cpu->PC >> 8) & 0xff);
 
 	cpu->P |= (STATUS_FLAG_IF);
 
@@ -335,7 +338,7 @@ void php_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	emu->stack[cpu->S--] = cpu->P;
+	emu->stack[--cpu->S] = cpu->P;
 
 	wait_cycles (emu, 3);
 
@@ -541,8 +544,10 @@ void jsr_absolute (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	emu->stack[cpu->S--] = (uint8_t) (cpu->PC & 0xff);
-	emu->stack[cpu->S--] = (uint8_t) ((cpu->PC >> 8) & 0xff);
+	emu->stack[--cpu->S] = (uint8_t) ((cpu->PC >> 8) & 0xff);
+	emu->stack[--cpu->S] = (uint8_t) (cpu->PC & 0xff);
+
+	cpu->PC = *(uint16_t *) &emu->mem[cpu->PC + 1];
 
 	wait_cycles (emu, 6);
 }
@@ -700,7 +705,7 @@ void pha_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	emu->stack[cpu->S--] = cpu->A;
+	emu->stack[--cpu->S] = cpu->A;
 
 	wait_cycles (emu, 3);
 
