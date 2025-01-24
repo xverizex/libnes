@@ -411,10 +411,10 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 	for (int i = 0; i < 256; i++) {
 
-		uint8_t px = emu->mem[0x200 + idx + 3];
-		uint8_t py = emu->mem[0x200 + idx + 0];
-		uint8_t flags = emu->mem[0x200 + idx + 2];
-		uint8_t id_texture = emu->mem[0x200 + idx + 1];
+		uint8_t px = emu->ram[0x200 + idx + 3];
+		uint8_t py = emu->ram[0x200 + idx + 0];
+		uint8_t flags = emu->ram[0x200 + idx + 2];
+		uint8_t id_texture = emu->ram[0x200 + idx + 1];
 
 		math_translate (r->transform, px, py, 0.f);
 

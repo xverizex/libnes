@@ -140,9 +140,10 @@
 #define BIT_ACTS(_flags, mem, cycles, is_off, _bytes) { \
 	struct CPUNes *cpu = &emu->cpu; \
 	uint8_t returned_reg = 0; \
-	returned_reg = mem; \
+	read_from_address (emu, mem, &returned_reg); \
 	cpu->P &= ~(_flags); \
-	cpu->P |= (returned_reg & 0xc0); \
+	CHECK_FLAGS (_flags, cpu->A, returned_reg); \
+	cpu->P &= ~(STATUS_FLAG_ZF); \
 	if ((cpu->A & returned_reg) == 0) { \
 		cpu->P |= (STATUS_FLAG_ZF); \
 	} \
@@ -165,7 +166,7 @@ uint16_t indirect_y (struct NESEmu *emu);
 
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
-	if (addr >= 0 && addr < 0x800) {
+	if (addr >= 0 && addr <= 0x800) {
 		emu->ram[addr] = *r;
 		return;
 	}
@@ -198,7 +199,7 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		*r = 0xc0;
 		return;
 	}
-	if (addr >= 0 && addr < 0x800) {
+	if (addr >= 0 && addr <= 0x800) {
 		*r = emu->ram[addr];
 	} else {
 		*r = emu->mem[addr];
@@ -565,7 +566,7 @@ void and_indirect_x (struct NESEmu *emu)
 
 void bit_zeropage (struct NESEmu *emu) 
 {
-	BIT_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF, emu->ram[zeropage (emu)], 3, 0, 2);
+	BIT_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF, zeropage (emu), 3, 0, 2);
 }
 
 void and_zeropage (struct NESEmu *emu) 
@@ -621,7 +622,7 @@ void bit_absolute (struct NESEmu *emu)
 	}
 #endif
 
-	BIT_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF, emu->mem[absolute (emu)], 4, 0, 3);
+	BIT_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF, absolute (emu), 4, 0, 3);
 }
 
 void and_absolute (struct NESEmu *emu) 
