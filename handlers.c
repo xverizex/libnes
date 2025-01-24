@@ -532,14 +532,21 @@ void asl_absolute_x (struct NESEmu *emu)
 }
 
 void jsr_absolute (struct NESEmu *) {}
-void and_indirect_x (struct NESEmu *) {}
+
+void and_indirect_x (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[indirect_x (emu)], =, 6, 0, 2);
+}
 
 void bit_zeropage (struct NESEmu *emu) 
 {
 	BIT_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF, emu->ram[zeropage (emu)], 3, 0, 2);
 }
 
-void and_zeropage (struct NESEmu *) {}
+void and_zeropage (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->ram[zeropage (emu)], =, 3, 0, 2);
+}
 
 void rol_zeropage (struct NESEmu *emu) 
 {
@@ -581,7 +588,10 @@ void bit_absolute (struct NESEmu *emu)
 	BIT_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF, emu->mem[absolute (emu)], 4, 0, 3);
 }
 
-void and_absolute (struct NESEmu *) {}
+void and_absolute (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute (emu)], =, 4, 0, 3);
+}
 
 void rol_absolute (struct NESEmu *emu) 
 {
@@ -589,8 +599,16 @@ void rol_absolute (struct NESEmu *emu)
 }
 
 void bmi_relative (struct NESEmu *) {}
-void and_indirect_y (struct NESEmu *) {}
-void and_zeropage_x (struct NESEmu *) {}
+
+void and_indirect_y (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[indirect_y (emu)], =, 5, 1, 2);
+}
+
+void and_zeropage_x (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->ram[zeropage_x (emu)], =, 4, 0, 2);
+}
 
 void rol_zeropage_x (struct NESEmu *emu) 
 {
@@ -598,8 +616,16 @@ void rol_zeropage_x (struct NESEmu *emu)
 }
 
 void sec_implied (struct NESEmu *) {}
-void and_absolute_y (struct NESEmu *) {}
-void and_absolute_x (struct NESEmu *) {}
+
+void and_absolute_y (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute_y (emu)], =, 4, 1, 3);
+}
+
+void and_absolute_x (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute_x (emu)], =, 4, 1, 3);
+}
 
 void rol_absolute_x (struct NESEmu *emu) 
 {
