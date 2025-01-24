@@ -558,6 +558,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 				emu->cpu.PC |= ((emu->stack[emu->cpu.S--] << 8) & 0xff00);
 				emu->cpu.PC = emu->stack[emu->cpu.S--];
 				emu->cpu.P = emu->stack[emu->cpu.S--];
+				emu->latest_exec = emu->cpu.PC;
 				emu->cpu.PC = emu->nmi_handler;
 			}
 		}
