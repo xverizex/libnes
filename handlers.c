@@ -288,7 +288,11 @@ void beq (struct NESEmu *emu, uint16_t addr)
 
 void invalid_opcode (struct NESEmu *) {}
 void brk_implied (struct NESEmu *) {}
-void ora_indirect_x (struct NESEmu *) {}
+
+void ora_indirect_x (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[indirect_x(emu)], =, 6, 0, 2);
+}
 
 void ora_zeropage (struct NESEmu *emu) 
 {
@@ -311,7 +315,10 @@ void asl_accumulator (struct NESEmu *emu)
 	ASL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, 2, 0, 1);
 }
 
-void ora_absolute (struct NESEmu *) {}
+void ora_absolute (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute(emu)], =, 4, 0, 3);
+}
 
 void asl_absolute (struct NESEmu *emu) 
 {
@@ -452,16 +459,31 @@ void bpl_relative (struct NESEmu *emu)
 	wait_cycles (emu, 2 + ext_cycles);
 }
 
-void ora_indirect_y (struct NESEmu *) {}
-void ora_zeropage_x (struct NESEmu *) {}
+void ora_indirect_y (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[indirect_y(emu)], =, 5, 1, 2);
+}
+
+void ora_zeropage_x (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->ram[zeropage_x(emu)], =, 4, 0, 2);
+}
 
 void asl_zeropage_x (struct NESEmu *emu) 
 {
 	ASL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[zeropage_x (emu)], 6, 0, 2);
 }
 void clc_implied (struct NESEmu *) {}
-void ora_absolute_y (struct NESEmu *) {}
-void ora_absolute_x (struct NESEmu *) {}
+
+void ora_absolute_y (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute_y(emu)], =, 4, 1, 3);
+}
+
+void ora_absolute_x (struct NESEmu *emu) 
+{
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute_x(emu)], =, 4, 1, 3);
+}
 
 void asl_absolute_x (struct NESEmu *emu) 
 {
