@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <cpunes.h>
+#include <stdio.h>
 
 #define CHECK_FLAGS(flags, reg, ret) \
 { \
@@ -9,8 +10,9 @@
 			cpu->P |= (STATUS_FLAG_NF); \
 	} \
 	if (flags & STATUS_FLAG_ZF) { \
-		if (ret == 0) \
+		if (ret == 0) { \
 			cpu->P |= (STATUS_FLAG_ZF); \
+		} \
 	} \
 	if (flags & STATUS_FLAG_CF) { \
 		if (ret < reg) \
@@ -485,11 +487,11 @@ void bpl_relative (struct NESEmu *emu)
 	uint32_t ext_cycles;
 
 	if (emu->cpu.P & STATUS_FLAG_NF) {
+		cpu->PC += 2;
+	} else {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
 
 		cpu->PC = new_offset;
-	} else {
-		cpu->PC += 2;
 	}
 
 	wait_cycles (emu, 2 + ext_cycles);

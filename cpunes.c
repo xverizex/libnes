@@ -527,6 +527,8 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
+	printf ("%04x\n", emu->cpu.PC);
+
 	if (emu->is_debug_list) {
 		uint16_t tmp_pc = emu->cpu.PC;
 		emu->cpu.PC = 0x8000;
@@ -549,7 +551,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		return;
 	}
 	
-#if 1
 	if (emu->is_nmi_works) {
 	} else if (emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 		if (emu->cb->calc_nmi) {
@@ -563,7 +564,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 			}
 		}
 	}
-#endif
 
 	if (emu->cb->calc_time_uint64) {
 		emu->cb->calc_time_uint64 (emu, NULL);
