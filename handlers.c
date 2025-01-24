@@ -308,10 +308,6 @@ uint16_t indirect (struct NESEmu *emu)
     	uint16_t addr = emu->mem[emu->cpu.PC + 1];
     	addr |= ((emu->mem[emu->cpu.PC + 2] << 8) & 0xff00);
 
-	if (emu->cpu.PC == 0xc907) {
-		printf ("indirect addr: %04x\n", addr);
-	}
-
 	uint16_t new_addr = 0;
 	if (addr >= 0x0 && addr <= 0x800) {
     		new_addr = emu->ram[addr + 0];
@@ -319,11 +315,6 @@ uint16_t indirect (struct NESEmu *emu)
 	} else {
     		new_addr = emu->mem[addr + 0];
     		new_addr |= ((emu->mem[addr + 1] << 8) & 0xff00);
-	}
-
-	if (emu->cpu.PC == 0xc907) {
-		printf ("indirect new addr: %04x\n", new_addr);
-		printf ("memory: %x %x\n", emu->ram[addr + 0], emu->ram[addr + 1]);
 	}
 
 	return new_addr;
@@ -348,12 +339,20 @@ uint16_t indirect_y (struct NESEmu *emu)
 	uint8_t zeroaddr = emu->mem[emu->cpu.PC + 1];
 	uint16_t addr = 0;
 
-	addr = emu->ram[zeroaddr + emu->cpu.Y + 0];
-	addr |= ((emu->ram[zeroaddr + emu->cpu.Y + 1] << 8) & 0xff00);
+#if 1
+	addr = emu->ram[zeroaddr + 0];
+	addr |= ((emu->ram[zeroaddr + 1] << 8) & 0xff00);
 
-	uint16_t fulladdr = emu->mem[addr + 0];
-	fulladdr |= ((emu->mem[addr + 1] << 8) & 0xff00);
-
+	uint16_t fulladdr = 0;
+	if (addr >= 0x0 && addr <= 0x800) {
+		fulladdr = emu->ram[addr + 0];
+		fulladdr |= ((emu->ram[addr + 1] << 8) & 0xff00);
+	} else {
+		fulladdr = emu->mem[addr + 0];
+		fulladdr |= ((emu->mem[addr + 1] << 8) & 0xff00);
+	}
+#endif
+	
 #if 0
 	printf ("indirect y: %x = %x; addr: %x; zeroaddr: %x, y: %x; mem: %02x %02x\n", 
 			zeroaddr, 
@@ -365,7 +364,7 @@ uint16_t indirect_y (struct NESEmu *emu)
 			emu->ram[zeroaddr + emu->cpu.Y + 1]);
 #endif
 
-	return fulladdr;
+	return fulladdr + emu->cpu.Y;
 }
 
 void invalid_opcode (struct NESEmu *emu) 
@@ -616,6 +615,7 @@ void jsr_absolute (struct NESEmu *emu)
 	emu->stack[--cpu->S] = (uint8_t) ((pc >> 8) & 0xff);
 	emu->stack[--cpu->S] = (uint8_t) (pc & 0xff);
 
+#if 0
 	uint16_t new_pc = 0;
 	printf ("cur pc: %x\n", cpu->PC);
 	new_pc = emu->mem[cpu->PC + 1];
@@ -623,6 +623,12 @@ void jsr_absolute (struct NESEmu *emu)
 	cpu->PC = new_pc;
 	printf ("called pc: %x\n", cpu->PC);
 	printf ("returned pc: %x\n", pc);
+#else
+	uint16_t new_pc = 0;
+	new_pc = emu->mem[cpu->PC + 1];
+	new_pc |= (( emu->mem[cpu->PC + 2] << 8) & 0xff00);
+	cpu->PC = new_pc;
+#endif
 
 	wait_cycles (emu, 6);
 }
