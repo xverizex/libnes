@@ -527,7 +527,8 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
-	printf ("%04x\n", emu->cpu.PC);
+	if (!emu->is_nmi_works)
+		printf ("%04x\n", emu->cpu.PC);
 
 	if (emu->is_debug_list) {
 		uint16_t tmp_pc = emu->cpu.PC;
@@ -574,7 +575,18 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		emu->last_cycles_int64 = 0;
 	}
 
+	uint16_t pc = emu->cpu.PC;
+
 	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+
+	switch (pc) {
+		case 0xc0a5:
+			printf ("save 1 to 0x22\n");
+			break;
+		case 0xc0af:
+			printf ("save 0 to 0x22\n");
+			break;
+	}
 
 	if (emu->latest_exec == emu->cpu.PC) {
 		emu->cb->render (emu, NULL);

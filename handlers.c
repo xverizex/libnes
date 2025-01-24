@@ -301,7 +301,11 @@ uint16_t absolute_y (struct NESEmu *emu)
 uint16_t indirect (struct NESEmu *emu)
 {
 	uint16_t addr = *((uint16_t *) &emu->mem[emu->cpu.PC + 1]);
-	addr = *((uint16_t *) &emu->mem[addr]);
+	if (addr >= 0x0 && addr <= 0x800) {
+		addr = *((uint16_t *) &emu->ram[addr]);
+	} else {
+		addr = *((uint16_t *) &emu->mem[addr]);
+	}
 	return addr;
 }
 
@@ -505,7 +509,7 @@ void bpl_relative (struct NESEmu *emu)
 		uint8_t off = 0xff - offset - 1;
 		new_offset = cpu->PC - off;
 	} else {
-		new_offset = cpu->PC + offset;
+		new_offset = cpu->PC + offset + 2;
 	}
 
 	uint32_t ext_cycles;
@@ -565,10 +569,16 @@ void jsr_absolute (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	emu->stack[--cpu->S] = (uint8_t) ((cpu->PC >> 8) & 0xff);
-	emu->stack[--cpu->S] = (uint8_t) (cpu->PC & 0xff);
+	uint16_t pc = cpu->PC + 3;
 
+
+	emu->stack[--cpu->S] = (uint8_t) ((pc >> 8) & 0xff);
+	emu->stack[--cpu->S] = (uint8_t) (pc & 0xff);
+
+	printf ("cur pc: %x\n", cpu->PC);
 	cpu->PC = *(uint16_t *) &emu->mem[cpu->PC + 1];
+	printf ("called pc: %x\n", cpu->PC);
+	printf ("returned pc: %x\n", pc);
 
 	wait_cycles (emu, 6);
 }
@@ -649,7 +659,33 @@ void rol_absolute (struct NESEmu *emu)
 	ROL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute (emu)], 6, 0, 3);
 }
 
-void bmi_relative (struct NESEmu *) {}
+void bmi_relative (struct NESEmu *emu) 
+{
+	struct CPUNes *cpu = &emu->cpu;
+
+	int8_t offset = emu->mem[cpu->PC + 1];
+
+	uint16_t new_offset;
+
+	if (offset < 0) {
+		uint8_t off = 0xff - offset - 1;
+		new_offset = cpu->PC - off;
+	} else {
+		new_offset = cpu->PC + offset + 2;
+	}
+
+	uint32_t ext_cycles;
+
+	if (emu->cpu.P & STATUS_FLAG_NF) {
+		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
+
+		cpu->PC = new_offset;
+	} else {
+		cpu->PC += 2;
+	}
+
+	wait_cycles (emu, 2 + ext_cycles);
+}
 
 void and_indirect_y (struct NESEmu *emu) 
 {
@@ -795,7 +831,7 @@ void bvc_relative (struct NESEmu *emu)
 		uint8_t off = 0xff - offset - 1;
 		new_offset = cpu->PC - off;
 	} else {
-		new_offset = cpu->PC + offset;
+		new_offset = cpu->PC + offset + 2;
 	}
 
 	uint32_t ext_cycles;
@@ -954,7 +990,7 @@ void bvs_relative (struct NESEmu *emu)
 		uint8_t off = 0xff - offset - 1;
 		new_offset = cpu->PC - off;
 	} else {
-		new_offset = cpu->PC + offset;
+		new_offset = cpu->PC + offset + 2;
 	}
 
 	uint32_t ext_cycles;
@@ -1200,7 +1236,7 @@ void bcc_relative (struct NESEmu *emu)
 		uint8_t off = 0xff - offset - 1;
 		new_offset = cpu->PC - off;
 	} else {
-		new_offset = cpu->PC + offset;
+		new_offset = cpu->PC + offset + 2;
 	}
 
 	uint32_t ext_cycles;
@@ -1442,7 +1478,7 @@ void bcs_relative (struct NESEmu *emu)
 		uint8_t off = 0xff - offset - 1;
 		new_offset = cpu->PC - off;
 	} else {
-		new_offset = cpu->PC + offset;
+		new_offset = cpu->PC + offset + 2;
 	}
 
 	uint32_t ext_cycles;
@@ -1588,7 +1624,7 @@ void bne_relative (struct NESEmu *emu)
 		uint8_t off = 0xff - offset - 1;
 		new_offset = cpu->PC - off;
 	} else {
-		new_offset = cpu->PC + offset;
+		new_offset = cpu->PC + offset + 2;
 	}
 
 	uint32_t ext_cycles;
@@ -1725,7 +1761,7 @@ void beq_relative (struct NESEmu *emu)
 		uint8_t off = 0xff - offset - 1;
 		new_offset = cpu->PC - off;
 	} else {
-		new_offset = cpu->PC + offset;
+		new_offset = cpu->PC + offset + 2;
 	}
 
 	uint32_t ext_cycles;
