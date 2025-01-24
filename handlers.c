@@ -152,6 +152,7 @@
 
 uint16_t accumulator (struct NESEmu *emu);
 uint16_t immediate (struct NESEmu *emu);
+uint8_t immediate_val (struct NESEmu *emu);
 uint16_t absolute (struct NESEmu *emu);
 uint16_t zeropage (struct NESEmu *emu);
 uint16_t zeropage_x (struct NESEmu *emu);
@@ -239,6 +240,11 @@ uint16_t accumulator (struct NESEmu *emu)
 uint16_t immediate (struct NESEmu *emu)
 {
     return (emu->cpu.PC + 1);
+}
+
+uint8_t immediate_val (struct NESEmu *emu)
+{
+    return emu->mem[(emu->cpu.PC + 1)];
 }
 
 uint16_t absolute (struct NESEmu *emu)
@@ -347,7 +353,7 @@ void php_implied (struct NESEmu *emu)
 
 void ora_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A | immediate (emu), =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A | immediate_val (emu), =, 2, 0, 2);
 }
 void asl_accumulator (struct NESEmu *emu) 
 {
@@ -587,7 +593,7 @@ void plp_implied (struct NESEmu *emu)
 
 void and_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & immediate (emu), =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & immediate_val (emu), =, 2, 0, 2);
 }
 void rol_accumulator (struct NESEmu *emu) 
 {
@@ -714,7 +720,7 @@ void pha_implied (struct NESEmu *emu)
 
 void eor_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ immediate (emu), =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ immediate_val (emu), =, 2, 0, 2);
 }
 void lsr_accumulator (struct NESEmu *emu) 
 {
@@ -884,7 +890,7 @@ void pla_implied (struct NESEmu *emu)
 
 void adc_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + immediate (emu), =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + immediate_val (emu), =, 2, 0, 2);
 }
 
 void ror_accumulator (struct NESEmu *emu) 
@@ -1498,7 +1504,7 @@ void ldx_absolute_y (struct NESEmu *emu)
 
 void cpy_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->Y, cpu->Y - immediate (emu), |, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->Y, cpu->Y - immediate_val (emu), |, 2, 0, 2);
 }
 
 void cmp_indirect_x (struct NESEmu *emu) 
@@ -1532,7 +1538,7 @@ void iny_implied (struct NESEmu *emu)
 
 void cmp_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, cpu->A - immediate (emu), |, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_CF|STATUS_FLAG_ZF|STATUS_FLAG_NF, cpu->A, cpu->A - immediate_val (emu), |, 2, 0, 2);
 }
 
 void dex_implied (struct NESEmu *emu) 
@@ -1634,7 +1640,7 @@ void dec_absolute_x (struct NESEmu *emu)
 
 void cpx_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - immediate (emu), |, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - immediate_val (emu), |, 2, 0, 2);
 }
 
 void sbc_indirect_x (struct NESEmu *emu) 
@@ -1668,7 +1674,7 @@ void inx_implied (struct NESEmu *emu)
 
 void sbc_immediate (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - immediate (emu) - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 2, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - immediate_val (emu) - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 2, 0, 2);
 }
 
 void nop_implied (struct NESEmu *emu) 
