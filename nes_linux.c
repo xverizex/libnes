@@ -44,7 +44,7 @@ int linux_calc_time_uint64 (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ns = (tv.tv_sec * 1000000) + tv.tv_usec;
+    uint64_t ns = (tv.tv_sec * 1000) + tv.tv_usec / 1000;
 
     uint64_t ls = emu->last_cycles_int64;
     uint64_t ret = ls - ns;
@@ -65,7 +65,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ms = (tv.tv_sec * 1000000) + (tv.tv_usec);
+    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
@@ -74,7 +74,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 100000) {
+    if (diff_time >= 16) {
         emu->start_time_nmi = 0;
 	return 1;
     }

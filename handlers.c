@@ -187,7 +187,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 	if (addr == OAMDMA) {
 		emu->addr |= (*r << 8) & 0xff00;
-		printf ("dma: %04x\n", emu->addr);
+		//printf ("dma: %04x\n", emu->addr);
 		return;
 	}
 
@@ -352,16 +352,10 @@ uint16_t indirect_x (struct NESEmu *emu)
 {
 	uint8_t addr = emu->mem[emu->cpu.PC + 1];
 	uint16_t indirect = 0;
-	indirect = emu->ram[addr + emu->cpu.X + 0];
-	indirect |= ((emu->ram[addr + emu->cpu.X + 1] << 8) & 0xff00);
 
-#if 1
-	uint16_t fulladdr = 0;
-	fulladdr  = emu->mem[indirect + 0];
-	fulladdr |= ((emu->mem[indirect + 1] << 8) & 0xff00);
-#endif
+	indirect = *((uint16_t *) &emu->ram[addr + emu->cpu.X]);
 
-	return fulladdr;
+	return indirect;
 }
 
 uint16_t indirect_y (struct NESEmu *emu)
@@ -369,32 +363,9 @@ uint16_t indirect_y (struct NESEmu *emu)
 	uint8_t zeroaddr = emu->mem[emu->cpu.PC + 1];
 	uint16_t addr = 0;
 
-#if 1
-	addr = emu->ram[zeroaddr + 0];
-	addr |= ((emu->ram[zeroaddr + 1] << 8) & 0xff00);
+	addr = *((uint16_t *) &emu->ram[zeroaddr]);
 
-	uint16_t fulladdr = 0;
-	if (addr >= 0x0 && addr <= 0x800) {
-		fulladdr = emu->ram[addr + 0];
-		fulladdr |= ((emu->ram[addr + 1] << 8) & 0xff00);
-	} else {
-		fulladdr = emu->mem[addr + 0];
-		fulladdr |= ((emu->mem[addr + 1] << 8) & 0xff00);
-	}
-#endif
-	
-#if 0
-	printf ("indirect y: %x = %x; addr: %x; zeroaddr: %x, y: %x; mem: %02x %02x\n", 
-			zeroaddr, 
-			fulladdr, 
-			addr, 
-			zeroaddr, 
-			emu->cpu.Y, 
-			emu->ram[zeroaddr + emu->cpu.Y], 
-			emu->ram[zeroaddr + emu->cpu.Y + 1]);
-#endif
-
-	return addr + emu->cpu.Y;
+	return addr + emu->cpu.Y;// + ((emu->cpu.P & STATUS_FLAG_CF) ? 1: 0);
 }
 
 void invalid_opcode (struct NESEmu *emu) 
@@ -649,6 +620,7 @@ void jsr_absolute (struct NESEmu *emu)
 	uint16_t pc = cpu->PC + 3;
 
 	pc--;
+	printf ("stacked %04x\n", pc);
 
 	emu->stack[--cpu->S] = (uint8_t) ((pc >> 8) & 0xff);
 	emu->stack[--cpu->S] = (uint8_t) (pc & 0xff);
@@ -666,6 +638,7 @@ void jsr_absolute (struct NESEmu *emu)
 	new_pc = emu->mem[cpu->PC + 1];
 	new_pc |= (( emu->mem[cpu->PC + 2] << 8) & 0xff00);
 	cpu->PC = new_pc;
+	printf ("called: %04x\n", new_pc);
 #endif
 
 	wait_cycles (emu, 6);
@@ -979,6 +952,7 @@ void rts_implied (struct NESEmu *emu)
 	cpu->PC |= ((emu->stack[cpu->S++] << 8) & 0xff00);
 
 	cpu->PC++;
+	printf ("rts %04x\n", cpu->PC);
 
 	wait_cycles (emu, 6);
 }
