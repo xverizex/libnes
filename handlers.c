@@ -169,9 +169,9 @@ uint16_t accumulator (struct NESEmu *emu);
 uint16_t immediate (struct NESEmu *emu);
 uint8_t immediate_val (struct NESEmu *emu);
 uint16_t absolute (struct NESEmu *emu);
-uint16_t zeropage (struct NESEmu *emu);
-uint16_t zeropage_x (struct NESEmu *emu);
-uint16_t zeropage_y (struct NESEmu *emu);
+uint8_t zeropage (struct NESEmu *emu);
+uint8_t zeropage_x (struct NESEmu *emu);
+uint8_t zeropage_y (struct NESEmu *emu);
 uint16_t absolute_x (struct NESEmu *emu);
 uint16_t absolute_y (struct NESEmu *emu);
 uint16_t indirect (struct NESEmu *emu);
@@ -201,7 +201,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->addr_off = 0;
 		}
 	} else if (addr == PPUDATA) {
-		emu->mem[emu->addr++] = *r;
+		emu->ppu[emu->addr++ - 0x2000] = *r; //screen on the 0x2000
 	} else {
 		emu->mem[addr] = *r;
 	}
@@ -210,7 +210,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	if (addr == 0x2002) {
-		*r = 0xc0;
+		*r = 0x80;
 		return;
 	}
 	if (addr >= 0 && addr <= 0x800) {
@@ -223,6 +223,7 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 static void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 	emu->last_cycles_float = (float) cycles * 0.000601465f;
+	emu->last_cycles_int64 = 16L;
 	emu->last_cycles_int64 = cycles * 601465L;
 }
 
@@ -269,21 +270,24 @@ uint16_t absolute (struct NESEmu *emu)
     return addr;
 }
 
-uint16_t zeropage (struct NESEmu *emu)
+uint8_t zeropage (struct NESEmu *emu)
 {
     uint8_t addr = emu->mem[emu->cpu.PC + 1];
     return addr;
 }
 
-uint16_t zeropage_x (struct NESEmu *emu)
+uint8_t zeropage_x (struct NESEmu *emu)
 {
-    uint8_t addr = emu->mem[emu->cpu.PC + 1] + emu->cpu.X;
+    uint8_t addr = emu->mem[emu->cpu.PC + 1];
+    uint8_t off = addr;
+    addr += emu->cpu.X;
     return addr;
 }
 
-uint16_t zeropage_y (struct NESEmu *emu)
+uint8_t zeropage_y (struct NESEmu *emu)
 {
-    uint8_t addr = emu->mem[emu->cpu.PC + 1] + emu->cpu.Y;
+    uint8_t addr = emu->mem[emu->cpu.PC + 1];
+    addr += emu->cpu.Y;
     return addr;
 }
 
@@ -292,6 +296,7 @@ uint16_t absolute_x (struct NESEmu *emu)
     uint16_t addr = emu->mem[emu->cpu.PC + 1];
     addr |= ((emu->mem[emu->cpu.PC + 2] << 8) & 0xff00);
     addr += emu->cpu.X;
+    addr += ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0);
     return addr;
 }
 
@@ -300,6 +305,7 @@ uint16_t absolute_y (struct NESEmu *emu)
     uint16_t addr = emu->mem[emu->cpu.PC + 1];
     addr |= ((emu->mem[emu->cpu.PC + 2] << 8) & 0xff00);
     addr += emu->cpu.Y;
+    addr += ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0);
     return addr;
 }
 
@@ -324,12 +330,14 @@ uint16_t indirect_x (struct NESEmu *emu)
 {
 	uint8_t addr = emu->mem[emu->cpu.PC + 1];
 	uint16_t indirect = 0;
-	indirect = emu->ram[emu->cpu.X + 0];
-	indirect |= ((emu->ram[emu->cpu.X + 1] << 8) & 0xff00);
+	indirect = emu->ram[addr + emu->cpu.X + 0];
+	indirect |= ((emu->ram[addr + emu->cpu.X + 1] << 8) & 0xff00);
 
+#if 1
 	uint16_t fulladdr = 0;
-	fulladdr  = emu->mem[addr + indirect + 0];
-	fulladdr |= ((emu->mem[addr + indirect + 1] << 8) & 0xff00);
+	fulladdr  = emu->mem[indirect + 0];
+	fulladdr |= ((emu->mem[indirect + 1] << 8) & 0xff00);
+#endif
 
 	return fulladdr;
 }
@@ -364,7 +372,7 @@ uint16_t indirect_y (struct NESEmu *emu)
 			emu->ram[zeroaddr + emu->cpu.Y + 1]);
 #endif
 
-	return fulladdr + emu->cpu.Y;
+	return addr + emu->cpu.Y;
 }
 
 void invalid_opcode (struct NESEmu *emu) 
@@ -376,12 +384,18 @@ void brk_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
+#if 0
 	emu->stack[--cpu->S] = (uint8_t) (cpu->PC & 0xff);
 	emu->stack[--cpu->S] = (uint8_t) ((cpu->PC >> 8) & 0xff);
+	emu->stack[--cpu->S] = cpu->P;
 
 	cpu->P |= (STATUS_FLAG_IF);
 
+	cpu->PC = emu->irq_handler;
+#endif
+
 	wait_cycles (emu, 7);
+	printf ("brk\n");
 }
 
 void ora_indirect_x (struct NESEmu *emu) 
@@ -511,6 +525,7 @@ static uint8_t *show_debug_info (struct NESEmu *emu, uint32_t count, char *op)
 	}
 #endif
 
+#include <stdlib.h>
 void bpl_relative (struct NESEmu *emu) 
 {
 #if 0
@@ -611,6 +626,7 @@ void jsr_absolute (struct NESEmu *emu)
 
 	uint16_t pc = cpu->PC + 3;
 
+	pc--;
 
 	emu->stack[--cpu->S] = (uint8_t) ((pc >> 8) & 0xff);
 	emu->stack[--cpu->S] = (uint8_t) (pc & 0xff);
@@ -939,6 +955,8 @@ void rts_implied (struct NESEmu *emu)
 
 	cpu->PC = emu->stack[cpu->S++];
 	cpu->PC |= ((emu->stack[cpu->S++] << 8) & 0xff00);
+
+	cpu->PC++;
 
 	wait_cycles (emu, 6);
 }
@@ -1345,7 +1363,8 @@ void txs_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	emu->mem[cpu->S] = cpu->X;
+	cpu->S &= 0xff00;
+	cpu->S |= cpu->X;
 
 	emu->cpu.PC += 1;
 
@@ -1585,7 +1604,7 @@ void tsx_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	cpu->X = emu->mem[cpu->S];
+	cpu->X = cpu->S;
 
 	emu->cpu.PC += 1;
 
@@ -1629,7 +1648,10 @@ void cmp_zeropage (struct NESEmu *emu)
 
 void dec_zeropage (struct NESEmu *emu) 
 {
+	uint16_t pg = zeropage (emu);
+	printf ("\tvalue on zeropage %04x: ", pg);
 	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->ram[zeropage(emu)], --emu->ram[zeropage (emu)], =, 5, 0, 2);
+	printf ("%02x\n", emu->ram[pg]);
 }
 
 void iny_implied (struct NESEmu *emu) 
