@@ -500,7 +500,7 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 	glBindVertexArray (r->vao);
 
-#if 0
+#if 1
 	uint32_t ppx = 0;
 	uint32_t ppy = 0;
 	uint8_t x, y;

@@ -169,7 +169,7 @@ uint16_t accumulator (struct NESEmu *emu);
 uint16_t immediate (struct NESEmu *emu);
 uint8_t immediate_val (struct NESEmu *emu);
 uint16_t absolute (struct NESEmu *emu);
-uint8_t zeropage (struct NESEmu *emu);
+uint16_t zeropage (struct NESEmu *emu);
 uint8_t zeropage_x (struct NESEmu *emu);
 uint8_t zeropage_y (struct NESEmu *emu);
 uint16_t absolute_x (struct NESEmu *emu);
@@ -192,7 +192,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 
 	if (addr >= 0 && addr <= 0x800) {
-		if (emu->addr >= 0x200 && emu->addr <= 0x2ff) {
+		if (((emu->addr >= 0x200) && (emu->addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
 			emu->oam[emu->addr++ - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
@@ -204,7 +204,6 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		printf ("ppumask\n");
 		emu->mem[addr] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
-			printf ("clear screen\n");
 			emu->is_return = 1;
 			emu->cb->ppu_mask (emu, NULL);
 		}
@@ -292,7 +291,7 @@ uint16_t absolute (struct NESEmu *emu)
     return addr;
 }
 
-uint8_t zeropage (struct NESEmu *emu)
+uint16_t zeropage (struct NESEmu *emu)
 {
     uint8_t addr = emu->mem[emu->cpu.PC + 1];
     return addr;
