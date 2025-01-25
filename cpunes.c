@@ -527,8 +527,8 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 {
-	printf ("%04x:\n", emu->cpu.PC);
 
+#if 0
 	if (emu->is_debug_list) {
 		uint16_t tmp_pc = emu->cpu.PC;
 		emu->cpu.PC = 0x8000;
@@ -550,7 +550,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		emu->cpu.PC = tmp_pc;
 		return;
 	}
-	
+#endif
+	for (int i = 0; i < count_instructions; i++) {
+		//printf ("%04x:\n", emu->cpu.PC);
+
 	if (emu->is_nmi_works) {
 	} else if (emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 		if (emu->cb->calc_nmi) {
@@ -562,7 +565,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 				emu->stack[--emu->cpu.S] = emu->cpu.P;
 				emu->latest_exec = emu->cpu.PC;
 				emu->cpu.PC = emu->nmi_handler;
-				printf ("nmi interrupt: %04x\n", emu->cpu.PC);
+				//printf ("nmi interrupt: %04x\n", emu->cpu.PC);
 			}
 #endif
 		}
@@ -588,13 +591,15 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 			getc (stdin);
 	}
 #endif
+#if 0
 	if (emu->is_debug) {
 		getc (stdin);
 	}
+#endif
 
 	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
 
-#if 1
+#if 0
 	printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %004x\n",
 			emu->cpu.A,
 			emu->cpu.X,
@@ -611,17 +616,13 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		case 0xc0af:
 			printf ("save 0 to 0x22\n");
 			break;
-		case 0xc6fe:
-			printf ("reg a: %02x from 0xc6fe\n", emu->cpu.A);
-			break;
-		case 0xc6ec:
-			printf ("reg a: %02x from 0xc6ec\n", emu->cpu.A);
-			break;
 	}
 
 	if (emu->latest_exec == emu->cpu.PC) {
 		//printf ("render nmi\n");
 		emu->cb->render (emu, NULL);
 		emu->is_nmi_works = 0;
+		return;
+	}
 	}
 }

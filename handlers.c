@@ -180,14 +180,31 @@ uint16_t indirect_y (struct NESEmu *emu);
 
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
+	if (addr == OAMADDR) {
+		emu->addr = 0;
+		emu->addr |= *r;
+		return;
+	}
+	if (addr == OAMDMA) {
+		emu->addr |= (*r << 8) & 0xff00;
+		printf ("dma: %04x\n", emu->addr);
+		return;
+	}
+
 	if (addr >= 0 && addr <= 0x800) {
-		emu->ram[addr] = *r;
+		if (emu->addr >= 0x200 && emu->addr <= 0x2ff) {
+			emu->oam[emu->addr++ - 0x200] = *r;
+		} else {
+			emu->ram[addr] = *r;
+		}
 		return;
 	}
 
 	if (addr == PPUMASK) {
+		printf ("ppumask\n");
 		emu->mem[addr] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
+			printf ("clear screen\n");
 			emu->cb->ppu_mask (emu, NULL);
 		}
 
@@ -201,7 +218,11 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->addr_off = 0;
 		}
 	} else if (addr == PPUDATA) {
-		emu->ppu[emu->addr++ - 0x2000] = *r; //screen on the 0x2000
+		if (emu->addr >= 0x2000 && emu->addr < 0x4000) {
+			emu->ppu[emu->addr++ - 0x2000] = *r; //screen on the 0x2000
+		} else {
+			emu->mem[emu->addr++] = *r;
+		}
 	} else {
 		emu->mem[addr] = *r;
 	}
@@ -1649,9 +1670,13 @@ void cmp_zeropage (struct NESEmu *emu)
 void dec_zeropage (struct NESEmu *emu) 
 {
 	uint16_t pg = zeropage (emu);
+#if 0
 	printf ("\tvalue on zeropage %04x: ", pg);
+#endif
 	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->ram[zeropage(emu)], --emu->ram[zeropage (emu)], =, 5, 0, 2);
+#if 0
 	printf ("%02x\n", emu->ram[pg]);
+#endif
 }
 
 void iny_implied (struct NESEmu *emu) 

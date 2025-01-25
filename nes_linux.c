@@ -44,7 +44,7 @@ int linux_calc_time_uint64 (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ns = (tv.tv_sec * 1000) + tv.tv_usec / 1000;
+    uint64_t ns = (tv.tv_sec * 1000000) + tv.tv_usec;
 
     uint64_t ls = emu->last_cycles_int64;
     uint64_t ret = ls - ns;
@@ -65,7 +65,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+    uint64_t ms = (tv.tv_sec * 1000000) + (tv.tv_usec);
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
@@ -74,7 +74,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 100) {
+    if (diff_time >= 100000) {
         emu->start_time_nmi = 0;
 	return 1;
     }
@@ -363,17 +363,31 @@ void debug (uint8_t *mem)
 	printf ("\n");
 }
 
-static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture)
+static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
 {
+#if 0
 	uint16_t addr_palette = 0x23c0;
-	uint8_t p[16][4];
+	uint8_t p[16];
 	for (int i = 0; i < 16; i++) {
-		p[i][0] = emu->ppu[addr_palette + 0 - 0x2000];
-		p[i][1] = emu->ppu[addr_palette + 1 - 0x2000];
-		p[i][2] = emu->ppu[addr_palette + 2 - 0x2000];
-		p[i][3] = emu->ppu[addr_palette + 3 - 0x2000];
+		p[i] = emu->ppu[addr_palette - 0x2000];
+		addr_palette++;
+#if 0
+		printf ("palette:\n");
+		printf ("\t%x\n", p[i][0]);
+#endif
+	}
+#endif
+
+	uint16_t addr_palette = 0x3f00;
+	uint8_t p[4][4];
+	for (int i = 0; i < 4; i++) {
+		p[i][0] = emu->mem[addr_palette + 0];
+		p[i][1] = emu->mem[addr_palette + 1];
+		p[i][2] = emu->mem[addr_palette + 2];
+		p[i][3] = emu->mem[addr_palette + 3];
 
 		addr_palette += 4;
+	}
 #if 0
 		printf ("palette:\n");
 		printf ("\t%x %x %x %x\n", p[0][0], p[0][1], p[0][2], p[0][3]);
@@ -381,17 +395,19 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 		printf ("\t%x %x %x %x\n", p[2][0], p[2][1], p[2][2], p[2][3]);
 		printf ("\t%x %x %x %x\n", p[3][0], p[3][1], p[3][2], p[3][3]);
 #endif
-	}
+
 
 	uint16_t addr = ((emu->mem[PPUCTRL] & PPUCTRL_BACKGROUND_PATTERN) == 0x0? 0x0: 0x1000);
 
 	uint8_t *ptr = &emu->mem[addr];
-	ptr += id_texture * 16; 
+	ptr += id_texture; 
 
 	memcpy (r->sprite_bits_one, ptr, 16);
 
-
 	uint8_t *sp = (uint8_t *) r->sprites[id_texture];
+
+	uint8_t yy = y % 32;
+	uint8_t xx = x % 32;
 
 	for (int i = 0; i < 8; i++) {
 		uint8_t s = 0x80;
@@ -400,7 +416,9 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 
 		for (int ii = 0; ii < 8; ii++) {
 			uint8_t n = 0;
-			uint32_t plt = palette_get_color (emu, p[0][0]);
+			if (low & s) n = 1;
+			if (high & s) n |= 2;
+			uint32_t plt = palette_get_color (emu, p[0][n]);
 			*sp++ = (plt >>  0) & 0xff;
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
@@ -422,10 +440,10 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	uint16_t addr_palette = 0x3f00;
 	uint8_t p[4][4];
 	for (int i = 0; i < 4; i++) {
-		p[i][0] = emu->mem[addr_palette + 0];
-		p[i][1] = emu->mem[addr_palette + 1];
-		p[i][2] = emu->mem[addr_palette + 2];
-		p[i][3] = emu->mem[addr_palette + 3];
+		p[i][0] = emu->ppu[addr_palette + 0 - 0x2000];
+		p[i][1] = emu->ppu[addr_palette + 1 - 0x2000];
+		p[i][2] = emu->ppu[addr_palette + 2 - 0x2000];
+		p[i][3] = emu->ppu[addr_palette + 3 - 0x2000];
 
 		addr_palette += 4;
 #if 0
@@ -482,14 +500,17 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 	glBindVertexArray (r->vao);
 
+#if 1
 	uint32_t ppx = 0;
 	uint32_t ppy = 0;
-	for (int i = 0; i < 256; i++) {
+	uint8_t x, y;
+	x = y = 0;
+	for (int i = 0; i < 960; i++) {
 		uint8_t id_texture = emu->ppu[i];
 
 		math_translate (r->transform, ppx, ppy, 0.f);
 
-		build_background (emu, r, id_texture);
+		build_background (emu, r, id_texture, x, y);
 
 		glActiveTexture (GL_TEXTURE0);
 		glBindTexture (GL_TEXTURE_2D, r->sprite_texture[id_texture]);
@@ -505,35 +526,25 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 		glDrawArrays (GL_TRIANGLES, 0, 6);
 
-		build_texture (emu, r, id_texture);
-
-		glActiveTexture (GL_TEXTURE0);
-		glBindTexture (GL_TEXTURE_2D, r->sprite_texture[id_texture]);
-		glUniform1i (r->id_sampler, 0);
-
-		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
-		glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
-		glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
-		glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
-
-		glEnableVertexAttribArray (0);
-		glEnableVertexAttribArray (1);
-
-		glDrawArrays (GL_TRIANGLES, 0, 6);
 
 		ppx += 8;
-		if (i % 16 == 0) {
+		x++;
+		if ((i > 0) && ((i % 32) == 0)) {
+			x = 0;
+			y++;
 			ppx = 0;
 			ppy += 8;
 		}
 	}
+#endif
 
+#if 1
 	for (int i = 0; i < 256; i++) {
 
-		uint8_t px = emu->ram[0x200 + idx + 3];
-		uint8_t py = emu->ram[0x200 + idx + 0];
-		uint8_t flags = emu->ram[0x200 + idx + 2];
-		uint8_t id_texture = emu->ram[0x200 + idx + 1];
+		uint8_t px = emu->oam[idx + 3];
+		uint8_t py = emu->oam[idx + 0];
+		uint8_t flags = emu->oam[idx + 2];
+		uint8_t id_texture = emu->oam[idx + 1];
 
 		math_translate (r->transform, px, py, 0.f);
 
@@ -555,6 +566,7 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 		idx += 4;
 	}
+#endif
 }
 
 void linux_init_callbacks (struct NESCallbacks *cb)
