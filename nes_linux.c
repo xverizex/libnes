@@ -500,7 +500,7 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 	glBindVertexArray (r->vao);
 
-#if 1
+#if 0
 	uint32_t ppx = 0;
 	uint32_t ppy = 0;
 	uint8_t x, y;
@@ -545,6 +545,10 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 		uint8_t py = emu->oam[idx + 0];
 		uint8_t flags = emu->oam[idx + 2];
 		uint8_t id_texture = emu->oam[idx + 1];
+		if (id_texture == 0) {
+			idx += 4;
+			continue;
+		}
 
 		math_translate (r->transform, px, py, 0.f);
 

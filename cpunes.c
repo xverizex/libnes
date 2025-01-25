@@ -624,5 +624,9 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 		emu->is_nmi_works = 0;
 		return;
 	}
+	if (emu->is_return) {
+		emu->is_return = 0;
+		return;
+	}
 	}
 }

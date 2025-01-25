@@ -116,6 +116,7 @@ struct NESEmu {
     uint16_t height;
 
     void *_render_data;
+    uint32_t is_return;
 
     struct NESCallbacks *cb;
 

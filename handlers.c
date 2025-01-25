@@ -205,6 +205,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		emu->mem[addr] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
 			printf ("clear screen\n");
+			emu->is_return = 1;
 			emu->cb->ppu_mask (emu, NULL);
 		}
 

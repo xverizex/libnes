@@ -70,7 +70,7 @@ static uint32_t colors_2c02[64] = {
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b)
 {
-	uint8_t color = emu->mem[0x3f00];
+	uint8_t color = emu->ppu[0x3f00 - 0x2000];
 
 	uint32_t c = colors_2c02[color];
 
