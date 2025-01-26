@@ -122,6 +122,7 @@ struct NESEmu {
     struct NESCallbacks *cb;
 
     uint32_t scale;
+    uint32_t is_debug_exit;
 
     uint8_t stack[0x300];
     uint8_t ram[0x800];

@@ -629,16 +629,32 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 		}
 
 		pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+		if (emu->is_debug_exit) {
+			printf ("\texit debug: A: %02x X: %02x Y: %02x P: %02x S: %004x PC: %04x\n",
+				emu->cpu.A,
+				emu->cpu.X,
+				emu->cpu.Y,
+				emu->cpu.P,
+				emu->cpu.S,
+				emu->cpu.PC
+	       		);
+			exit (0);
+		}
 #if 1
-	if (pc == 0xcaca) {
+	if (pc == 0xca77) {
 		debug (emu);
-	printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %004x\n",
+		printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %004x mem: %02x %02x %02x %02x\n",
 			emu->cpu.A,
 			emu->cpu.X,
 			emu->cpu.Y,
 			emu->cpu.P,
-			emu->cpu.S
-	       );
+			emu->cpu.S,
+			emu->ram[0x500],
+			emu->ram[0x501],
+			emu->ram[0x502],
+			emu->ram[0x503]
+	       	);
+		exit (0);
 	}
 #endif
 
