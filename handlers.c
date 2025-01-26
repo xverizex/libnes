@@ -181,20 +181,20 @@ uint16_t indirect_y (struct NESEmu *emu);
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	if (addr == OAMADDR) {
-		emu->addr = 0;
-		emu->addr |= *r;
+		emu->oam_addr = 0;
+		emu->oam_addr |= *r;
 		return;
 	}
 	if (addr == OAMDMA) {
-		emu->addr |= (*r << 8) & 0xff00;
+		emu->oam_addr |= (*r << 8) & 0xff00;
 		//printf ("dma: %04x\n", emu->addr);
 		return;
 	}
 
 	if (addr >= 0 && addr <= 0x800) {
-		if (((emu->addr >= 0x200) && (emu->addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-			printf ("writing to %04x = %02x\n", emu->addr, *r);
-			emu->oam[emu->addr++ - 0x200] = *r;
+		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
+			printf ("writing to %04x = %02x\n", emu->oam_addr, *r);
+			emu->oam[emu->oam_addr - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
 		}
@@ -214,19 +214,19 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 	} else if (addr == PPUADDR) {
 		if (emu->addr_off == 0) {
-			emu->addr = 0;
-			emu->addr |= (*r << 8) & 0xff00;
+			emu->ppu_addr = 0;
+			emu->ppu_addr |= (*r << 8) & 0xff00;
 			emu->addr_off++;
 		} else {
-			emu->addr |= *r & 0xff;
+			emu->ppu_addr |= *r & 0xff;
 			emu->addr_off = 0;
 		}
 	} else if (addr == PPUDATA) {
-		if (emu->addr >= 0x2000 && emu->addr < 0x4000) {
-			printf ("write to ppu: %04x = %02x\n", emu->addr, *r);
-			emu->ppu[emu->addr++ - 0x2000] = *r; //screen on the 0x2000
+		if (emu->ppu_addr >= 0x2000 && emu->ppu_addr < 0x4000) {
+			printf ("write to ppu: %04x = %02x\n", emu->ppu_addr, *r);
+			emu->ppu[emu->ppu_addr++ - 0x2000] = *r; //screen on the 0x2000
 		} else {
-			emu->mem[emu->addr++] = *r;
+			emu->mem[emu->ppu_addr++ - 0x2000] = *r;
 		}
 	} else {
 		emu->mem[addr] = *r;
@@ -236,6 +236,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	if (addr == 0x2002) {
+		emu->addr_off = 0;
 		*r = 0x80;
 		return;
 	}

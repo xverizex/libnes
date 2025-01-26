@@ -74,7 +74,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 1000) {
+    if (diff_time >= 2000) {
         emu->start_time_nmi = 0;
 	return 1;
     }
@@ -506,13 +506,11 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 	int32_t ppy = 0;
 	uint8_t x, y;
 	x = y = 0;
-	uint16_t addr = 0x000;
+	uint16_t addr = 0x0;
 	int ind = 0;
 	int ddt = 0;
-
 	int m = 0;
 
-try:
 	x = y = ppx = ppy = 0;
 	for (int i = 0; i < 960; i++) {
 
@@ -525,29 +523,11 @@ try:
 
 		uint8_t id_texture = emu->ppu[i + addr];
 
+#if 0
 		if ((emu->mem[PPUMASK] & MASK_IS_BACKGROUND_SHOW_LEFTMOST) && id_texture == 0) {
-			ppx += 8;
-			x++;
-
-			if ((i > 0) && ((i % 32) == 0)) {
-				x = 0;
-				y++;
-				ppx = m == 0? 0: 256 - 8;
-				ppy += 8;
-			}
-			continue;
 		} else if (id_texture == 0) {
-			ppx += 8;
-			x++;
-
-			if ((i > 0) && ((i % 32) == 0)) {
-				x = 0;
-				y++;
-				ppx = 0;
-				ppy += 8;
-			}
-			continue;
 		}
+#endif
 
 		math_translate (r->transform, ppx, ppy, 0.f);
 
@@ -574,7 +554,7 @@ try:
 
 #endif
 
-#if 0
+#if 1
 	for (int i = 0; i < 256; i++) {
 
 		uint8_t px = emu->oam[idx + 3];

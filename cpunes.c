@@ -600,7 +600,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 	}
 #endif
 
-	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
 
 	if (emu->is_nmi_works) {
 	} else if ((emu->cpu.P & STATUS_FLAG_IF) && emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
@@ -613,11 +612,12 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 				emu->latest_exec = emu->cpu.PC;
 				emu->cpu.PC = emu->nmi_handler;
 				emu->is_nmi_works = 1;
-	//			printf ("nmi interrupt: %04x\n", emu->cpu.PC);
+				printf ("nmi interrupt: %04x\n", emu->cpu.PC);
 			}
 		}
 	}
 
+	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
 #if 0
 	if (pc == 0xc6fe || pc == 0xc705) {
 	printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %004x\n",
@@ -640,10 +640,11 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 	}
 
 	if (emu->latest_exec == emu->cpu.PC) {
-		//printf ("render nmi\n");
+		printf ("render nmi\n");
 		emu->cb->render (emu, NULL);
 		emu->is_nmi_works = 0;
-		emu->addr = 0;
+		emu->is_return = 1;
+		emu->latest_exec = 0;
 		return;
 	}
 	if (emu->is_return) {

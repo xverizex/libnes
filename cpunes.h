@@ -105,7 +105,8 @@ struct NESEmu {
     char line[32];
 
     uint8_t addr_off;
-    uint16_t addr;
+    uint16_t oam_addr;
+    uint16_t ppu_addr;
 
     uint16_t latest_exec;
     uint8_t is_nmi_works;
