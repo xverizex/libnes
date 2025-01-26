@@ -366,7 +366,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 			ADD_HANDLER (invalid_opcode)		/* 0x62 */
 			ADD_HANDLER (invalid_opcode)		/* 0x63 */
 			ADD_HANDLER (invalid_opcode)		/* 0x64 */
-			ADD_HANDLER (adc_zeropage_x)		/* 0x65 */
+			ADD_HANDLER (adc_zeropage)		/* 0x65 */
 			ADD_HANDLER (ror_zeropage)		/* 0x66 */
 			ADD_HANDLER (invalid_opcode)		/* 0x67 */
 			ADD_HANDLER (pla_implied)		/* 0x68 */
@@ -535,9 +535,20 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 
 static void debug (struct NESEmu *emu)
 {
-	for (int i = 0; i < 256; i++) {
+	uint16_t addr = 0;
+	printf ("----: ");
+
+	for (int i = 0; i < 16; i++) {
+		printf ("%02x ", i);
+	}
+	printf ("\n");
+	for (int i = 0; i < 0x600; i++) {
+		if (i == 0) {
+			printf ("%04x: ", addr);
+		}
 		if (i > 0 && i % 16 == 0) {
-			printf ("\n");
+			addr += 16;
+			printf ("\n%04x: ", addr);
 		}
 		printf ("%02x ", emu->ram[i]);
 	}
@@ -641,20 +652,24 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 			exit (0);
 		}
 #if 1
-	if (pc == 0xca77) {
-		debug (emu);
-		printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %004x mem: %02x %02x %02x %02x\n",
-			emu->cpu.A,
-			emu->cpu.X,
-			emu->cpu.Y,
-			emu->cpu.P,
-			emu->cpu.S,
-			emu->ram[0x500],
-			emu->ram[0x501],
-			emu->ram[0x502],
-			emu->ram[0x503]
-	       	);
-		exit (0);
+	static int count = 6;
+	if (pc == 0xca5e) {
+		count++;
+		if (count == 5) {
+			debug (emu);
+			printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %004x mem: %02x %02x %02x %02x\n",
+				emu->cpu.A,
+				emu->cpu.X,
+				emu->cpu.Y,
+				emu->cpu.P,
+				emu->cpu.S,
+				emu->ram[0x500],
+				emu->ram[0x501],
+				emu->ram[0x502],
+				emu->ram[0x503]
+		       	);
+			exit (0);
+		}
 	}
 #endif
 

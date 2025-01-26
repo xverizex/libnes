@@ -10,7 +10,8 @@
 #define STATUS_FLAG_UNUSED0   (1 << 5)
 #define STATUS_FLAG_VF        (1 << 6)
 #define STATUS_FLAG_NF        (1 << 7)
-
+/* NVUBDIZC */
+/* 76543210 */
 #define PPUCTRL_SPRITE_PATTERN			(1 << 3)
 #define PPUCTRL_BACKGROUND_PATTERN		(1 << 4)
 #define PPUCTRL_VBLANK_NMI    			(1 << 7)
