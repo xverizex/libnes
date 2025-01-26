@@ -178,8 +178,24 @@ uint16_t indirect (struct NESEmu *emu);
 uint16_t indirect_x (struct NESEmu *emu);
 uint16_t indirect_y (struct NESEmu *emu);
 
+#include <stdlib.h>
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
+	if (addr == 0xfa22) {
+		// TODO: writing to address in play
+		printf ("excelent\n");
+		printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %04x PC: %04x OPCODE: %02x\n",
+			emu->cpu.A,
+			emu->cpu.X,
+			emu->cpu.Y,
+			emu->cpu.P,
+			emu->cpu.S,
+			emu->cpu.PC,
+			emu->mem[emu->cpu.PC]
+	       	);
+		exit (0);
+	}
+
 	if (addr == OAMADDR) {
 		emu->oam_addr = 0;
 		emu->oam_addr |= *r;
@@ -187,14 +203,14 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 	if (addr == OAMDMA) {
 		emu->oam_addr |= (*r << 8) & 0xff00;
-		//printf ("dma: %04x\n", emu->addr);
+		//printf ("\tdma: %04x\n", emu->oam_addr);
 		return;
 	}
 
-	if (addr >= 0 && addr <= 0x800) {
+	if (addr >= 0 && addr < 0x800) {
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-			printf ("writing to %04x = %02x\n", emu->oam_addr, *r);
-			emu->oam[emu->oam_addr - 0x200] = *r;
+			printf ("writing to %04x %04x = %02x\n", emu->oam_addr, addr, *r);
+			emu->oam[emu->oam_addr++ - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
 		}
@@ -226,7 +242,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			printf ("write to ppu: %04x = %02x\n", emu->ppu_addr, *r);
 			emu->ppu[emu->ppu_addr++ - 0x2000] = *r; //screen on the 0x2000
 		} else {
-			emu->mem[emu->ppu_addr++ - 0x2000] = *r;
+			emu->mem[addr] = *r;
 		}
 	} else {
 		emu->mem[addr] = *r;
@@ -240,8 +256,11 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		*r = 0x80;
 		return;
 	}
-	if (addr >= 0 && addr <= 0x800) {
+	if (addr >= 0 && addr < 0x800) {
 		*r = emu->ram[addr];
+	} else if (addr == 2007) {
+		// TODO: what is return ppu data?
+		*r = emu->ppu[emu->ppu_addr++ - 0x2000];
 	} else {
 		*r = emu->mem[addr];
 	}
@@ -250,7 +269,7 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 static void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 	emu->last_cycles_float = (float) cycles * 0.000601465f;
-	emu->last_cycles_int64 = 16L;
+	//emu->last_cycles_int64 = 16L;
 	emu->last_cycles_int64 = cycles * 601465L;
 }
 
@@ -373,8 +392,19 @@ uint16_t indirect_y (struct NESEmu *emu)
 	return addr + emu->cpu.Y;// + ((emu->cpu.P & STATUS_FLAG_CF) ? 1: 0);
 }
 
+#include <stdlib.h>
 void invalid_opcode (struct NESEmu *emu) 
 {
+	printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %04x PC: %04x OPCODE: %02x\n",
+			emu->cpu.A,
+			emu->cpu.X,
+			emu->cpu.Y,
+			emu->cpu.P,
+			emu->cpu.S,
+			emu->cpu.PC,
+			emu->mem[emu->cpu.PC]
+	       );
+	exit (0);
 	//emu->cpu.PC++;
 }
 
@@ -1708,6 +1738,7 @@ void dec_absolute (struct NESEmu *emu)
 
 void bne_relative (struct NESEmu *emu) 
 {
+	printf ("\tbne relative\n");
 	struct CPUNes *cpu = &emu->cpu;
 
 	int8_t offset = emu->mem[cpu->PC + 1];
@@ -1725,10 +1756,12 @@ void bne_relative (struct NESEmu *emu)
 
 	if (emu->cpu.P & STATUS_FLAG_ZF) {
 		cpu->PC += 2;
+		printf ("\tnew pc: %04x\n", cpu->PC);
 	} else {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
 
 		cpu->PC = new_offset;
+		printf ("\tnew pc: %04x\n", cpu->PC);
 	}
 
 	wait_cycles (emu, 2 + ext_cycles);

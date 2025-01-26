@@ -6,6 +6,7 @@
 #include <string.h>
 #include <GLES3/gl3.h>
 #include <stdlib.h>
+#include <SDL2/SDL.h>
 
 void linux_wait_cycles (struct NESEmu *emu)
 {
@@ -66,15 +67,17 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
     gettimeofday (&tv, NULL);
 
     uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+    ms *= 24000;
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
-            return 1;
+            return 0;
     }
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 2000) {
+//    printf ("difftime: %lu\n", diff_time);
+    if (diff_time >= 33) {
         emu->start_time_nmi = 0;
 	return 1;
     }
@@ -492,8 +495,11 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
 
+#include <SDL2/SDL.h>
 void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 {
+	SDL_Window *win = _other_data;
+
 	struct render_linux_data *r = emu->_render_data;
 	uint16_t idx = 0;
 
@@ -555,6 +561,7 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 #endif
 
 #if 1
+	idx = 0;
 	for (int i = 0; i < 256; i++) {
 
 		uint8_t px = emu->oam[idx + 3];
@@ -588,7 +595,9 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 		idx += 4;
 	}
+
 #endif
+	SDL_GL_SwapWindow (win);
 }
 
 void linux_init_callbacks (struct NESCallbacks *cb)

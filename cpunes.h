@@ -134,6 +134,6 @@ void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, fl
 
 void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk);
 void nes_emu_rescale (struct NESEmu *emu, uint32_t scale);
-void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions);
+void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data);
 
 #endif // CPUNES_H
