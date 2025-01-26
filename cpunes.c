@@ -533,6 +533,17 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	}
 }
 
+static void debug (struct NESEmu *emu)
+{
+	for (int i = 0; i < 256; i++) {
+		if (i > 0 && i % 16 == 0) {
+			printf ("\n");
+		}
+		printf ("%02x ", emu->ram[i]);
+	}
+	printf ("\n");
+}
+
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win)
 {
 
@@ -617,10 +628,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 			}
 		}
 
-		printf ("down pc: %04x\n", emu->cpu.PC);
 		pnes_handler [emu->mem[emu->cpu.PC]] (emu);
-#if 0
-	if (pc == 0xc6fe || pc == 0xc705) {
+#if 1
+	if (pc == 0xcaca) {
+		debug (emu);
 	printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %004x\n",
 			emu->cpu.A,
 			emu->cpu.X,

@@ -181,6 +181,21 @@ uint16_t indirect_y (struct NESEmu *emu);
 #include <stdlib.h>
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
+	if (addr == 0x6120) {
+		// TODO: writing to address in play
+		printf ("excelent\n");
+		printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %04x PC: %04x *r: %02x\n",
+			emu->cpu.A,
+			emu->cpu.X,
+			emu->cpu.Y,
+			emu->cpu.P,
+			emu->cpu.S,
+			emu->cpu.PC,
+			*r
+	       	);
+		exit (0);
+	}
+
 	if (addr == 0xfa22) {
 		// TODO: writing to address in play
 		printf ("excelent\n");
@@ -213,6 +228,18 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->oam[emu->oam_addr++ - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
+			if (addr == 0x0 || addr == 1 || addr == 2 || addr == 3 || addr == 4) {
+				printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %04x PC: %04x addr: %04x *r: %02x\n",
+					emu->cpu.A,
+					emu->cpu.X,
+					emu->cpu.Y,
+					emu->cpu.P,
+					emu->cpu.S,
+					emu->cpu.PC,
+					addr,
+					*r
+	       			);
+			}
 		}
 		return;
 	}
@@ -389,7 +416,7 @@ uint16_t indirect_y (struct NESEmu *emu)
 
 	addr = *((uint16_t *) &emu->ram[zeroaddr]);
 
-	return addr + emu->cpu.Y;// + ((emu->cpu.P & STATUS_FLAG_CF) ? 1: 0);
+	return addr + emu->cpu.Y + ((emu->cpu.P & STATUS_FLAG_CF) ? 1: 0);
 }
 
 #include <stdlib.h>
