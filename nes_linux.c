@@ -74,7 +74,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 16) {
+    if (diff_time >= 1000) {
         emu->start_time_nmi = 0;
 	return 1;
     }
@@ -381,10 +381,10 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 	uint16_t addr_palette = 0x3f00;
 	uint8_t p[4][4];
 	for (int i = 0; i < 4; i++) {
-		p[i][0] = emu->mem[addr_palette + 0];
-		p[i][1] = emu->mem[addr_palette + 1];
-		p[i][2] = emu->mem[addr_palette + 2];
-		p[i][3] = emu->mem[addr_palette + 3];
+		p[i][0] = emu->ppu[addr_palette + 0 - 0x2000];
+		p[i][1] = emu->ppu[addr_palette + 1 - 0x2000];
+		p[i][2] = emu->ppu[addr_palette + 2 - 0x2000];
+		p[i][3] = emu->ppu[addr_palette + 3 - 0x2000];
 
 		addr_palette += 4;
 	}
@@ -400,7 +400,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 	uint16_t addr = ((emu->mem[PPUCTRL] & PPUCTRL_BACKGROUND_PATTERN) == 0x0? 0x0: 0x1000);
 
 	uint8_t *ptr = &emu->mem[addr];
-	ptr += id_texture; 
+	ptr += id_texture * 16; 
 
 	memcpy (r->sprite_bits_one, ptr, 16);
 
@@ -508,6 +508,19 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 	for (int i = 0; i < 960; i++) {
 		uint8_t id_texture = emu->ppu[i];
 
+		if ((emu->mem[PPUMASK] & MASK_IS_BACKGROUND_SHOW_LEFTMOST) && id_texture == 0) {
+		} else if (id_texture == 0) {
+			ppx += 8;
+			x++;
+			if ((i > 0) && ((i % 32) == 0)) {
+				x = 0;
+				y++;
+				ppx = 0;
+				ppy += 8;
+			}
+			continue;
+		}
+
 		math_translate (r->transform, ppx, ppy, 0.f);
 
 		build_background (emu, r, id_texture, x, y);
@@ -545,7 +558,9 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 		uint8_t py = emu->oam[idx + 0];
 		uint8_t flags = emu->oam[idx + 2];
 		uint8_t id_texture = emu->oam[idx + 1];
-		if (id_texture == 0) {
+		if ((emu->mem[PPUMASK] & MASK_IS_BACKGROUND_SHOW_LEFTMOST) && id_texture == 0) {
+						
+		} else if (id_texture == 0){
 			idx += 4;
 			continue;
 		}

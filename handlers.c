@@ -193,6 +193,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 	if (addr >= 0 && addr <= 0x800) {
 		if (((emu->addr >= 0x200) && (emu->addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
+			printf ("writing to %04x = %02x\n", emu->addr, *r);
 			emu->oam[emu->addr++ - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
@@ -200,8 +201,11 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		return;
 	}
 
-	if (addr == PPUMASK) {
-		printf ("ppumask\n");
+	if (addr == PPUCTRL) {
+		printf ("ppuctrl: %02x\n", *r);
+		emu->mem[addr] = *r;
+	} else if (addr == PPUMASK) {
+		printf ("ppumask: %02x\n", *r);
 		emu->mem[addr] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
 			emu->is_return = 1;
@@ -619,7 +623,6 @@ void jsr_absolute (struct NESEmu *emu)
 	uint16_t pc = cpu->PC + 3;
 
 	pc--;
-	printf ("stacked %04x\n", pc);
 
 	emu->stack[--cpu->S] = (uint8_t) ((pc >> 8) & 0xff);
 	emu->stack[--cpu->S] = (uint8_t) (pc & 0xff);
@@ -762,7 +765,13 @@ void rol_zeropage_x (struct NESEmu *emu)
 	ROL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[zeropage_x (emu)], 6, 0, 2);
 }
 
-void sec_implied (struct NESEmu *) {}
+void sec_implied (struct NESEmu *emu) 
+{
+	emu->cpu.PC |= (STATUS_FLAG_CF);
+	emu->cpu.PC++;
+
+	wait_cycles (emu, 2);
+}
 
 void and_absolute_y (struct NESEmu *emu) 
 {
@@ -926,7 +935,13 @@ void lsr_zeropage_x (struct NESEmu *emu)
 	LSR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[zeropage_x (emu)], 6, 0, 2);
 }
 
-void cli_implied (struct NESEmu *) {}
+void cli_implied (struct NESEmu *emu) 
+{
+	emu->cpu.P &= ~(STATUS_FLAG_IF);
+	emu->cpu.PC++;
+
+	wait_cycles (emu, 2);
+}
 
 void eor_absolute_y (struct NESEmu *emu) 
 {
