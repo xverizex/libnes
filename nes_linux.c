@@ -44,7 +44,7 @@ int linux_calc_time_uint64 (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ns = (tv.tv_sec * 1000) + tv.tv_usec / 1000;
+    uint64_t ns = (tv.tv_sec * 1000000) + tv.tv_usec;
 
     uint64_t ls = emu->last_cycles_int64;
     uint64_t ret = ls - ns;
@@ -69,7 +69,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
-            return 0;
+            return 1;
     }
 
     uint64_t diff_time = ms - emu->start_time_nmi;
@@ -272,8 +272,8 @@ static void init_textures (uint32_t *tex, uint32_t tex_width, uint32_t tex_heigh
 
 static void init_vao (struct NESEmu *emu, struct render_linux_data *r)
 {
-	float w = 8;
-	float h = 8;
+	float w = 8.f;
+	float h = 8.f;
 
 #if 1
     float vertices[] = {
@@ -379,6 +379,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 #endif
 
 	uint16_t addr_palette = 0x3f00;
+	//uint16_t addr_palette = 0x23c0;
 	uint8_t p[4][4];
 	for (int i = 0; i < 4; i++) {
 		p[i][0] = emu->ppu[addr_palette + 0 - 0x2000];
@@ -501,17 +502,44 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 	glBindVertexArray (r->vao);
 
 #if 1
-	uint32_t ppx = 0;
-	uint32_t ppy = 0;
+	int32_t ppx = 0;
+	int32_t ppy = 0;
 	uint8_t x, y;
 	x = y = 0;
+	uint16_t addr = 0x000;
+	int ind = 0;
+	int ddt = 0;
+
+	int m = 0;
+
+try:
+	x = y = ppx = ppy = 0;
 	for (int i = 0; i < 960; i++) {
-		uint8_t id_texture = emu->ppu[i];
+
+		if ((i > 0) && ((i % 32) == 0)) {
+			x = 0;
+			y++;
+			ppx = 0;
+			ppy += 8;
+		}
+
+		uint8_t id_texture = emu->ppu[i + addr];
 
 		if ((emu->mem[PPUMASK] & MASK_IS_BACKGROUND_SHOW_LEFTMOST) && id_texture == 0) {
+			ppx += 8;
+			x++;
+
+			if ((i > 0) && ((i % 32) == 0)) {
+				x = 0;
+				y++;
+				ppx = m == 0? 0: 256 - 8;
+				ppy += 8;
+			}
+			continue;
 		} else if (id_texture == 0) {
 			ppx += 8;
 			x++;
+
 			if ((i > 0) && ((i % 32) == 0)) {
 				x = 0;
 				y++;
@@ -539,19 +567,14 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 		glDrawArrays (GL_TRIANGLES, 0, 6);
 
-
 		ppx += 8;
 		x++;
-		if ((i > 0) && ((i % 32) == 0)) {
-			x = 0;
-			y++;
-			ppx = 0;
-			ppy += 8;
-		}
+
 	}
+
 #endif
 
-#if 1
+#if 0
 	for (int i = 0; i < 256; i++) {
 
 		uint8_t px = emu->oam[idx + 3];

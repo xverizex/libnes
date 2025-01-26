@@ -120,8 +120,10 @@ struct NESEmu {
 
     struct NESCallbacks *cb;
 
-    uint8_t stack[0x301];
-    uint8_t ram[0x801];
+    uint32_t scale;
+
+    uint8_t stack[0x300];
+    uint8_t ram[0x800];
     uint8_t oam[0x100];
     uint8_t ppu[0x4000];
     uint8_t mem[0x10000];
@@ -130,6 +132,7 @@ struct NESEmu {
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);
 
 void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk);
+void nes_emu_rescale (struct NESEmu *emu, uint32_t scale);
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions);
 
 #endif // CPUNES_H

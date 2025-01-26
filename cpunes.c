@@ -210,6 +210,13 @@ static void parse_header (struct NESEmu *emu)
 	emu->sz_prg_ram = d[8] * 8192;
 }
 
+void nes_emu_rescale (struct NESEmu *emu, uint32_t _scale)
+{
+	emu->scale = _scale;
+	emu->width = 256;
+	emu->height = 240;
+}
+
 void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk)
 {
 	size_t sz_nes_emu = sizeof (struct NESEmu);
@@ -240,6 +247,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	emu->cpu.S = 0x1ff;
 	emu->cpu.P |= STATUS_FLAG_IF;
 
+	emu->scale = 1;
 	emu->width = 256;
 	emu->height = 240;
 
@@ -552,29 +560,13 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 	}
 #endif
 	for (int i = 0; i < count_instructions; i++) {
-		printf ("%04x:\n", emu->cpu.PC);
+		//printf ("%04x:\n", emu->cpu.PC);
 
-	if (emu->is_nmi_works) {
-	} else if (emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
-		if (emu->cb->calc_nmi) {
-#if 1
-			emu->is_nmi_works = emu->cb->calc_nmi (emu, NULL);
-			if (emu->is_nmi_works) {
-				emu->stack[--emu->cpu.S] = (emu->cpu.PC >> 8) & 0xff;
-				emu->stack[--emu->cpu.S] = (emu->cpu.PC & 0xff);
-				emu->stack[--emu->cpu.S] = emu->cpu.P;
-				emu->latest_exec = emu->cpu.PC;
-				emu->cpu.PC = emu->nmi_handler;
-				printf ("nmi interrupt: %04x\n", emu->cpu.PC);
-			}
-#endif
-		}
-	}
 
 	if (emu->cb->calc_time_uint64) {
-#if 0
+#if 1
 		if (!emu->cb->calc_time_uint64 (emu, NULL))
-			return;
+			continue;
 #endif
 		emu->last_cycles_int64 = 0;
 	}
@@ -609,6 +601,22 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions)
 #endif
 
 	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+
+	if (emu->is_nmi_works) {
+	} else if ((emu->cpu.P & STATUS_FLAG_IF) && emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+		if (emu->cb->calc_nmi) {
+			emu->is_nmi_works = emu->cb->calc_nmi (emu, NULL);
+			if (emu->is_nmi_works) {
+				emu->stack[--emu->cpu.S] = (emu->cpu.PC >> 8) & 0xff;
+				emu->stack[--emu->cpu.S] = (emu->cpu.PC & 0xff);
+				emu->stack[--emu->cpu.S] = emu->cpu.P;
+				emu->latest_exec = emu->cpu.PC;
+				emu->cpu.PC = emu->nmi_handler;
+				emu->is_nmi_works = 1;
+	//			printf ("nmi interrupt: %04x\n", emu->cpu.PC);
+			}
+		}
+	}
 
 #if 0
 	if (pc == 0xc6fe || pc == 0xc705) {

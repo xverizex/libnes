@@ -223,6 +223,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 	} else if (addr == PPUDATA) {
 		if (emu->addr >= 0x2000 && emu->addr < 0x4000) {
+			printf ("write to ppu: %04x = %02x\n", emu->addr, *r);
 			emu->ppu[emu->addr++ - 0x2000] = *r; //screen on the 0x2000
 		} else {
 			emu->mem[emu->addr++] = *r;
@@ -376,6 +377,7 @@ void invalid_opcode (struct NESEmu *emu)
 	//emu->cpu.PC++;
 }
 
+#include <stdlib.h>
 void brk_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
@@ -392,6 +394,7 @@ void brk_implied (struct NESEmu *emu)
 
 	wait_cycles (emu, 7);
 	printf ("brk\n");
+	exit (0);
 }
 
 void ora_indirect_x (struct NESEmu *emu) 
@@ -640,7 +643,7 @@ void jsr_absolute (struct NESEmu *emu)
 	new_pc = emu->mem[cpu->PC + 1];
 	new_pc |= (( emu->mem[cpu->PC + 2] << 8) & 0xff00);
 	cpu->PC = new_pc;
-	printf ("called: %04x\n", new_pc);
+	//printf ("called: %04x\n", new_pc);
 #endif
 
 	wait_cycles (emu, 6);
@@ -767,7 +770,7 @@ void rol_zeropage_x (struct NESEmu *emu)
 
 void sec_implied (struct NESEmu *emu) 
 {
-	emu->cpu.PC |= (STATUS_FLAG_CF);
+	emu->cpu.P |= (STATUS_FLAG_CF);
 	emu->cpu.PC++;
 
 	wait_cycles (emu, 2);
@@ -966,7 +969,7 @@ void rts_implied (struct NESEmu *emu)
 	cpu->PC |= ((emu->stack[cpu->S++] << 8) & 0xff00);
 
 	cpu->PC++;
-	printf ("rts %04x\n", cpu->PC);
+	//printf ("rts %04x\n", cpu->PC);
 
 	wait_cycles (emu, 6);
 }
