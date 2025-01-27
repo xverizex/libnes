@@ -229,6 +229,11 @@ static void debug_info_regs (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
+	if (addr == 0xc95f) {
+		emu->is_debug_exit = 1;
+		return;
+	}
+
 	if (addr == OAMADDR) {
 		emu->oam_addr = 0;
 		emu->oam_addr |= *r;
@@ -236,13 +241,11 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 	if (addr == OAMDMA) {
 		emu->oam_addr |= (*r << 8) & 0xff00;
-		//printf ("\tdma: %04x\n", emu->oam_addr);
 		return;
 	}
 
 	if (addr >= 0 && addr < 0x800) {
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-			printf ("writing to %04x %04x = %02x\n", emu->oam_addr, addr, *r);
 			emu->oam[emu->oam_addr++ - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
@@ -251,10 +254,8 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 
 	if (addr == PPUCTRL) {
-		printf ("ppuctrl: %02x\n", *r);
 		emu->ctrl[REAL_PPUCTRL] = *r;
 	} else if (addr == PPUMASK) {
-		printf ("ppumask: %02x\n", *r);
 		emu->ctrl[REAL_PPUMASK] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
 			emu->is_return = 1;
@@ -271,14 +272,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->addr_off = 0;
 		}
 	} else if (addr == PPUDATA) {
-		if (emu->ppu_addr >= 0x2000 && emu->ppu_addr < 0x4000) {
-			printf ("write to ppu: %04x = %02x\n", emu->ppu_addr, *r);
-			emu->ppu[emu->ppu_addr++ - 0x2000] = *r; //screen on the 0x2000
-		} else {
-			printf ("debug addr exit on the line: %d: %04x\n", addr, __LINE__);
-			emu->mem[addr] = *r;
-			exit (0);
-		}
+			emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
 	} else if (addr >= PPUCTRL && addr <= PPUDATA) {
 		emu->ctrl[addr - 0x2000] = *r;
 	} else if (addr >= 0x4000 && addr < 0x6000) {
@@ -294,9 +288,9 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 	if (addr >= 0 && addr < 0x800) {
 		*r = emu->ram[addr];
-	} else if (addr == 2007) {
+	} else if (addr == 0x2007) {
 		// TODO: what is return ppu data?
-		*r = emu->ppu[emu->ppu_addr++ - 0x2000];
+		*r = emu->ppu[emu->ppu_addr++];
 	} else {
 		*r = emu->mem[addr - 0x8000];
 	}
@@ -708,7 +702,7 @@ void jsr_absolute (struct NESEmu *emu)
 #else
 	uint16_t new_pc = 0;
 	new_pc = emu->mem[(cpu->PC + 1) - 0x8000];
-	new_pc |= (( emu->mem[(cpu->PC + 2) - 0x8000] << 8) & 0xff00);
+	new_pc |= ((emu->mem[(cpu->PC + 2) - 0x8000] << 8) & 0xff00);
 	cpu->PC = new_pc;
 	//printf ("called: %04x\n", new_pc);
 #endif
@@ -1758,7 +1752,6 @@ void dec_absolute (struct NESEmu *emu)
 
 void bne_relative (struct NESEmu *emu) 
 {
-	printf ("\tbne relative\n");
 	struct CPUNes *cpu = &emu->cpu;
 
 	int8_t offset = emu->mem[(cpu->PC + 1) - 0x8000];
@@ -1776,12 +1769,10 @@ void bne_relative (struct NESEmu *emu)
 
 	if (emu->cpu.P & STATUS_FLAG_ZF) {
 		cpu->PC += 2;
-		printf ("\tnew pc: %04x\n", cpu->PC);
 	} else {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
 
 		cpu->PC = new_offset;
-		printf ("\tnew pc: %04x\n", cpu->PC);
 	}
 
 	wait_cycles (emu, 2 + ext_cycles);

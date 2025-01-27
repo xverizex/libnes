@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <debug.h>
 
 static uint32_t is_init_global_func;
 
@@ -558,31 +559,12 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	}
 }
 
-static void debug (struct NESEmu *emu)
-{
-	uint16_t addr = 0;
-	printf ("----: ");
-
-	for (int i = 0; i < 16; i++) {
-		printf ("%02x ", i);
-	}
-	printf ("\n");
-	for (int i = 0; i < 0x600; i++) {
-		if (i == 0) {
-			printf ("%04x: ", addr);
-		}
-		if (i > 0 && i % 16 == 0) {
-			addr += 16;
-			printf ("\n%04x: ", addr);
-		}
-		printf ("%02x ", emu->ram[i]);
-	}
-	printf ("\n");
-}
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win)
 {
 
+			debug (emu->mem, 0xc900 - 0x8000, 0xc9ff - 0x8000, 0xc900);
+			exit  (0);
 #if 0
 	if (emu->is_debug_list) {
 		uint16_t tmp_pc = emu->cpu.PC;
@@ -610,10 +592,13 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 		printf ("%04x:\n", emu->cpu.PC);
 
 
-		if (emu->cb->calc_time_uint64) {
+		if (emu->is_nmi_works) {
+		} else if (emu->cb->calc_time_uint64) {
 #if 1
-			if (!emu->cb->calc_time_uint64 (emu, NULL))
+			if (!emu->cb->calc_time_uint64 (emu, NULL)) {
+				if (i > 0) i--;
 				continue;
+			}
 #endif
 			emu->last_cycles_int64 = 0;
 		}
@@ -658,7 +643,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 					emu->stack[--emu->cpu.S] = emu->cpu.P;
 					emu->latest_exec = emu->cpu.PC;
 					emu->cpu.PC = emu->nmi_handler;
-					printf ("nmi_handler: %04x\n", emu->nmi_handler);
+					//printf ("nmi_handler: %04x\n", emu->nmi_handler);
 					emu->is_nmi_works = 1;
 					emu->tmp_last_cycles_int64 = emu->last_cycles_int64;
 				//	printf ("nmi interrupt: %04x\n", emu->cpu.PC);
@@ -667,10 +652,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 		}
 
 		uint16_t real_pos = emu->cpu.PC - 0x8000;
-		printf ("PC: %04x, real_pos: %04x\n", emu->cpu.PC, real_pos);
+		//printf ("PC: %04x, real_pos: %04x\n", emu->cpu.PC, real_pos);
 		pnes_handler [emu->mem[real_pos]] (emu);
 		if (emu->is_debug_exit) {
-			printf ("\texit debug: A: %02x X: %02x Y: %02x P: %02x S: %004x PC: %04x\n",
+			printf ("\texit debug: A: %02x X: %02x Y: %02x P: %02x S: %004x PC: %04x;\n",
 				emu->cpu.A,
 				emu->cpu.X,
 				emu->cpu.Y,
@@ -678,30 +663,9 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 				emu->cpu.S,
 				emu->cpu.PC
 	       		);
+			debug (emu->mem, 0xc900 - 0x8000, 0xc9ff - 0x8000, 0xc900);
 			return;
 		}
-#if 1
-	static int count = 6;
-	if (pc == 0xca5e) {
-		count++;
-		if (count == 5) {
-			debug (emu);
-			printf ("\tA: %02x X: %02x Y: %02x P: %02x S: %004x mem: %02x %02x %02x %02x\n",
-				emu->cpu.A,
-				emu->cpu.X,
-				emu->cpu.Y,
-				emu->cpu.P,
-				emu->cpu.S,
-				emu->ram[0x500],
-				emu->ram[0x501],
-				emu->ram[0x502],
-				emu->ram[0x503]
-		       	);
-			exit (0);
-		}
-	}
-#endif
-
 #if 0
 	switch (pc) {
 		case 0xc0a5:
@@ -713,9 +677,8 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 	}
 #endif
 
-	printf ("%04x addr\n", emu->cpu.PC);
 		if (emu->latest_exec == emu->cpu.PC) {
-			printf ("render nmi\n");
+			//printf ("render nmi\n");
 			emu->cb->render (emu, win);
 			emu->is_nmi_works = 0;
 			emu->latest_exec = 0;

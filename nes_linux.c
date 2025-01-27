@@ -7,6 +7,7 @@
 #include <GLES3/gl3.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
+#include <debug.h>
 
 void linux_wait_cycles (struct NESEmu *emu)
 {
@@ -65,8 +66,8 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec);
-    static uint64_t full_cycle = (24000 * 558730074L);
+    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+    static uint64_t full_cycle = (558730L);
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
@@ -75,8 +76,8 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-//    printf ("difftime: %lu\n", diff_time);
-    if (diff_time >= full_cycle) {
+    //printf ("difftime: %lu %lu\n", diff_time, full_cycle);
+    if (diff_time >= 2) {
         emu->start_time_nmi = 0;
 	return 1;
     }
@@ -353,25 +354,13 @@ void linux_opengl_init (struct NESEmu *emu, void *_other_data)
 
 uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
-void debug (uint8_t *mem)
-{
-	for (int i = 0; i < 512; i++) {
-		if (i > 0 && i % 16 == 0) {
-			printf ("\n");
-		}
-		printf ("%02x ", *mem++);
-	}
-	printf ("\n");
-	printf ("\n");
-}
-
 static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
 {
 #if 0
 	uint16_t addr_palette = 0x23c0;
 	uint8_t p[16];
 	for (int i = 0; i < 16; i++) {
-		p[i] = emu->ppu[addr_palette - 0x2000];
+		p[i] = emu->ppu[addr_palette];
 		addr_palette++;
 #if 0
 		printf ("palette:\n");
@@ -384,10 +373,10 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 	//uint16_t addr_palette = 0x23c0;
 	uint8_t p[4][4];
 	for (int i = 0; i < 4; i++) {
-		p[i][0] = emu->ppu[addr_palette + 0 - 0x2000];
-		p[i][1] = emu->ppu[addr_palette + 1 - 0x2000];
-		p[i][2] = emu->ppu[addr_palette + 2 - 0x2000];
-		p[i][3] = emu->ppu[addr_palette + 3 - 0x2000];
+		p[i][0] = emu->ppu[addr_palette + 0];
+		p[i][1] = emu->ppu[addr_palette + 1];
+		p[i][2] = emu->ppu[addr_palette + 2];
+		p[i][3] = emu->ppu[addr_palette + 3];
 
 		addr_palette += 4;
 	}
@@ -443,10 +432,10 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	uint16_t addr_palette = 0x3f00;
 	uint8_t p[4][4];
 	for (int i = 0; i < 4; i++) {
-		p[i][0] = emu->ppu[addr_palette + 0 - 0x2000];
-		p[i][1] = emu->ppu[addr_palette + 1 - 0x2000];
-		p[i][2] = emu->ppu[addr_palette + 2 - 0x2000];
-		p[i][3] = emu->ppu[addr_palette + 3 - 0x2000];
+		p[i][0] = emu->ppu[addr_palette + 0];
+		p[i][1] = emu->ppu[addr_palette + 1];
+		p[i][2] = emu->ppu[addr_palette + 2];
+		p[i][3] = emu->ppu[addr_palette + 3];
 
 		addr_palette += 4;
 #if 0
@@ -458,7 +447,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 #endif
 	}
 
-	uint16_t addr = ((emu->mem[PPUCTRL - 0x8000] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
+	uint16_t addr = ((emu->ctrl[REAL_PPUCTRL] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
 
 	uint8_t *ptr = &emu->chr[addr];
 	ptr += id_texture * 16; 
@@ -511,7 +500,7 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 	int32_t ppy = 0;
 	uint8_t x, y;
 	x = y = 0;
-	uint16_t addr = 0x0;
+	uint16_t addr = 0x2000;
 	int ind = 0;
 	int ddt = 0;
 	int m = 0;
@@ -553,7 +542,7 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 #endif
 
-#if 0
+#if 1
 	idx = 0;
 	for (int i = 0; i < 256; i++) {
 
@@ -561,12 +550,6 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 		uint8_t py = emu->oam[idx + 0];
 		uint8_t flags = emu->oam[idx + 2];
 		uint8_t id_texture = emu->oam[idx + 1];
-		if ((emu->mem[PPUMASK] & MASK_IS_BACKGROUND_SHOW_LEFTMOST) && id_texture == 0) {
-						
-		} else if (id_texture == 0){
-			idx += 4;
-			continue;
-		}
 
 		math_translate (r->transform, px, py, 0.f);
 
