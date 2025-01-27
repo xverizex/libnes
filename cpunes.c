@@ -563,8 +563,10 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win)
 {
 
+#if 0
 			debug (emu->mem, 0xc900 - 0x8000, 0xc9ff - 0x8000, 0xc900);
 			exit  (0);
+#endif
 #if 0
 	if (emu->is_debug_list) {
 		uint16_t tmp_pc = emu->cpu.PC;
