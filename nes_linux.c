@@ -51,8 +51,7 @@ int linux_calc_time_uint64 (struct NESEmu *emu, void *_other_data)
     uint64_t ret = ls - ns;
 
     if ((ret) > ls) {
-	    ls = 0;
-	    emu->last_cycles_int64 = ls;
+	    emu->last_cycles_int64 = 0;
 	    return 1;
     } else {
 	    emu->last_cycles_int64 = ret;
@@ -66,8 +65,8 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
-    ms *= 24000;
+    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec);
+    static uint64_t full_cycle = (24000 * 558730074L);
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
@@ -77,7 +76,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
     uint64_t diff_time = ms - emu->start_time_nmi;
 
 //    printf ("difftime: %lu\n", diff_time);
-    if (diff_time >= 33) {
+    if (diff_time >= full_cycle) {
         emu->start_time_nmi = 0;
 	return 1;
     }
@@ -401,9 +400,9 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 #endif
 
 
-	uint16_t addr = ((emu->mem[PPUCTRL] & PPUCTRL_BACKGROUND_PATTERN) == 0x0? 0x0: 0x1000);
+	uint16_t addr = ((emu->ctrl[REAL_PPUCTRL] & PPUCTRL_BACKGROUND_PATTERN) == 0x0? 0x0: 0x1000);
 
-	uint8_t *ptr = &emu->mem[addr];
+	uint8_t *ptr = &emu->chr[addr];
 	ptr += id_texture * 16; 
 
 	memcpy (r->sprite_bits_one, ptr, 16);
@@ -459,9 +458,9 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 #endif
 	}
 
-	uint16_t addr = ((emu->mem[PPUCTRL] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
+	uint16_t addr = ((emu->mem[PPUCTRL - 0x8000] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
 
-	uint8_t *ptr = &emu->mem[addr];
+	uint8_t *ptr = &emu->chr[addr];
 	ptr += id_texture * 16; 
 
 	memcpy (r->sprite_bits_one, ptr, 16);
@@ -529,12 +528,6 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 		uint8_t id_texture = emu->ppu[i + addr];
 
-#if 0
-		if ((emu->mem[PPUMASK] & MASK_IS_BACKGROUND_SHOW_LEFTMOST) && id_texture == 0) {
-		} else if (id_texture == 0) {
-		}
-#endif
-
 		math_translate (r->transform, ppx, ppy, 0.f);
 
 		build_background (emu, r, id_texture, x, y);
@@ -560,7 +553,7 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 #endif
 
-#if 1
+#if 0
 	idx = 0;
 	for (int i = 0; i < 256; i++) {
 

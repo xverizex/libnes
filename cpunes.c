@@ -217,23 +217,48 @@ void nes_emu_rescale (struct NESEmu *emu, uint32_t _scale)
 	emu->height = 240;
 }
 
-void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk)
+void memset_bytes (void *addr0, uint8_t byte, uint64_t sz)
 {
-	size_t sz_nes_emu = sizeof (struct NESEmu);
-
-	uint32_t dword_size = sz_nes_emu >> 2; /* div by 4 */
-	uint32_t *ptr_dword_emu = (uint32_t *) emu;
+	uint32_t dword_size = sz >> 2; /* div by 4 */
+	uint32_t *ptr_dword_emu = (uint32_t *) addr0;
 	for (uint32_t i = 0; i < dword_size; i++) {
-		*ptr_dword_emu = 0;
+		*ptr_dword_emu = byte;
 		ptr_dword_emu++;
 	}
-	uint32_t last_sz = sz_nes_emu & 0x3;
+	uint32_t last_sz = sz & 0x3;
 	if (last_sz) {
 		uint8_t *last_byte_emu = (uint8_t *) ptr_dword_emu;
 		for (uint32_t i = 0; i < last_sz; i++) {
 			last_byte_emu[i] = 0;
 		}
 	}
+}
+
+void copy_bytes (void *addr0, void *addr1, uint64_t sz)
+{
+	uint32_t dword_size = sz >> 2; /* div by 4 */
+	uint32_t *ptr_dword_addr0 = (uint32_t *) addr0;
+	uint32_t *ptr_dword_addr1 = (uint32_t *) addr1;
+	for (uint32_t i = 0; i < dword_size; i++) {
+		*ptr_dword_addr0 = *ptr_dword_addr1;
+		ptr_dword_addr0++;
+		ptr_dword_addr1++;
+	}
+	uint32_t last_sz = sz & 0x3;
+	if (last_sz) {
+		uint8_t *last_byte_addr0 = (uint8_t *) ptr_dword_addr0;
+		uint8_t *last_byte_addr1 = (uint8_t *) ptr_dword_addr1;
+		for (uint32_t i = 0; i < last_sz; i++) {
+			last_byte_addr0[i] = last_byte_addr1[i];
+		}
+	}
+}
+
+void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk)
+{
+	size_t sz_nes_emu = sizeof (struct NESEmu);
+
+	memset_bytes (emu, 0, sz_nes_emu);
 
 	emu->cb = clbk;
 
@@ -257,8 +282,8 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	emu->reset_handler = *(uint16_t *) &buffer[pos_handler + 2];
 	emu->irq_handler = *(uint16_t *) &buffer[pos_handler + 4];
 
-	memcpy (&emu->mem[0x8000], &buffer[16], emu->sz_prg_rom);
-	memcpy (&emu->mem[0x0000], &buffer[emu->sz_prg_rom + 0x10], 0x2000);
+	copy_bytes (&emu->mem[0x0], &buffer[0x10], emu->sz_prg_rom);
+	copy_bytes (&emu->chr[0x0], &buffer[emu->sz_prg_rom + 0x10], 0x2000);
 
 	emu->cpu.PC = emu->reset_handler;
 
@@ -624,7 +649,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 
 
 		if (emu->is_nmi_works) {
-		} else if ((emu->cpu.P & STATUS_FLAG_IF) && emu->mem[PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+		} else if ((emu->cpu.P & STATUS_FLAG_IF) && emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (emu->cb->calc_nmi) {
 				emu->is_nmi_works = emu->cb->calc_nmi (emu, NULL);
 				if (emu->is_nmi_works) {
@@ -633,13 +658,17 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 					emu->stack[--emu->cpu.S] = emu->cpu.P;
 					emu->latest_exec = emu->cpu.PC;
 					emu->cpu.PC = emu->nmi_handler;
+					printf ("nmi_handler: %04x\n", emu->nmi_handler);
 					emu->is_nmi_works = 1;
+					emu->tmp_last_cycles_int64 = emu->last_cycles_int64;
 				//	printf ("nmi interrupt: %04x\n", emu->cpu.PC);
 				}
 			}
 		}
 
-		pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+		uint16_t real_pos = emu->cpu.PC - 0x8000;
+		printf ("PC: %04x, real_pos: %04x\n", emu->cpu.PC, real_pos);
+		pnes_handler [emu->mem[real_pos]] (emu);
 		if (emu->is_debug_exit) {
 			printf ("\texit debug: A: %02x X: %02x Y: %02x P: %02x S: %004x PC: %04x\n",
 				emu->cpu.A,
@@ -649,7 +678,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 				emu->cpu.S,
 				emu->cpu.PC
 	       		);
-			exit (0);
+			return;
 		}
 #if 1
 	static int count = 6;
@@ -684,12 +713,14 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 	}
 #endif
 
+	printf ("%04x addr\n", emu->cpu.PC);
 		if (emu->latest_exec == emu->cpu.PC) {
 			printf ("render nmi\n");
 			emu->cb->render (emu, win);
 			emu->is_nmi_works = 0;
 			emu->latest_exec = 0;
 			emu->start_time_nmi = 0;
+			emu->last_cycles_int64 = emu->tmp_last_cycles_int64;
 			return;
 		}
 	}

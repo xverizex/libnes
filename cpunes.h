@@ -30,6 +30,19 @@ enum {
 };
 
 enum {
+	REAL_PPUCTRL,
+	REAL_PPUMASK,
+	REAL_PPUSTATUS,
+	REAL_OAMADDR,
+	REAL_OAMDATA,
+	REAL_PPUSCROLL,
+	REAL_PPUADDR,
+	REAL_PPUDATA,
+	REAL_OAMDMA,
+	N_REAL_PPUMANAGE
+};
+
+enum {
 	FORMAT_UNKNOWN,
 	FORMAT_INES,
 	FORMAT_NES20,
@@ -94,6 +107,7 @@ struct NESEmu {
 
     float last_cycles_float;
     uint64_t last_cycles_int64;
+    uint64_t tmp_last_cycles_int64;
     float capasity_time;
 
     uint64_t start_time_nmi;
@@ -125,11 +139,13 @@ struct NESEmu {
     uint32_t scale;
     uint32_t is_debug_exit;
 
+    uint8_t ctrl[0x100];
     uint8_t stack[0x300];
     uint8_t ram[0x800];
     uint8_t oam[0x100];
     uint8_t ppu[0x4000];
-    uint8_t mem[0x10000];
+    uint8_t mem[0x8000];
+    uint8_t chr[0x2000];
 };
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);
