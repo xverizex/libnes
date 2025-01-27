@@ -229,11 +229,6 @@ static void debug_info_regs (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
-	if (addr == 0xc95f) {
-		emu->is_debug_exit = 1;
-		return;
-	}
-
 	if (addr == OAMADDR) {
 		emu->oam_addr = 0;
 		emu->oam_addr |= *r;
@@ -244,7 +239,12 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		return;
 	}
 
-	if (addr >= 0 && addr < 0x800) {
+	if (addr >= 0 && addr < RAM_MAX) {
+		if (emu->oam_addr >= RAM_MAX) {
+			printf ("emu->oam_addr is overflow: %04x\n", emu->oam_addr);
+			emu->is_debug_exit = 1;
+			return;
+		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
 			emu->oam[emu->oam_addr++ - 0x200] = *r;
 		} else {
@@ -272,7 +272,12 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->addr_off = 0;
 		}
 	} else if (addr == PPUDATA) {
-			emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
+		if (emu->ppu_addr >= 0x10000) {
+			printf ("%04x ppu addr\n", emu->ppu_addr);
+			emu->is_debug_exit = 1;
+			return;
+		}
+		emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
 	} else if (addr >= PPUCTRL && addr <= PPUDATA) {
 		emu->ctrl[addr - 0x2000] = *r;
 	} else if (addr >= 0x4000 && addr < 0x6000) {
@@ -286,10 +291,14 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		*r = 0x80;
 		return;
 	}
-	if (addr >= 0 && addr < 0x800) {
+	if (addr >= 0 && addr < RAM_MAX) {
 		*r = emu->ram[addr];
 	} else if (addr == 0x2007) {
 		// TODO: what is return ppu data?
+		if (emu->ppu_addr >= 0x10000) {
+			printf ("ppu read exit; %04x\n", emu->ppu_addr);
+			emu->is_debug_exit = 1;
+		}
 		*r = emu->ppu[emu->ppu_addr++];
 	} else {
 		*r = emu->mem[addr - 0x8000];
@@ -419,6 +428,8 @@ uint16_t indirect_y (struct NESEmu *emu)
 
 	addr = *((uint16_t *) &emu->ram[zeroaddr]);
 
+	printf ("indirect y: %04x %02x %02x", addr, emu->cpu.Y, emu->cpu.P & STATUS_FLAG_CF);
+
 	return addr + emu->cpu.Y + ((emu->cpu.P & STATUS_FLAG_CF) ? 1: 0);
 }
 
@@ -434,7 +445,7 @@ void invalid_opcode (struct NESEmu *emu)
 			emu->cpu.PC,
 			emu->mem[emu->cpu.PC - 0x8000]
 	       );
-	exit (0);
+	emu->is_debug_exit = 1;
 	//emu->cpu.PC++;
 }
 
@@ -495,12 +506,22 @@ void asl_accumulator (struct NESEmu *emu)
 
 void ora_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute(emu)], =, 4, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->ram[absolute(emu)], =, 4, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute(emu)], =, 4, 0, 3);
+	}
 }
 
 void asl_absolute (struct NESEmu *emu) 
 {
-	ASL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute (emu)], 6, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		ASL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[absolute (emu)], 6, 0, 3);
+	} else {
+		ASL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute (emu)], 6, 0, 3);
+	}
 }
 
 static uint8_t hex_number_str (uint8_t n)
@@ -667,17 +688,32 @@ void clc_implied (struct NESEmu *emu)
 
 void ora_absolute_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute_y(emu)], =, 4, 1, 3);
+	uint16_t addr = absolute_y (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->ram[absolute_y(emu)], =, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute_y(emu)], =, 4, 1, 3);
+	}
 }
 
 void ora_absolute_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute_x(emu)], =, 4, 1, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->ram[absolute_x(emu)], =, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A | emu->mem[absolute_x(emu)], =, 4, 1, 3);
+	}
 }
 
 void asl_absolute_x (struct NESEmu *emu) 
 {
-	ASL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute_x (emu)], 7, 0, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		ASL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[absolute_x (emu)], 7, 0, 3);
+	} else {
+		ASL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute_x (emu)], 7, 0, 3);
+	}
 }
 
 void jsr_absolute (struct NESEmu *emu) 
@@ -774,17 +810,23 @@ void bit_absolute (struct NESEmu *emu)
 #endif
 
 	BIT_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF, absolute (emu), 4, 0, 3);
+	// TODO BITS absolute ram or mem?
 }
 
 void and_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute (emu)], =, 4, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->ram[absolute (emu)], =, 4, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute (emu)], =, 4, 0, 3);
+	}
 }
 
 void rol_absolute (struct NESEmu *emu) 
 {
 	uint16_t addr = absolute (emu);
-	if (addr < 0x800) {
+	if (addr < RAM_MAX) {
 		ROL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[absolute (emu)], 6, 0, 3);
 	} else {
 		ROL_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute (emu)], 6, 0, 3);
@@ -844,12 +886,22 @@ void sec_implied (struct NESEmu *emu)
 
 void and_absolute_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute_y (emu)], =, 4, 1, 3);
+	uint16_t addr = absolute_y (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->ram[absolute_y (emu)], =, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute_y (emu)], =, 4, 1, 3);
+	}
 }
 
 void and_absolute_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute_x (emu)], =, 4, 1, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->ram[absolute_x (emu)], =, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A & emu->mem[absolute_x (emu)], =, 4, 1, 3);
+	}
 }
 
 void rol_absolute_x (struct NESEmu *emu) 
@@ -958,12 +1010,22 @@ void jmp_absolute (struct NESEmu *emu)
 
 void eor_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[absolute (emu)], =, 4, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->ram[absolute (emu)], =, 4, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[absolute (emu)], =, 4, 0, 3);
+	}
 }
 
 void lsr_absolute (struct NESEmu *emu) 
 {
-	LSR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute (emu)], 6, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		LSR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[absolute (emu)], 6, 0, 3);
+	} else {
+		LSR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute (emu)], 6, 0, 3);
+	}
 }
 
 void bvc_relative (struct NESEmu *emu) 
@@ -1019,17 +1081,32 @@ void cli_implied (struct NESEmu *emu)
 
 void eor_absolute_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[absolute_y (emu)], =, 4, 1, 3);
+	uint16_t addr = absolute_y (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->ram[absolute_y (emu)], =, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[absolute_y (emu)], =, 4, 1, 3);
+	}
 }
 
 void eor_absolute_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[absolute_x (emu)], =, 4, 1, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->ram[absolute_x (emu)], =, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, cpu->A, cpu->A ^ emu->mem[absolute_x (emu)], =, 4, 1, 3);
+	}
 }
 
 void lsr_absolute_x (struct NESEmu *emu) 
 {
-	LSR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute_x (emu)], 7, 0, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		LSR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[absolute_x (emu)], 7, 0, 3);
+	} else {
+		LSR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute_x (emu)], 7, 0, 3);
+	}
 }
 
 void rts_implied (struct NESEmu *emu) 
@@ -1108,7 +1185,7 @@ void jmp_indirect (struct NESEmu *emu)
 void adc_absolute (struct NESEmu *emu) 
 {
 	uint16_t addr = absolute (emu);
-	if (addr < 0x800) {
+	if (addr < RAM_MAX) {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->ram[addr], =, 4, 0, 3);
 	} else {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->mem[addr], =, 4, 0, 3);
@@ -1118,7 +1195,7 @@ void adc_absolute (struct NESEmu *emu)
 void ror_absolute (struct NESEmu *emu) 
 {
 	uint16_t addr = absolute (emu);
-	if (addr < 0x800) {
+	if (addr < RAM_MAX) {
 		ROR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[absolute (emu)], 6, 0, 3);
 	} else {
 		ROR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute (emu)], 6, 0, 3);
@@ -1162,7 +1239,7 @@ void adc_indirect_y (struct NESEmu *emu)
 
 	uint16_t addr = indirect_y (emu);
 
-	if (addr < 0x800) {
+	if (addr < RAM_MAX) {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->ram[addr], =, 5, 1, 2);
 	} else {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->mem[addr], =, 5, 1, 2);
@@ -1174,7 +1251,7 @@ void adc_zeropage_x (struct NESEmu *emu)
 {
 	uint16_t addr = zeropage_x (emu);
 
-	if (addr < 0x800) {
+	if (addr < RAM_MAX) {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->ram[addr], =, 4, 0, 2);
 	} else {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->mem[addr], =, 4, 0, 2);
@@ -1213,7 +1290,7 @@ void adc_absolute_y (struct NESEmu *emu)
 
 	uint16_t addr = absolute_y (emu);
 
-	if (addr < 0x800) {
+	if (addr < RAM_MAX) {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->ram[addr], =, 4, 1, 3);
 	} else {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->mem[addr], =, 4, 1, 3);
@@ -1228,7 +1305,7 @@ void adc_absolute_x (struct NESEmu *emu)
 
 	uint16_t addr = absolute_x (emu);
 
-	if (addr < 0x800) {
+	if (addr < RAM_MAX) {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->ram[addr], =, 4, 1, 3);
 	} else {
 		ADC_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A + emu->mem[addr], =, 4, 1, 3);
@@ -1238,7 +1315,7 @@ void adc_absolute_x (struct NESEmu *emu)
 void ror_absolute_x (struct NESEmu *emu) 
 {
 	uint16_t addr = absolute_x (emu);
-	if (addr < 0x800) {
+	if (addr < RAM_MAX) {
 		ROR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->ram[absolute_x (emu)], 7, 0, 3);
 	} else {
 		ROR_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, emu->mem[absolute_x (emu)], 7, 0, 3);
@@ -1737,17 +1814,32 @@ void dex_implied (struct NESEmu *emu)
 
 void cpy_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->Y, cpu->Y - emu->mem[absolute (emu)], |, 4, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->Y, cpu->Y - emu->ram[absolute (emu)], |, 4, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->Y, cpu->Y - emu->mem[absolute (emu)], |, 4, 0, 3);
+	}
 }
 
 void cmp_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[absolute (emu)], |, 4, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->ram[absolute (emu)], |, 4, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[absolute (emu)], |, 4, 0, 3);
+	}
 }
 
 void dec_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute(emu)], --emu->mem[absolute (emu)], =, 6, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->ram[absolute(emu)], --emu->ram[absolute (emu)], =, 6, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute(emu)], --emu->mem[absolute (emu)], =, 6, 0, 3);
+	}
 }
 
 void bne_relative (struct NESEmu *emu) 
@@ -1785,7 +1877,7 @@ void cmp_indirect_y (struct NESEmu *emu)
 
 void cmp_zeropage_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[zeropage_x (emu)], |, 4, 0, 2);
+	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->ram[zeropage_x (emu)], |, 4, 0, 2);
 }
 
 void dec_zeropage_x (struct NESEmu *emu) 
@@ -1814,17 +1906,32 @@ void cld_implied (struct NESEmu *emu)
 
 void cmp_absolute_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[absolute_y (emu)], |, 4, 1, 3);
+	uint16_t addr = absolute_y (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->ram[absolute_y (emu)], |, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[absolute_y (emu)], |, 4, 1, 3);
+	}
 }
 
 void cmp_absolute_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[absolute_x (emu)], |, 4, 1, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->ram[absolute_x (emu)], |, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->A, cpu->A - emu->mem[absolute_x (emu)], |, 4, 1, 3);
+	}
 }
 
 void dec_absolute_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute_x(emu)], --emu->mem[absolute_x (emu)], =, 7, 0, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->ram[absolute_x(emu)], --emu->ram[absolute_x (emu)], =, 7, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute_x(emu)], --emu->mem[absolute_x (emu)], =, 7, 0, 3);
+	}
 }
 
 void cpx_immediate (struct NESEmu *emu) 
@@ -1875,16 +1982,31 @@ void nop_implied (struct NESEmu *emu)
 
 void cpx_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - emu->mem[absolute (emu)], |, 4, 0, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - emu->ram[absolute (emu)], |, 4, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, cpu->X, cpu->X - emu->mem[absolute (emu)], |, 4, 0, 3);
+	}
 }
 void sbc_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->mem[absolute (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->ram[absolute (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->mem[absolute (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 0, 3);
+	}
 }
 
 void inc_absolute (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute(emu)], ++emu->mem[absolute (emu)], =, 6, 0, 3);
+	uint16_t addr = absolute (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->ram[absolute(emu)], ++emu->ram[absolute (emu)], =, 6, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute(emu)], ++emu->mem[absolute (emu)], =, 6, 0, 3);
+	}
 }
 
 void beq_relative (struct NESEmu *emu) 
@@ -1940,14 +2062,29 @@ void sed_implied (struct NESEmu *emu)
 
 void sbc_absolute_y (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->mem[absolute_y (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 1, 3);
+	uint16_t addr = absolute_y (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->ram[absolute_y (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->mem[absolute_y (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 1, 3);
+	}
 }
 void sbc_absolute_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->mem[absolute_x (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 1, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->ram[absolute_x (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 1, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, cpu->A, cpu->A - emu->mem[absolute_x (emu)] - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0), =, 4, 1, 3);
+	}
 }
 
 void inc_absolute_x (struct NESEmu *emu) 
 {
-	REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute_x(emu)], ++emu->mem[absolute_x (emu)], =, 7, 0, 3);
+	uint16_t addr = absolute_x (emu);
+	if (addr < RAM_MAX) {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->ram[absolute_x(emu)], ++emu->ram[absolute_x (emu)], =, 7, 0, 3);
+	} else {
+		REPETITIVE_ACTS (STATUS_FLAG_NF|STATUS_FLAG_ZF, emu->mem[absolute_x(emu)], ++emu->mem[absolute_x (emu)], =, 7, 0, 3);
+	}
 }

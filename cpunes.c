@@ -559,6 +559,12 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	}
 }
 
+static void check_byte_by_address (struct NESEmu *emu, uint8_t *mem, uint16_t addr, uint8_t byte)
+{
+	if (mem[addr] != byte) {
+		emu->is_debug_exit = 1;
+	}
+}
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win)
 {
@@ -593,6 +599,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 	for (int i = 0; i < count_instructions; i++) {
 		printf ("%04x:\n", emu->cpu.PC);
 
+		check_byte_by_address (emu, emu->mem, 0x4f3, 0xad);
 
 		if (emu->is_nmi_works) {
 		} else if (emu->cb->calc_time_uint64) {
@@ -648,6 +655,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 					//printf ("nmi_handler: %04x\n", emu->nmi_handler);
 					emu->is_nmi_works = 1;
 					emu->tmp_last_cycles_int64 = emu->last_cycles_int64;
+					emu->oam_addr = 0;
 				//	printf ("nmi interrupt: %04x\n", emu->cpu.PC);
 				}
 			}
@@ -656,6 +664,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 		uint16_t real_pos = emu->cpu.PC - 0x8000;
 		//printf ("PC: %04x, real_pos: %04x\n", emu->cpu.PC, real_pos);
 		pnes_handler [emu->mem[real_pos]] (emu);
+
 		if (emu->is_debug_exit) {
 			printf ("\texit debug: A: %02x X: %02x Y: %02x P: %02x S: %004x PC: %04x;\n",
 				emu->cpu.A,
@@ -665,7 +674,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 				emu->cpu.S,
 				emu->cpu.PC
 	       		);
-			debug (emu->mem, 0xc900 - 0x8000, 0xc9ff - 0x8000, 0xc900);
+			debug (emu->mem, 0x8400 - 0x8000, 0x84ff - 0x8000, 0x8400);
 			return;
 		}
 #if 0

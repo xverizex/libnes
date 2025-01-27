@@ -87,6 +87,8 @@ struct NESCallbacks {
 #define MASK_IS_EMPHASIZE_GREEN				(1 << 6)
 #define MASK_IS_EMPHASIZE_BLUE				(1 << 7)
 
+#define RAM_MAX                 0x800
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
@@ -141,9 +143,9 @@ struct NESEmu {
 
     uint8_t ctrl[0x100];
     uint8_t stack[0x300];
-    uint8_t ram[0x800];
-    uint8_t oam[0x100];
-    uint8_t ppu[0x4000];
+    uint8_t ram[RAM_MAX];
+    uint8_t oam[0x800];
+    uint8_t ppu[0x10000];
     uint8_t mem[0x8000];
     uint8_t chr[0x2000];
 };
