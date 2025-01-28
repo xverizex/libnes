@@ -674,7 +674,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 				emu->cpu.S,
 				emu->cpu.PC
 	       		);
-			debug (emu->mem, 0x0, 0x0, 0x00);
+			debug (emu->ram, 0x0, 0x100, 0x0);
 			return;
 		}
 #if 0
