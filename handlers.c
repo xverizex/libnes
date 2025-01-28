@@ -229,6 +229,7 @@ static void debug_info_regs (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
+	//printf ("\twrite to addr: %04x = %02x\n", addr, *r);
 	if (addr == OAMADDR) {
 		emu->oam_addr = 0;
 		emu->oam_addr |= *r;
@@ -246,7 +247,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-			emu->oam[emu->oam_addr++ - 0x200] = *r;
+			emu->oam[addr - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
 		}
@@ -265,7 +266,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	} else if (addr == PPUADDR) {
 		if (emu->addr_off == 0) {
 			emu->ppu_addr = 0;
-			emu->ppu_addr |= (*r << 8) & 0xff00;
+			emu->ppu_addr |= ((*r << 8) & 0xff00);
 			emu->addr_off++;
 		} else {
 			emu->ppu_addr |= *r & 0xff;
@@ -277,6 +278,10 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->is_debug_exit = 1;
 			return;
 		}
+		if (emu->ppu_addr < 0x2000) {
+			printf ("write to ppu %04x = %02x\n", emu->ppu_addr, *r);
+			emu->is_debug_exit = 1;
+		}
 		emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
 	} else if (addr >= PPUCTRL && addr <= PPUDATA) {
 		emu->ctrl[addr - 0x2000] = *r;
@@ -286,8 +291,10 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
+	//printf ("\tread from addr: %04x = %02x\n", addr, *r);
 	if (addr == PPUSTATUS) {
 		emu->addr_off = 0;
+		emu->ppu_addr = 0;
 		*r = 0x80;
 		return;
 	}
@@ -428,9 +435,7 @@ uint16_t indirect_y (struct NESEmu *emu)
 
 	addr = *((uint16_t *) &emu->ram[zeroaddr]);
 
-	printf ("indirect y: %04x %02x %02x", addr, emu->cpu.Y, emu->cpu.P & STATUS_FLAG_CF);
-
-	return addr + emu->cpu.Y + ((emu->cpu.P & STATUS_FLAG_CF) ? 1: 0);
+	return addr + emu->cpu.Y;// + ((emu->cpu.P & STATUS_FLAG_CF) ? 1: 0);
 }
 
 #include <stdlib.h>

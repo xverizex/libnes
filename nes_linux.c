@@ -544,7 +544,7 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 #if 1
 	idx = 0;
-	for (int i = 0; i < 256; i++) {
+	for (int i = 0; i < 64; i++) {
 
 		uint8_t px = emu->oam[idx + 3];
 		uint8_t py = emu->oam[idx + 0];
