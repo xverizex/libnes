@@ -74,11 +74,13 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
             return 0;
     }
 
+    //uint64_t cycles = 2250 * full_cycle;
+
     uint64_t diff_time = ms - emu->start_time_nmi;
 
     //printf ("difftime: %lu %lu\n", diff_time, full_cycle);
     if (diff_time >= 2) {
-        emu->start_time_nmi = 0;
+        emu->start_time_nmi = ms;
 	return 1;
     }
 
@@ -455,7 +457,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	memcpy (r->sprite_bits_one, ptr, 16);
 
 
-	uint8_t *sp = (uint8_t *) r->sprites[id_texture];
+	uint8_t *sp = (uint8_t *) &r->sprites[id_texture][0];
 
 	for (int i = 0; i < 8; i++) {
 		uint8_t s = 0x80;
