@@ -601,6 +601,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 
 		//check_byte_by_address (emu, emu->mem, 0x4f3, 0xad);
 
+#if 1
 		if (emu->is_nmi_works) {
 		} else if (emu->cb->calc_time_uint64) {
 #if 1
@@ -611,6 +612,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *win
 #endif
 			emu->last_cycles_int64 = 0;
 		}
+#endif
 
 		uint16_t pc = emu->cpu.PC;
 

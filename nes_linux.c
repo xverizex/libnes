@@ -63,6 +63,7 @@ int linux_calc_time_uint64 (struct NESEmu *emu, void *_other_data)
 
 uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 {
+#if 1
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
@@ -85,6 +86,7 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
     }
 
     return 0;
+#endif
 }
 
 void linux_print_debug (struct NESEmu *emu, void *_other_data)

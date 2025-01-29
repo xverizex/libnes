@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <cpunes.h>
 #include <stdio.h>
+#include <time.h>
 
 #define CHECK_FLAGS_LD(flags, reg) \
 { \
@@ -320,7 +321,7 @@ static void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 	//emu->last_cycles_float = (float) cycles * 0.000558730074f;
 	//emu->last_cycles_int64 = 16L;
-	emu->last_cycles_int64 = cycles * 558730074000L;
+	emu->last_cycles_int64 = cycles * 558730074L;
 }
 
 static inline void set_ext_cycles (struct CPUNes *cpu, int8_t offset, uint16_t new_offset, uint32_t *ext_cycles)
