@@ -1479,8 +1479,9 @@ void txs_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	cpu->S &= 0xff00;
-	cpu->S |= cpu->X;
+	// TODO: check this code
+//	cpu->S &= 0xff;
+	cpu->S = cpu->X;
 
 	emu->cpu.PC += 1;
 

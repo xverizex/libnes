@@ -60,7 +60,7 @@ struct CPUNes {
     uint8_t X;
     uint8_t Y;
     uint16_t PC;
-    uint16_t S;
+    uint8_t S;
     uint8_t P;
 };
 
@@ -142,10 +142,10 @@ struct NESEmu {
     uint32_t is_debug_exit;
 
     uint8_t ctrl[0x100];
-    uint8_t stack[0x300];
+    uint8_t stack[0x100];
     uint8_t ram[RAM_MAX];
-    uint8_t oam[0x800];
-    uint8_t ppu[0x10000];
+    uint8_t oam[0x100];
+    uint8_t ppu[0x4000];
     uint8_t mem[0x8000];
     uint8_t chr[0x2000];
 };

@@ -270,7 +270,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESC
 	parse_header (emu);
 
 	emu->cpu.PC = 0xfffc;
-	emu->cpu.S = 0x1ff;
+	emu->cpu.S = 0xff;
 	emu->cpu.P |= STATUS_FLAG_IF;
 
 	emu->scale = 1;
