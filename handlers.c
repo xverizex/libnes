@@ -396,32 +396,27 @@ uint8_t zeropage_y (struct NESEmu *emu)
 
 uint16_t absolute_x (struct NESEmu *emu)
 {
-    uint16_t addr = emu->mem[(emu->cpu.PC + 1) - 0x8000];
-    addr |= ((emu->mem[(emu->cpu.PC + 2) - 0x8000] << 8) & 0xff00);
+    uint16_t addr = *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000];
     addr += emu->cpu.X;
     return addr;
 }
 
 uint16_t absolute_y (struct NESEmu *emu)
 {
-    uint16_t addr = emu->mem[(emu->cpu.PC + 1) - 0x8000];
-    addr |= ((emu->mem[(emu->cpu.PC + 2) - 0x8000] << 8) & 0xff00);
+    uint16_t addr = *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000];
     addr += emu->cpu.Y;
     return addr;
 }
 
 uint16_t indirect (struct NESEmu *emu)
 {
-    	uint16_t addr = emu->mem[(emu->cpu.PC + 1) - 0x8000];
-    	addr |= ((emu->mem[(emu->cpu.PC + 2) - 0x8000] << 8) & 0xff00);
+    	uint16_t addr = *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000];
 
 	uint16_t new_addr = 0;
 	if (addr < RAM_MAX) {
-    		new_addr = emu->ram[addr + 0];
-    		new_addr |= ((emu->ram[addr + 1] << 8) & 0xff00);
+    		new_addr = *(uint16_t *) &emu->ram[addr + 0];
 	} else {
-    		new_addr = emu->mem[(addr + 0) - 0x8000];
-    		new_addr |= ((emu->mem[(addr + 1) - 0x8000] << 8) & 0xff00);
+    		new_addr = *(uint16_t *) &emu->mem[(addr + 0) - 0x8000];
 	}
 
 	return new_addr;
@@ -841,10 +836,9 @@ void jsr_absolute (struct NESEmu *emu)
 	printf ("returned pc: %x\n", pc);
 #else
 	uint16_t new_pc = 0;
-	new_pc = emu->mem[(cpu->PC + 1) - 0x8000];
-	new_pc |= ((emu->mem[(cpu->PC + 2) - 0x8000] << 8) & 0xff00);
+	new_pc = *(uint16_t *) &emu->mem[(cpu->PC + 1) - 0x8000];
 	cpu->PC = new_pc;
-	printf ("called: %04x\n", new_pc);
+	//printf ("called: %04x\n", new_pc);
 #endif
 
 	wait_cycles (emu, 6);
@@ -1139,8 +1133,9 @@ void rti_implied (struct NESEmu *emu)
 	cpu->P = emu->stack[cpu->S++];
 
 	uint16_t new_pc = 0;
-	new_pc = emu->stack[cpu->S++];
-	new_pc |= ((emu->stack[cpu->S++] << 8) & 0xff00);
+	new_pc = *(uint16_t *) &emu->stack[cpu->S];
+
+	cpu->S += 2;
 
 	cpu->PC = new_pc;
 
@@ -1228,30 +1223,9 @@ void lsr_accumulator (struct NESEmu *emu)
 
 void jmp_absolute (struct NESEmu *emu)
 {
-#if 0
-	if (emu->is_debug_list) {
-		struct CPUNes *cpu = &emu->cpu;
-		uint16_t new_offset = *(uint16_t *) &emu->mem[cpu->PC + 1];
-
-		uint8_t *pl = show_debug_info (emu, 3, "JMP");
-		uint8_t up = (new_offset >> 8) & 0xff;
-		uint8_t down = (new_offset & 0xff);
-		*pl++ = hex_up_half (up);
-		*pl++ = hex_down_half (up);
-		*pl++ = hex_up_half (down);
-		*pl++ = hex_down_half (down);
-		*pl = 0;
-		cpu->PC += 3;
-		return;
-	}
-#endif
-
 	struct CPUNes *cpu = &emu->cpu;
 
-	cpu->PC++;
-
-	uint16_t new_offset = emu->mem[(cpu->PC + 0) - 0x8000];
-	new_offset |= ((emu->mem[(cpu->PC + 1) - 0x8000] << 8) & 0xff00);
+	uint16_t new_offset = *(uint16_t *) &emu->mem[(cpu->PC + 1) - 0x8000];
 
 	cpu->PC = new_offset;
 
