@@ -416,7 +416,7 @@ uint16_t indirect (struct NESEmu *emu)
     	addr |= ((emu->mem[(emu->cpu.PC + 2) - 0x8000] << 8) & 0xff00);
 
 	uint16_t new_addr = 0;
-	if (addr >= 0x0 && addr < RAM_MAX) {
+	if (addr < RAM_MAX) {
     		new_addr = emu->ram[addr + 0];
     		new_addr |= ((emu->ram[addr + 1] << 8) & 0xff00);
 	} else {
