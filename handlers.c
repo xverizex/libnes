@@ -60,7 +60,7 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		*r = emu->ram[addr];
 	} else if (addr == 0x2007) {
 		// TODO: what is return ppu data?
-		if (emu->ppu_addr >= 0x10000) {
+		if (emu->ppu_addr >= 0x4000) {
 			printf ("ppu read exit; %04x\n", emu->ppu_addr);
 			emu->is_debug_exit = 1;
 		}
@@ -73,9 +73,6 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	//printf ("\twrite to addr: %04x = %02x\n", addr, *r);
-	if (addr == 0x7d && *r == 0x09) {
-		emu->is_debug_exit = 1;
-	}
 
 	if (addr == OAMADDR) {
 		emu->oam_addr = 0;
@@ -843,7 +840,7 @@ void jsr_absolute (struct NESEmu *emu)
 	new_pc = emu->mem[(cpu->PC + 1) - 0x8000];
 	new_pc |= ((emu->mem[(cpu->PC + 2) - 0x8000] << 8) & 0xff00);
 	cpu->PC = new_pc;
-	//printf ("called: %04x\n", new_pc);
+	printf ("called: %04x\n", new_pc);
 #endif
 
 	wait_cycles (emu, 6);
@@ -1429,8 +1426,8 @@ void rts_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	cpu->PC = emu->stack[cpu->S++];
-	cpu->PC |= ((emu->stack[cpu->S++] << 8) & 0xff00);
+	cpu->PC = *(uint16_t *) &emu->stack[cpu->S];
+	cpu->S += 2;
 
 	cpu->PC++;
 	//printf ("rts %04x\n", cpu->PC);
@@ -2502,7 +2499,7 @@ void sbc_indirect_x (struct NESEmu *emu)
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
 			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0),
+			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
 			(6 << 8) | 2);
 }
@@ -2533,7 +2530,7 @@ void sbc_zeropage (struct NESEmu *emu)
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
 			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0),
+			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
 			(3 << 8) | 2);
 }
@@ -2572,7 +2569,7 @@ void sbc_immediate (struct NESEmu *emu)
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
 			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0),
+			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
 			(2 << 8) | 2);
 }
@@ -2607,7 +2604,7 @@ void sbc_absolute (struct NESEmu *emu)
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
 			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0),
+			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
 			(4 << 8) | 3);
 }
@@ -2665,7 +2662,7 @@ void sbc_indirect_y (struct NESEmu *emu)
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
 			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0),
+			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
 			(5 << 8) | 2);
 }
@@ -2679,7 +2676,7 @@ void sbc_zeropage_x (struct NESEmu *emu)
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
 			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0),
+			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
 			(4 << 8) | 2);
 }
@@ -2729,7 +2726,7 @@ void sbc_absolute_y (struct NESEmu *emu)
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
 			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0),
+			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
 			(4 << 8) | 3);
 }
@@ -2742,7 +2739,7 @@ void sbc_absolute_x (struct NESEmu *emu)
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
 			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 1: 0),
+			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
 			(4 << 8) | 3);
 }
