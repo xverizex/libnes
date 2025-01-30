@@ -245,7 +245,8 @@ static void rol_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t 
 	cpu->P &= ~(flags);
 	if (bt & 0x80) {
 		cpu->P |= STATUS_FLAG_CF;
-	} else if (bt == 0x0) {
+	} 
+	if (bt == 0x0) {
 		cpu->P |= STATUS_FLAG_ZF;
 	}
 	if (bt & 0x40) {
@@ -271,7 +272,8 @@ void ror_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_
 	cpu->P &= ~(flags);
 	if (bt & 0x01) {
 		cpu->P |= STATUS_FLAG_CF;
-	} else {
+	} 
+	if (bt == 0x00) {
 		cpu->P |= STATUS_FLAG_ZF;
 	}
 	bt >>= 1;
@@ -2496,8 +2498,9 @@ void sbc_indirect_x (struct NESEmu *emu)
 	uint16_t addr = indirect_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
+	/* TODO: need or CF flag */
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
 			&cpu->A,
 			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
 			eq,
