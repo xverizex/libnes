@@ -1215,7 +1215,7 @@ void adc_zeropage (struct NESEmu *emu)
 	uint16_t addr = zeropage (emu);
 
 	adc_acts (emu, 
-		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF, 
+		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + emu->ram[addr], 
 		eq,
