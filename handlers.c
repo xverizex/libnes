@@ -1515,9 +1515,10 @@ void pla_implied (struct NESEmu *emu)
 	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF);
 	cpu->P &= ~(flags);
 
-	if (cpu->A >= 0x80) {
+	if (cpu->A == 0x80) {
 		cpu->P |= STATUS_FLAG_NF;
-	} else if (cpu->A == 0x0) {
+	} 
+	if (cpu->A == 0x0) {
 		cpu->P |= STATUS_FLAG_ZF;
 	}
 
@@ -1702,17 +1703,6 @@ void ror_zeropage_x (struct NESEmu *emu)
 
 void sei_implied (struct NESEmu *emu) 
 {
-#if 0
-	if (emu->is_debug_list) {
-		struct CPUNes *cpu = &emu->cpu;
-
-		uint8_t *pl = show_debug_info (emu, 1, "SEI");
-		*pl = 0;
-		cpu->PC++;
-		return;
-	}
-#endif
-
 	emu->cpu.P &= (STATUS_FLAG_IF);
 	emu->cpu.PC++;
 
