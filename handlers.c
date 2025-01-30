@@ -1822,12 +1822,19 @@ void stx_zeropage (struct NESEmu *emu)
 void dey_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF,
-			&cpu->Y,
-			(uint8_t) (cpu->Y - (uint8_t) 1),
-			eq,
-			(2 << 8) | 1);
+
+	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
+
+	cpu->Y--;
+
+	if (cpu->Y & 0x80)
+		cpu->P |= STATUS_FLAG_NF;
+	if (cpu->Y == 0)
+		cpu->P |= STATUS_FLAG_ZF;
+
+	wait_cycles (emu, 2);
+
+	cpu->PC++;
 }
 
 void txa_implied (struct NESEmu *emu) 
@@ -2327,11 +2334,20 @@ void dec_zeropage (struct NESEmu *emu)
 
 void iny_implied (struct NESEmu *emu) 
 {
+	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
+
 	emu->cpu.Y++;
 
-	emu->cpu.PC++;
+	if (cpu->Y & 0x80)
+		cpu->P |= STATUS_FLAG_NF;
+	if (cpu->Y == 0)
+		cpu->P |= STATUS_FLAG_ZF;
 
 	wait_cycles (emu, 2);
+
+	emu->cpu.PC++;
 }
 
 void cmp_immediate (struct NESEmu *emu) 
@@ -2350,12 +2366,19 @@ void cmp_immediate (struct NESEmu *emu)
 void dex_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF,
-			&cpu->X,
-			cpu->X - (uint8_t) 1,
-			eq,
-			(2 << 8) | 1);
+
+	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
+
+	cpu->X--;
+
+	if (cpu->X & 0x80)
+		cpu->P |= STATUS_FLAG_NF;
+	if (cpu->X == 0)
+		cpu->P |= STATUS_FLAG_ZF;
+
+	wait_cycles (emu, 2);
+
+	cpu->PC++;
 }
 
 void cpy_absolute (struct NESEmu *emu) 
@@ -2632,11 +2655,20 @@ void inc_zeropage (struct NESEmu *emu)
 void inx_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
+
+	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
+
 	emu->cpu.X++;
 
-	emu->cpu.PC++;
+	if (cpu->X & 0x80)
+		cpu->P |= STATUS_FLAG_NF;
+
+	if (cpu->X == 0)
+		cpu->P |= STATUS_FLAG_ZF;
 
 	wait_cycles (emu, 2);
+
+	cpu->PC++;
 }
 
 void sbc_immediate (struct NESEmu *emu) 
