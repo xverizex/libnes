@@ -136,8 +136,6 @@ struct NESEmu {
     void *_render_data;
     uint32_t is_return;
 
-    struct NESCallbacks *cb;
-
     uint32_t scale;
     uint32_t is_debug_exit;
 
@@ -145,14 +143,14 @@ struct NESEmu {
     uint8_t stack[0x100];
     uint8_t ram[RAM_MAX];
     uint8_t oam[0x100];
-    uint8_t ppu[0x4000];
-    uint8_t mem[0x8000];
-    uint8_t chr[0x2000];
+    uint8_t *ppu;
+    uint8_t *mem;
+    uint8_t *chr;
 };
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);
 
-void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz, struct NESCallbacks *clbk);
+void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz);
 void nes_emu_rescale (struct NESEmu *emu, uint32_t scale);
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data);
 

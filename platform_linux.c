@@ -31,7 +31,7 @@ void linux_wait_cycles (struct NESEmu *emu)
 #endif
 }
 
-void linux_clear_screen (struct NESEmu *emu, void *_other_data)
+void platform_ppu_mask (struct NESEmu *emu, void *_other_data)
 {
 	float r, g, b;
 	nes_get_colors_background_clear (emu, &r, &g, &b);
@@ -40,9 +40,8 @@ void linux_clear_screen (struct NESEmu *emu, void *_other_data)
 	glClear (GL_COLOR_BUFFER_BIT);
 }
 
-int linux_calc_time_uint64 (struct NESEmu *emu, void *_other_data)
+int platform_delay (struct NESEmu *emu, void *_other_data)
 {
-#if 1
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
@@ -58,10 +57,9 @@ int linux_calc_time_uint64 (struct NESEmu *emu, void *_other_data)
 	    emu->last_cycles_int64 = ret;
 	    return 0;
     }
-#endif
 }
 
-uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
+uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 {
 #if 1
     struct timeval tv;
@@ -87,11 +85,6 @@ uint32_t linux_calc_time_nmi (struct NESEmu *emu, void *_other_data)
 
     return 0;
 #endif
-}
-
-void linux_print_debug (struct NESEmu *emu, void *_other_data)
-{
-	printf ("%s\n", emu->line);
 }
 
 static const char *vert_shader_str = 
@@ -336,7 +329,14 @@ static void init_id (struct NESEmu *emu, struct render_linux_data *r)
 	glUseProgram (0);
 }
 
-void linux_opengl_init (struct NESEmu *emu, void *_other_data)
+void platform_alloc_memory_map (struct NESEmu *emu)
+{
+	emu->mem = malloc (emu->sz_prg_rom);
+	emu->chr = malloc (0x2000);
+	emu->ppu = malloc (0x4000);
+}
+
+void platform_init (struct NESEmu *emu, void *_other_data)
 {
 	struct render_linux_data *r = malloc (sizeof (struct render_linux_data));
 	memset (r, 0, sizeof (struct render_linux_data));
@@ -349,12 +349,6 @@ void linux_opengl_init (struct NESEmu *emu, void *_other_data)
 
 	emu->_render_data = r;
 }
-
-/*
- * 1. get palette +
- * 2. get char data texture +
- * 3. fill texture buffer +
- */
 
 uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
@@ -401,9 +395,6 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 	memcpy (r->sprite_bits_one, ptr, 16);
 
 	uint8_t *sp = (uint8_t *) r->sprites[id_texture];
-
-	uint8_t yy = y % 32;
-	uint8_t xx = x % 32;
 
 	for (int i = 0; i < 8; i++) {
 		uint8_t s = 0x80;
@@ -488,7 +479,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 }
 
 #include <SDL2/SDL.h>
-void linux_opengl_render (struct NESEmu *emu, void *_other_data)
+void platform_render (struct NESEmu *emu, void *_other_data)
 {
 	SDL_Window *win = _other_data;
 
@@ -578,14 +569,4 @@ void linux_opengl_render (struct NESEmu *emu, void *_other_data)
 
 #endif
 	SDL_GL_SwapWindow (win);
-}
-
-void linux_init_callbacks (struct NESCallbacks *cb)
-{
-	cb->init = linux_opengl_init;
-	cb->print_debug = linux_print_debug;
-	cb->calc_time_uint64 = linux_calc_time_uint64;
-	cb->ppu_mask = linux_clear_screen;
-	cb->calc_nmi = linux_calc_time_nmi;
-	cb->render = linux_opengl_render;
 }

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <time.h>
 
+void platform_ppu_mask (struct NESEmu *emu, void *_other_data);
+
 #define CHECK_FLAGS_LD(flags, reg) \
 { \
 	if (flags & STATUS_FLAG_NF) { \
@@ -265,7 +267,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		emu->ctrl[REAL_PPUMASK] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
 			emu->is_return = 1;
-			emu->cb->ppu_mask (emu, NULL);
+			platform_ppu_mask (emu, NULL);
 		}
 
 	} else if (addr == PPUADDR) {
