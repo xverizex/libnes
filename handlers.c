@@ -492,7 +492,7 @@ void ora_indirect_x (struct NESEmu *emu)
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
@@ -508,7 +508,7 @@ void ora_zeropage (struct NESEmu *emu)
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
@@ -552,7 +552,7 @@ void ora_immediate (struct NESEmu *emu)
 	uint8_t val = immediate_val (emu);
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
@@ -574,7 +574,7 @@ void ora_absolute (struct NESEmu *emu)
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
@@ -719,7 +719,7 @@ void ora_indirect_y (struct NESEmu *emu)
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
@@ -734,7 +734,7 @@ void ora_zeropage_x (struct NESEmu *emu)
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
@@ -779,7 +779,7 @@ void ora_absolute_y (struct NESEmu *emu)
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
@@ -793,7 +793,7 @@ void ora_absolute_x (struct NESEmu *emu)
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
@@ -2558,7 +2558,7 @@ void dec_absolute_x (struct NESEmu *emu)
 	uint16_t off = addr < RAM_MAX? 0: 0x8000;
 
 	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&m[addr - off],
 			--m[addr - off],
 			void_eq,
