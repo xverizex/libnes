@@ -66,7 +66,7 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		*r = emu->ppu[emu->ppu_addr++];
 	} else if (addr >= 0x4016 && addr <= 0x4017) {
-		*r = 0x0;
+		*r = 0x40;
 	} else {
 		*r = emu->mem[addr - 0x8000];
 	}
@@ -125,7 +125,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (emu->ppu_addr < 0x2000) {
-			//printf ("write to ppu %04x = %02x\n", emu->ppu_addr, *r);
+			printf ("write to ppu %04x = %02x\n", emu->ppu_addr, *r);
 			emu->is_debug_exit = 1;
 		}
 		emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
