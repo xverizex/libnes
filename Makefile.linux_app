@@ -1,0 +1,20 @@
+CC=gcc
+CFLAGS=-I.
+LDFLAGS=-lGLESv2 -lSDL2 -Os -m32
+SOURCES=cpunes.c handlers.c platform_linux.c palette.c debug.c app.c
+OBJECTS=$(SOURCES:.c=.o)
+EXECUTABLE=app
+LIB_DIR=/usr/local/lib64
+
+all: $(SOURCES) $(EXECUTABLE)
+
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+
+.c.o:
+	@echo [CC] $<
+	@cc -c $< $(CFLAGS) $(LDFLAGS) -o $@
+
+clean:
+	rm -f *o
+	rm -f $(EXECUTABLE)
