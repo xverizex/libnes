@@ -73,7 +73,177 @@ static void test_adc_zeropage_without_carry_flag (struct NESEmu *emu, const char
 	if (emu->cpu.A == 0x24) {
 		printf ("OK\n");
 	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_zeropage_x_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x75;
+	emu->mem[1] = 0x00;
+	emu->ram[1] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.X = 1;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_zeropage_x (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
 		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_zeropage_x_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x75;
+	emu->mem[1] = 0x00;
+	emu->ram[1] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.X = 1;
+	emu->cpu.PC = 0x8000;
+
+	adc_zeropage_x (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_immediate_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_immediate (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_immediate_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+
+	adc_immediate (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x6d;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x80;
+	emu->mem[3] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_absolute (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x6d;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x80;
+	emu->mem[3] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+
+	adc_absolute (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_indirect_y_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x71;
+	emu->mem[1] = 0x01;
+	emu->mem[2] = 0x14;
+	emu->ram[1] = 0x02;
+	emu->ram[2] = 0x80;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_indirect_y (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_indirect_y_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x71;
+	emu->mem[1] = 0x01;
+	emu->mem[2] = 0x14;
+	emu->ram[1] = 0x02;
+	emu->ram[2] = 0x80;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+
+	adc_indirect_y (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
 		exit (0);
 	}
 }
@@ -84,6 +254,14 @@ static void test_adc ()
 
 	test_adc_zeropage_with_carry_flag (emu, "ADC zeropage with carry FLAG: ");
 	test_adc_zeropage_without_carry_flag (emu, "ADC zeropage without carry FLAG: ");
+	test_adc_zeropage_x_with_carry_flag (emu, "ADC zeropage_x with carry FLAG: ");
+	test_adc_zeropage_x_without_carry_flag (emu, "ADC zeropage_x without carry FLAG: ");
+	test_adc_immediate_with_carry_flag (emu, "ADC immediate with carry FLAG: ");
+	test_adc_immediate_without_carry_flag (emu, "ADC immediate without carry FLAG: ");
+	test_adc_absolute_with_carry_flag (emu, "ADC absolute with carry FLAG: ");
+	test_adc_absolute_without_carry_flag (emu, "ADC absolute without carry FLAG: ");
+	test_adc_indirect_y_with_carry_flag (emu, "ADC indirect_y with carry FLAG: ");
+	test_adc_indirect_y_without_carry_flag (emu, "ADC indirect_y without carry FLAG: ");
 
 	END_TEST;
 }

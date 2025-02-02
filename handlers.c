@@ -369,8 +369,7 @@ uint8_t immediate_val (struct NESEmu *emu)
 
 uint16_t absolute (struct NESEmu *emu)
 {
-    uint16_t addr = emu->mem[(emu->cpu.PC + 1) - 0x8000];
-    addr |= ((emu->mem[(emu->cpu.PC + 2) - 0x8000] << 8) & 0xff00);
+    uint16_t addr = *((uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000]);
     return addr;
 }
 
@@ -1551,7 +1550,7 @@ void adc_absolute (struct NESEmu *emu)
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
-		cpu->A + m[addr - 0x8000], 
+		cpu->A + m[addr - off], 
 		eq,
 		(4 << 8) | (3)
 		);

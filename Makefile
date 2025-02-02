@@ -1,5 +1,3 @@
-test:
-	make -f tests/Makefile
 all:
 	make -f Makefile.linux
 clean:
