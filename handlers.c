@@ -2445,13 +2445,20 @@ void cmp_zeropage_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage_x (emu);
 
-	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
-	uint8_t *m = addr < RAM_MAX? emu->ram: emu->mem;
+	uint8_t *m;
+	uint16_t off;
+	if (addr < RAM_MAX) {
+		m = emu->ram;
+		off = 0;
+	} else {
+		m = emu->mem;
+		off = 0x8000;
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
-			cpu->A - m[addr],
+			cpu->A - m[addr - off],
 			eq,
 			(4 << 8) | 2);
 }
@@ -2820,16 +2827,13 @@ void inc_zeropage_x (struct NESEmu *emu) {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage_x (emu);
 
-	uint8_t val;
 	uint8_t *mem;
 	uint16_t off;
 
 	if (addr < RAM_MAX) {
-		val = emu->ram[addr];
 		mem = emu->ram;
 		off = 0;
 	} else {
-		val = emu->mem[addr - 0x8000];
 		mem = emu->mem;
 		off = 0x8000;
 	}
