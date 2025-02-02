@@ -6,14 +6,14 @@
 
 void platform_ppu_mask (struct NESEmu *emu, void *_other_data);
 
-static void wait_cycles (struct NESEmu *emu, uint32_t cycles)
+void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 	//emu->last_cycles_float = (float) cycles * 0.000558730074f;
 	//emu->last_cycles_int64 = 16L;
 	emu->last_cycles_int64 = cycles * 558L;
 }
 
-static void check_flags_ld (struct CPUNes *cpu, uint8_t flags, uint8_t reg)
+void check_flags_ld (struct CPUNes *cpu, uint8_t flags, uint8_t reg)
 {
 	if (flags & STATUS_FLAG_NF) {
 		if (reg & 0x80)
@@ -47,7 +47,7 @@ static inline void set_ext_cycles (struct CPUNes *cpu, int8_t offset, uint16_t n
 	}
 }
 
-static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
+void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	//printf ("\tread from addr: %04x = %02x\n", addr, *r);
 	if (addr == PPUSTATUS) {
@@ -72,7 +72,7 @@ static void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 }
 
-static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
+void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	//printf ("\twrite to addr: %04x = %02x\n", addr, *r);
 
@@ -135,7 +135,7 @@ static void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 }
 
-static void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
+void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
 {
 	if (flags & STATUS_FLAG_NF) {
 		if (ret & 0x80) {
@@ -158,16 +158,16 @@ static void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t
 		cpu->P |= STATUS_FLAG_VF;
 }
 
-static void eq (uint8_t *r0, uint8_t r1)
+void eq (uint8_t *r0, uint8_t r1)
 {
 	*r0 = r1;
 }
 
-static void void_eq (uint8_t *r0, uint8_t r1)
+void void_eq (uint8_t *r0, uint8_t r1)
 {
 }
 
-static void adc_acts (struct NESEmu *emu, uint8_t flags, 
+void adc_acts (struct NESEmu *emu, uint8_t flags, 
 		uint8_t *reg,
 		uint8_t result, 
 		void (*eq) (uint8_t *r0, uint8_t r1),
@@ -185,7 +185,7 @@ static void adc_acts (struct NESEmu *emu, uint8_t flags,
 	cpu->PC += (cycles_and_bytes & 0xff);
 }
 
-static void repetitive_acts (struct NESEmu *emu, 
+void repetitive_acts (struct NESEmu *emu, 
 		uint8_t flags, 
 		uint8_t *reg,
 		uint8_t result, 
@@ -203,7 +203,7 @@ static void repetitive_acts (struct NESEmu *emu,
 	emu->cpu.PC += (cycles_and_bytes & 0xff);
 }
 
-static void asl_acts (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint16_t cycles_and_bytes)
+void asl_acts (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint16_t cycles_and_bytes)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t ret = 0;
@@ -223,7 +223,7 @@ static void asl_acts (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint16_t 
 	emu->cpu.PC += (cycles_and_bytes & 0xff);
 }
 
-static void lsr_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_and_bytes)
+void lsr_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_and_bytes)
 {
 	struct CPUNes *cpu = &emu->cpu; 
 	uint8_t ret = 0;
@@ -242,7 +242,7 @@ static void lsr_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t 
 	// TODO: bt == 0?
 }
 
-static void rol_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_and_bytes)
+void rol_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_and_bytes)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t bt = *mem;
@@ -290,7 +290,7 @@ void ror_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_
 	emu->cpu.PC += (cycles_and_bytes & 0xff);
 }
 
-static void ld_acts (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint16_t addr, uint16_t cycles_and_bytes)
+void ld_acts (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint16_t addr, uint16_t cycles_and_bytes)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	read_from_address (emu, addr, reg);
@@ -300,7 +300,7 @@ static void ld_acts (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint16_t a
 	emu->cpu.PC += cycles_and_bytes & 0xff;
 }
 
-static void st_acts (struct NESEmu *emu, uint8_t *reg, uint16_t addr, uint16_t cycles_and_bytes)
+void st_acts (struct NESEmu *emu, uint8_t *reg, uint16_t addr, uint16_t cycles_and_bytes)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	write_to_address (emu, addr, reg);
@@ -308,7 +308,7 @@ static void st_acts (struct NESEmu *emu, uint8_t *reg, uint16_t addr, uint16_t c
 	emu->cpu.PC += cycles_and_bytes & 0xff;
 }
 
-static void bit_acts (struct NESEmu *emu, uint8_t flags, uint16_t mem, uint16_t cycles_and_bytes)
+void bit_acts (struct NESEmu *emu, uint8_t flags, uint16_t mem, uint16_t cycles_and_bytes)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t returned_reg = 0;
@@ -337,7 +337,7 @@ uint16_t indirect_y (struct NESEmu *emu);
 
 #include <stdlib.h>
 
-static void debug_info_regs (struct NESEmu *emu, uint16_t addr, uint8_t *r)
+void debug_info_regs (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 #if 0
 	printf ("\tdebug exit: A: %02x X: %02x Y: %02x P: %02x S: %04x PC: %04x *r: %02x\n",
