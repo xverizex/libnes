@@ -72,6 +72,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 }
 
+#include <stdlib.h>
 void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	//printf ("\twrite to addr: %04x = %02x\n", addr, *r);
@@ -93,6 +94,10 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
+			if (*r == 0x9) {
+				printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
+				exit (0);
+			}
 			emu->oam[addr - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
