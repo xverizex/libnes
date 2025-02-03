@@ -248,6 +248,233 @@ static void test_adc_indirect_y_without_carry_flag (struct NESEmu *emu, const ch
 	}
 }
 
+static void test_adc_indirect_x_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x61;
+	emu->mem[1] = 0x02;
+	emu->ram[3] = 0x02;
+	emu->ram[4] = 0x80;
+	emu->mem[2] = 0x14;
+	emu->cpu.X = 1;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_indirect_x (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_indirect_x_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x61;
+	emu->mem[1] = 0x02;
+	emu->ram[3] = 0x02;
+	emu->ram[4] = 0x80;
+	emu->mem[2] = 0x14;
+	emu->cpu.X = 1;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+
+	adc_indirect_x (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_y_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x79;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x80;
+	emu->mem[5] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.Y = 2;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_absolute_y (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_y_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x79;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x80;
+	emu->mem[5] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.Y = 2;
+	emu->cpu.PC = 0x8000;
+
+	adc_absolute_y (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_y_low_address_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x79;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x00;
+	emu->ram[5] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.Y = 2;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_absolute_y (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_y_low_address_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x79;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x00;
+	emu->ram[5] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.Y = 2;
+	emu->cpu.PC = 0x8000;
+
+	adc_absolute_y (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_x_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x7d;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x80;
+	emu->mem[5] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.X = 2;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_absolute_x (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_x_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x7d;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x80;
+	emu->mem[5] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.X = 2;
+	emu->cpu.PC = 0x8000;
+
+	adc_absolute_x (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_x_low_address_with_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x7d;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x00;
+	emu->ram[5] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.X = 2;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_absolute_x (emu);
+
+	if (emu->cpu.A == 0x25) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x25, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_adc_absolute_x_low_address_without_carry_flag (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x7d;
+	emu->mem[1] = 0x03;
+	emu->mem[2] = 0x00;
+	emu->ram[5] = 0x14;
+	emu->cpu.A = 0x10;
+	emu->cpu.X = 2;
+	emu->cpu.PC = 0x8000;
+
+	adc_absolute_x (emu);
+
+	if (emu->cpu.A == 0x24) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x24, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
 static void test_adc ()
 {
 	BEGIN_TEST;
@@ -262,6 +489,16 @@ static void test_adc ()
 	test_adc_absolute_without_carry_flag (emu, "ADC absolute without carry FLAG: ");
 	test_adc_indirect_y_with_carry_flag (emu, "ADC indirect_y with carry FLAG: ");
 	test_adc_indirect_y_without_carry_flag (emu, "ADC indirect_y without carry FLAG: ");
+	test_adc_indirect_x_with_carry_flag (emu, "ADC indirect_x with carry FLAG: ");
+	test_adc_indirect_x_without_carry_flag (emu, "ADC indirect_x without carry FLAG: ");
+	test_adc_absolute_y_with_carry_flag (emu, "ADC absolute_y with carry FLAG: ");
+	test_adc_absolute_y_without_carry_flag (emu, "ADC absolute_y without carry FLAG: ");
+	test_adc_absolute_y_low_address_with_carry_flag (emu, "ADC absolute_y low address with carry FLAG: ");
+	test_adc_absolute_y_low_address_without_carry_flag (emu, "ADC absolute_y low address without carry FLAG: ");
+	test_adc_absolute_x_with_carry_flag (emu, "ADC absolute_x with carry FLAG: ");
+	test_adc_absolute_x_without_carry_flag (emu, "ADC absolute_x without carry FLAG: ");
+	test_adc_absolute_x_low_address_with_carry_flag (emu, "ADC absolute_x low address with carry FLAG: ");
+	test_adc_absolute_x_low_address_without_carry_flag (emu, "ADC absolute_x low address without carry FLAG: ");
 
 	END_TEST;
 }
