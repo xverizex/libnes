@@ -94,10 +94,9 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-#if 0
-			if (*r == 0x9) {
+#if 1
+			if (addr == 0x224) {
 				printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
-				exit (0);
 			}
 #endif
 			emu->oam[addr - 0x200] = *r;
@@ -155,7 +154,7 @@ void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
 		}
 	}
 	if (flags & STATUS_FLAG_CF) {
-		if (ret > 0 && ret < reg) {
+		if ((reg > 0) && (ret < reg)) {
 			cpu->P |= STATUS_FLAG_CF;
 		}
 	}
@@ -323,9 +322,16 @@ void bit_acts (struct NESEmu *emu, uint8_t flags, uint16_t mem, uint16_t cycles_
 	cpu->P &= ~(flags);
 	check_flags (cpu, flags, cpu->A, returned_reg);
 	cpu->P &= ~(STATUS_FLAG_ZF);
+	// TODO: Im not sure that is right code
+	if ((cpu->A & 0xc0) && (returned_reg & 0xc0)) {
+	} else {
+		cpu->P |= (STATUS_FLAG_ZF);
+	}
+#if 0
 	if ((cpu->A & returned_reg) == 0) {
 		cpu->P |= (STATUS_FLAG_ZF);
 	}
+#endif
 	wait_cycles (emu, cycles_and_bytes >> 8);
 	cpu->PC += cycles_and_bytes & 0xff;
 }

@@ -545,7 +545,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 		uint8_t flags = emu->oam[idx + 2];
 		uint8_t id_texture = emu->oam[idx + 1];
 		if (id_texture != 0 && id_texture != 244) {
-			printf ("%d %d = %d; %d\n", px, py, id_texture, i);
+			printf ("%d %d = %d; %d %d\n", px, py, id_texture, i, idx);
 		}
 
 		math_translate (r->transform, px, py, 0.f);
