@@ -529,6 +529,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		uint32_t runs = 0;
 		if (!emu->is_nmi_works) {
+#if 0
 			if (pc == 0xc7b0) {
 				runs = 1;
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x\n",
@@ -537,21 +538,12 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 						emu->cpu.Y,
 						emu->cpu.P,
 						pc);
-			} else if (runs == 1) {
-				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x\n",
-						emu->cpu.A,
-						emu->cpu.X,
-						emu->cpu.Y,
-						emu->cpu.P,
-						pc);
-				if (pc == 0xc7cb) {
-					exit (0);
-				}
 			}
+#endif
 		}
 
-		if (emu->is_nmi_works && emu->is_returned_from_nmi) {
-			platform_render (emu, NULL);
+		if (emu->is_returned_from_nmi) {
+			platform_render (emu, _data);
 			emu->is_returned_from_nmi = 0;
 			emu->is_nmi_works = 0;
 			emu->last_cycles_int64 = 0;
@@ -559,5 +551,4 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 	}
-
 }

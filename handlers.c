@@ -94,10 +94,12 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
+#if 0
 			if (*r == 0x9) {
 				printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
 				exit (0);
 			}
+#endif
 			emu->oam[addr - 0x200] = *r;
 		} else {
 			emu->ram[addr] = *r;
@@ -867,14 +869,9 @@ void bit_zeropage (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage (emu);
 	uint16_t off;
-	if (addr < RAM_MAX) {
-		off = 0;
-	} else {
-		off = 0x0;
-	}
 	bit_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
-			addr - off,
+			addr,
 			(3 << 8) | 2);
 }
 
@@ -1142,6 +1139,8 @@ void rti_implied (struct NESEmu *emu)
 	cpu->S += 2;
 
 	cpu->PC = new_pc;
+
+	emu->is_returned_from_nmi = 1;
 
 	wait_cycles (emu, 6);
 }

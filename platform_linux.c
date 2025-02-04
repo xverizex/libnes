@@ -570,5 +570,6 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	}
 
 #endif
+	printf ("error: %d\n", glGetError ());
 	SDL_GL_SwapWindow (win);
 }
