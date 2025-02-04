@@ -783,6 +783,26 @@ static void test_bit_zeropage_0x0d (struct NESEmu *emu, const char *str)
 	}
 }
 
+static void test_bit_zeropage_0x0e (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0xcf;
+	emu->cpu.A = 0xcf;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if (!(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be none flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
 static void test_bit ()
 {
 	BEGIN_TEST;
@@ -801,6 +821,7 @@ static void test_bit ()
 	test_bit_zeropage_0x0b (emu, "BIT zeropage 0x0b:");
 	test_bit_zeropage_0x0c (emu, "BIT zeropage 0x0c:");
 	test_bit_zeropage_0x0d (emu, "BIT zeropage 0x0d:");
+	test_bit_zeropage_0x0e (emu, "BIT zeropage 0x0e:");
 
 	END_TEST;
 }

@@ -320,8 +320,6 @@ void bit_acts (struct NESEmu *emu, uint8_t flags, uint16_t mem, uint16_t cycles_
 	uint8_t returned_reg = 0;
 	read_from_address (emu, mem, &returned_reg);
 	cpu->P &= ~(flags);
-	uint8_t a = cpu->A >> 6;
-	uint8_t b = returned_reg >> 6;
 
 	if ((cpu->A & returned_reg) == 0)
 		cpu->P |= STATUS_FLAG_ZF;
@@ -874,7 +872,6 @@ void bit_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage (emu);
-	uint16_t off;
 	bit_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
 			addr,
@@ -954,16 +951,9 @@ void bit_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint16_t addr = absolute (emu);
-	uint8_t *m;
-	uint16_t off;
-	if (addr < RAM_MAX) {
-		off = 0;
-	} else {
-		off = 0x8000;
-	}
 	bit_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
-			addr - off,
+			addr,
 			(4 << 8) | 3);
 }
 
