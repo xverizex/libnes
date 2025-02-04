@@ -155,7 +155,7 @@ void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
 		}
 	}
 	if (flags & STATUS_FLAG_CF) {
-		if (ret < reg) {
+		if (ret > 0 && ret < reg) {
 			cpu->P |= STATUS_FLAG_CF;
 		}
 	}

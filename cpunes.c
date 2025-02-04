@@ -522,15 +522,16 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 				emu->stack[--emu->cpu.S] = emu->cpu.P;
 
 				emu->cpu.PC = emu->nmi_handler;
+				emu->is_nmi_works = 1;
 			}
 		}
 
 		pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
 
-		uint32_t runs = 0;
+		static uint32_t runs = 0;
 		if (!emu->is_nmi_works) {
 #if 0
-			if (pc == 0xc7b0) {
+			if (pc == 0xc754) {
 				runs = 1;
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x\n",
 						emu->cpu.A,
@@ -538,6 +539,15 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 						emu->cpu.Y,
 						emu->cpu.P,
 						pc);
+				getc (stdin);
+			} else if (runs) {
+				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x\n",
+						emu->cpu.A,
+						emu->cpu.X,
+						emu->cpu.Y,
+						emu->cpu.P,
+						pc);
+				getc (stdin);
 			}
 #endif
 		}
