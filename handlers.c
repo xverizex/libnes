@@ -2014,7 +2014,6 @@ void tay_implied (struct NESEmu *emu)
 
 	cpu->Y = cpu->A;
 	
-	cpu->Y = cpu->A;
 	if (cpu->Y == 0) {
 		cpu->P |= STATUS_FLAG_ZF;
 	}
@@ -2233,7 +2232,7 @@ void cpy_immediate (struct NESEmu *emu)
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->Y,
 			cpu->Y - val,
-			eq,
+			void_eq,
 			(2 << 8) | 2);
 }
 
@@ -2277,7 +2276,7 @@ void cmp_zeropage (struct NESEmu *emu)
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			eq,
+			void_eq,
 			(3 << 8) | 2);
 }
 
@@ -2368,7 +2367,7 @@ void cmp_absolute (struct NESEmu *emu)
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			eq,
+			void_eq,
 			(4 << 8) | 3);
 }
 
@@ -2434,7 +2433,7 @@ void cmp_indirect_y (struct NESEmu *emu)
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			eq,
+			void_eq,
 			(5 << 8) | 2);
 }
 
@@ -2457,7 +2456,7 @@ void cmp_zeropage_x (struct NESEmu *emu)
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - m[addr - off],
-			eq,
+			void_eq,
 			(4 << 8) | 2);
 }
 
@@ -2521,7 +2520,7 @@ void cmp_absolute_x (struct NESEmu *emu)
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			eq,
+			void_eq,
 			(4 << 8) | 3);
 }
 
@@ -2598,7 +2597,7 @@ void cpx_zeropage (struct NESEmu *emu)
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->X,
 			cpu->X - val,
-			eq,
+			void_eq,
 			(3 << 8) | 2);
 }
 
@@ -2711,7 +2710,7 @@ void cpx_absolute (struct NESEmu *emu)
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->X,
 			cpu->X - val,
-			eq,
+			void_eq,
 			(4 << 8) | 3);
 }
 void sbc_absolute (struct NESEmu *emu) 
