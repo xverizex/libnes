@@ -191,6 +191,11 @@ static void parse_header (struct NESEmu *emu)
 	emu->sz_prg_ram = d[8] * 8192;
 }
 
+#include <stdio.h>
+#include <stdlib.h>
+
+void platform_init (struct NESEmu *emu, void *data);
+
 void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 {
 	size_t sz_nes_emu = sizeof (struct NESEmu);
@@ -200,9 +205,19 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->sz_dump = sz_file;
 	set_dump_format (emu);
 	parse_header (emu);
-	emu->cpu.PC = 0xfffc;
+	emu->cpu.PC = 0x8000;
 	emu->cpu.S = 0xff;
 	emu->cpu.P |= STATUS_FLAG_IF;
+
+	emu->nmi_handler = *(uint16_t *) &data[0xa + emu->sz_prg_rom];
+	emu->reset_handler = *(uint16_t *) &data[0xa + emu->sz_prg_rom + 2];
+	emu->irq_handler = *(uint16_t *) &data[0xa + emu->sz_prg_rom + 4];
+
+	emu->cpu.PC = emu->reset_handler;
+
+	emu->scale = 4;
+	emu->width = 256;
+	emu->height = 224;
 
 	emu->mem = malloc (emu->sz_prg_rom);
 	emu->chr = malloc (emu->sz_chr_rom);
@@ -317,7 +332,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (invalid_opcode)		/* 0x62 */
 			ADD_HANDLER (invalid_opcode)		/* 0x63 */
 			ADD_HANDLER (invalid_opcode)		/* 0x64 */
-			ADD_HANDLER (adc_zeropage_x)		/* 0x65 */
+			ADD_HANDLER (adc_zeropage)		/* 0x65 */
 			ADD_HANDLER (ror_zeropage)		/* 0x66 */
 			ADD_HANDLER (invalid_opcode)		/* 0x67 */
 			ADD_HANDLER (pla_implied)		/* 0x68 */
@@ -476,9 +491,35 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 
 		pnes_handler = nes_handler;
 	}
+
+	platform_init (emu, NULL);
 }
+
+int platform_delay (struct NESEmu *emu, void *_other_data);
+uint32_t platform_delay_nmi (struct NESEmu *emu, void *_data);
+void platform_render (struct NESEmu *emu, void *data);
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data)
 {
-	pnes_handler [emu->mem[emu->cpu.PC]] (emu);
+
+	for (int i = 0; i < count_instructions; i++) {
+
+		if (emu->is_nmi_works) {
+		} else {
+			if (!platform_delay (emu, NULL)) {
+				if (i > 0) i--;
+				continue;
+			}
+		}
+
+
+		if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+			if (platform_delay_nmi (emu, NULL)) {
+				platform_render (emu, NULL);
+			}
+		}
+
+		pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
+	}
+
 }
