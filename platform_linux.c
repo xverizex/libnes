@@ -7,7 +7,6 @@
 #include <GLES3/gl3.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
-#include <debug.h>
 
 void linux_wait_cycles (struct NESEmu *emu)
 {
