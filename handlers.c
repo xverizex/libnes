@@ -94,7 +94,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-#if 1
+#if 0
 			printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
 #endif
 			emu->oam[addr - 0x200] = *r;
@@ -139,6 +139,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 }
 
+// TODO: implement right VF checking
 void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
 {
 	if (flags & STATUS_FLAG_NF) {
@@ -159,10 +160,12 @@ void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
 			cpu->P |= STATUS_FLAG_CF;
 		}
 	}
+#if 0
 	if ((ret & 0x80) && (!(reg & 0x80)))
 		cpu->P |= STATUS_FLAG_VF;
-	else if ((!(ret & 0x80)) && (reg & 0x80))
+	if ((!(ret & 0x80)) && (reg & 0x80))
 		cpu->P |= STATUS_FLAG_VF;
+#endif
 }
 
 void eq (uint8_t *r0, uint8_t r1)
@@ -2369,6 +2372,10 @@ void cmp_absolute (struct NESEmu *emu)
 			cpu->A - val,
 			void_eq,
 			(4 << 8) | 3);
+
+	if (addr == 0x9b97) {
+		printf ("!!! %02x; %02x\n", emu->mem[addr - 0x8000], cpu->P);
+	}
 }
 
 void dec_absolute (struct NESEmu *emu) 
@@ -2648,6 +2655,7 @@ void inc_zeropage (struct NESEmu *emu)
 			++m[addr - off],
 			void_eq,
 			(5 << 8) | 2);
+
 }
 
 void inx_implied (struct NESEmu *emu)
@@ -2757,6 +2765,7 @@ void inc_absolute (struct NESEmu *emu)
 			++m[addr - off],
 			void_eq,
 			(6 << 8) | 3);
+
 }
 
 void beq_relative (struct NESEmu *emu) 

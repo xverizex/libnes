@@ -331,8 +331,12 @@ static void init_id (struct NESEmu *emu, struct render_linux_data *r)
 void platform_alloc_memory_map (struct NESEmu *emu)
 {
 	emu->mem = malloc (emu->sz_prg_rom);
-	emu->chr = malloc (0x2000);
+	emu->chr = malloc (emu->sz_chr_rom);
 	emu->ppu = malloc (0x4000);
+
+	memset (emu->mem, 0, emu->sz_prg_rom);
+	memset (emu->chr, 0, emu->sz_chr_rom);
+	memset (emu->ppu, 0, 0x4000);
 }
 
 void platform_init (struct NESEmu *emu, void *_other_data)
@@ -477,6 +481,8 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
 
+static uint8_t pp[256];
+static int is_pp;
 #include <SDL2/SDL.h>
 void platform_render (struct NESEmu *emu, void *_other_data)
 {
@@ -545,7 +551,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 		uint8_t flags = emu->oam[idx + 2];
 		uint8_t id_texture = emu->oam[idx + 1];
 		if (id_texture != 0 && id_texture != 244) {
-			printf ("%d %d = %d; %d %d\n", px, py, id_texture, i, idx);
+//			printf ("%d %d = %d; %d %d\n", px, py, id_texture, i, idx);
 		}
 
 		math_translate (r->transform, px, py, 0.f);
@@ -570,6 +576,5 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	}
 
 #endif
-	printf ("error: %d\n", glGetError ());
 	SDL_GL_SwapWindow (win);
 }

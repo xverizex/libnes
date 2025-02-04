@@ -195,6 +195,7 @@ static void parse_header (struct NESEmu *emu)
 #include <stdlib.h>
 
 void platform_init (struct NESEmu *emu, void *data);
+void platform_alloc_memory_map (struct NESEmu *emu);
 
 void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 {
@@ -219,12 +220,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->width = 256;
 	emu->height = 224;
 
-	emu->mem = malloc (emu->sz_prg_rom);
-	emu->chr = malloc (emu->sz_chr_rom);
-	emu->ppu = malloc (0x4000);
-	memset (emu->mem, 0, emu->sz_prg_rom);
-	memset (emu->chr, 0, emu->sz_chr_rom);
-	memset (emu->ppu, 0, 0x4000);
+	platform_alloc_memory_map (emu);
 
 	memcpy (emu->mem, &data[0x10], emu->sz_prg_rom);
 	memcpy (emu->chr, &data[0x10 + emu->sz_prg_rom], 0x2000);
@@ -528,17 +524,22 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
 
+		//printf ("pc: %04x\n", pc);
+
 		static uint32_t runs = 0;
 		if (!emu->is_nmi_works) {
 #if 0
-			if (pc == 0xc787) {
+			if (emu->cpu.PC == 0xc031) {
+//			if (emu->cpu.P & STATUS_FLAG_VF) {
 				runs = 1;
-				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x\n",
+				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; mem: %02x\n",
 						emu->cpu.A,
 						emu->cpu.X,
 						emu->cpu.Y,
 						emu->cpu.P,
-						pc);
+						pc,
+						emu->mem[0x9b97 - 0x8000]
+						);
 				getc (stdin);
 			} else if (runs) {
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x\n",
