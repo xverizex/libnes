@@ -189,6 +189,12 @@ void adc_acts (struct NESEmu *emu, uint8_t flags,
 	cpu->P &= ~(flags);
 	result += carry;
 	check_flags (cpu, flags, *reg, result);
+
+	if ((result & 0x80) && (!(*reg & 0x80)))
+		cpu->P |= STATUS_FLAG_VF;
+	if ((!(result & 0x80)) && (*reg & 0x80))
+		cpu->P |= STATUS_FLAG_VF;
+
 	eq (reg, result);
 //	*reg += carry;
 	wait_cycles (emu, (cycles_and_bytes >> 8) & 0xff);
