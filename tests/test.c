@@ -503,7 +503,121 @@ static void test_adc ()
 	END_TEST;
 }
 
+static void test_bit_zeropage_0x00 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0x02;
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if (emu->cpu.P & STATUS_FLAG_ZF) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be zero flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit_zeropage_0x01 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0x81;
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if (emu->cpu.P & STATUS_FLAG_NF) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be negative flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit_zeropage_0x02 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0x40;
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if ((emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_ZF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be overflow flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit_zeropage_0x03 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0x00;
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if (emu->cpu.P & STATUS_FLAG_ZF) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be zero flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit_zeropage_0x04 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0x00;
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be zero flag and negative flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit ()
+{
+	BEGIN_TEST;
+
+	test_bit_zeropage_0x00 (emu, "BIT zeropage 0x00:");
+	test_bit_zeropage_0x01 (emu, "BIT zeropage 0x01:");
+	test_bit_zeropage_0x02 (emu, "BIT zeropage 0x02:");
+	test_bit_zeropage_0x03 (emu, "BIT zeropage 0x03:");
+	test_bit_zeropage_0x04 (emu, "BIT zeropage 0x04:");
+
+	END_TEST;
+}
+
 int main (int argc, char **argv)
 {
 	test_adc ();
+	test_bit ();
 }

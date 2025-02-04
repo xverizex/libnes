@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #define STATUS_FLAG_CF        (1 << 0)
-#define STATUS_FLAG_ZF        (1 << 1)
+#define STATUS_FLAG_ZF        (1 << 1)  
 #define STATUS_FLAG_IF        (1 << 2)
 #define STATUS_FLAG_DF        (1 << 3)
 #define STATUS_FLAG_BF        (1 << 4)

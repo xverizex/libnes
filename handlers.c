@@ -320,18 +320,34 @@ void bit_acts (struct NESEmu *emu, uint8_t flags, uint16_t mem, uint16_t cycles_
 	uint8_t returned_reg = 0;
 	read_from_address (emu, mem, &returned_reg);
 	cpu->P &= ~(flags);
-	check_flags (cpu, flags, cpu->A, returned_reg);
-	cpu->P &= ~(STATUS_FLAG_ZF);
-	// TODO: Im not sure that is right code
-	if ((cpu->A & 0xc0) && (returned_reg & 0xc0)) {
-	} else {
-		cpu->P |= (STATUS_FLAG_ZF);
-	}
+	if ((cpu->A & returned_reg) == 0)
+		cpu->P |= STATUS_FLAG_ZF;
+
+	if (returned_reg & 0x80)
+		cpu->P |= STATUS_FLAG_NF;
+	if (cpu->A & 0x80)
+		cpu->P |= STATUS_FLAG_NF;
+	if (!(cpu->A & 0x80) && (returned_reg & 0x80))
+		cpu->P |= STATUS_FLAG_VF;
+	else if ((cpu->A & 0x80) && !(returned_reg & 0x80))
+		cpu->P |= STATUS_FLAG_VF;
 #if 0
-	if ((cpu->A & returned_reg) == 0) {
-		cpu->P |= (STATUS_FLAG_ZF);
+	uint8_t a = cpu->A >> 7;
+	uint8_t r = returned_reg >> 7;
+	if (a == r) {
+		cpu->P |= STATUS_FLAG_NF;
+	}
+	a = (cpu->A >> 6) & 0x1;
+	r = (returned_reg >> 6) & 0x1;
+	if (a == r) {
+		cpu->P |= STATUS_FLAG_VF;
+	} else if ((a == 0) && (r == 1)) {
+		cpu->P |= STATUS_FLAG_VF;
 	}
 #endif
+	//check_flags (cpu, flags, cpu->A, returned_reg);
+	//cpu->P &= ~(STATUS_FLAG_ZF);
+	// TODO: Im not sure that is right code
 	wait_cycles (emu, cycles_and_bytes >> 8);
 	cpu->PC += cycles_and_bytes & 0xff;
 }
