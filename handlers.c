@@ -320,17 +320,26 @@ void bit_acts (struct NESEmu *emu, uint8_t flags, uint16_t mem, uint16_t cycles_
 	uint8_t returned_reg = 0;
 	read_from_address (emu, mem, &returned_reg);
 	cpu->P &= ~(flags);
-	if (((cpu->A & 0xc0) & (returned_reg & 0xc0)) == 0)
+	uint8_t a = cpu->A >> 6;
+	uint8_t b = returned_reg >> 6;
+
+	if ((a & b) == 0)
 		cpu->P |= STATUS_FLAG_ZF;
+
+	if ((returned_reg & 0x40))
+		cpu->P |= STATUS_FLAG_VF;
 
 	if (returned_reg & 0x80)
 		cpu->P |= STATUS_FLAG_NF;
-	if (cpu->A & 0x80)
-		cpu->P |= STATUS_FLAG_NF;
-	if (!(cpu->A & 0x80) && (returned_reg & 0x80))
-		cpu->P |= STATUS_FLAG_VF;
-	else if ((cpu->A & 0x80) && !(returned_reg & 0x80))
-		cpu->P |= STATUS_FLAG_VF;
+
+#if 0
+	if ((returned_reg > 0)) {
+		if (!(cpu->A & 0x80) && (returned_reg & 0x80))
+			cpu->P |= STATUS_FLAG_VF;
+		if ((cpu->A & 0x80) && !(returned_reg & 0x80))
+			cpu->P |= STATUS_FLAG_VF;
+	}
+#endif
 #if 0
 	uint8_t a = cpu->A >> 7;
 	uint8_t r = returned_reg >> 7;

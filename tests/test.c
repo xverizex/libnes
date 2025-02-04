@@ -515,7 +515,7 @@ static void test_bit_zeropage_0x00 (struct NESEmu *emu, const char *str)
 
 	bit_zeropage (emu);
 
-	if (emu->cpu.P & STATUS_FLAG_ZF) {
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF)) {
 		printf ("OK\n");
 	} else {
 		printf ("FAIL; should be zero flag, but %02x\n", emu->cpu.P);
@@ -535,7 +535,7 @@ static void test_bit_zeropage_0x01 (struct NESEmu *emu, const char *str)
 
 	bit_zeropage (emu);
 
-	if (emu->cpu.P & STATUS_FLAG_NF) {
+	if ((emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_VF)) {
 		printf ("OK\n");
 	} else {
 		printf ("FAIL; should be negative flag, but %02x\n", emu->cpu.P);
@@ -555,7 +555,7 @@ static void test_bit_zeropage_0x02 (struct NESEmu *emu, const char *str)
 
 	bit_zeropage (emu);
 
-	if ((emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_ZF)) {
+	if ((emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF)) {
 		printf ("OK\n");
 	} else {
 		printf ("FAIL; should be overflow flag, but %02x\n", emu->cpu.P);
@@ -575,7 +575,7 @@ static void test_bit_zeropage_0x03 (struct NESEmu *emu, const char *str)
 
 	bit_zeropage (emu);
 
-	if (emu->cpu.P & STATUS_FLAG_ZF) {
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF)) {
 		printf ("OK\n");
 	} else {
 		printf ("FAIL; should be zero flag, but %02x\n", emu->cpu.P);
@@ -589,13 +589,13 @@ static void test_bit_zeropage_0x04 (struct NESEmu *emu, const char *str)
 
 	emu->mem[0] = 0x24;
 	emu->mem[1] = 0x02;
-	emu->ram[2] = 0x00;
-	emu->cpu.A = 0x80;
+	emu->ram[2] = 0x80;
+	emu->cpu.A = 0x00;
 	emu->cpu.PC = 0x8000;
 
 	bit_zeropage (emu);
 
-	if ((emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF)) {
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF)) {
 		printf ("OK\n");
 	} else {
 		printf ("FAIL; should be zero flag and negative flag, but %02x\n", emu->cpu.P);
@@ -615,7 +615,7 @@ static void test_bit_zeropage_0x05 (struct NESEmu *emu, const char *str)
 
 	bit_zeropage (emu);
 
-	if ((emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_ZF)) {
+	if ((emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_VF)) {
 		printf ("OK\n");
 	} else {
 		printf ("FAIL; should be zero flag and negative flag, but %02x\n", emu->cpu.P);
@@ -635,7 +635,7 @@ static void test_bit_zeropage_0x06 (struct NESEmu *emu, const char *str)
 
 	bit_zeropage (emu);
 
-	if ((emu->cpu.P & STATUS_FLAG_ZF)) {
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF)) {
 		printf ("OK\n");
 	} else {
 		printf ("FAIL; should be zero flag, but %02x\n", emu->cpu.P);
@@ -655,10 +655,90 @@ static void test_bit_zeropage_0x07 (struct NESEmu *emu, const char *str)
 
 	bit_zeropage (emu);
 
-	if ((emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF)) {
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF)) {
 		printf ("OK\n");
 	} else {
 		printf ("FAIL; should be zero negative flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit_zeropage_0x08 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0xc0;
+	emu->cpu.A = 0x00;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be zero negative overflow flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit_zeropage_0x09 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0x00;
+	emu->cpu.A = 0xc0;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be zero flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit_zeropage_0x0a (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0x40;
+	emu->cpu.A = 0x40;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if (!(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be overflow flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_bit_zeropage_0x0b (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x24;
+	emu->mem[1] = 0x02;
+	emu->ram[2] = 0x40;
+	emu->cpu.A = 0x00;
+	emu->cpu.PC = 0x8000;
+
+	bit_zeropage (emu);
+
+	if ((emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be overflow flag, but %02x\n", emu->cpu.P);
 		exit (0);
 	}
 }
@@ -675,6 +755,10 @@ static void test_bit ()
 	test_bit_zeropage_0x05 (emu, "BIT zeropage 0x05:");
 	test_bit_zeropage_0x06 (emu, "BIT zeropage 0x06:");
 	test_bit_zeropage_0x07 (emu, "BIT zeropage 0x07:");
+	test_bit_zeropage_0x08 (emu, "BIT zeropage 0x08:");
+	test_bit_zeropage_0x09 (emu, "BIT zeropage 0x09:");
+	test_bit_zeropage_0x0a (emu, "BIT zeropage 0x0a:");
+	test_bit_zeropage_0x0b (emu, "BIT zeropage 0x0b:");
 
 	END_TEST;
 }
