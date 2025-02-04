@@ -95,9 +95,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
 #if 1
-			if (addr == 0x224) {
-				printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
-			}
+			printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
 #endif
 			emu->oam[addr - 0x200] = *r;
 		} else {
@@ -154,7 +152,10 @@ void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
 		}
 	}
 	if (flags & STATUS_FLAG_CF) {
-		if ((reg > 0) && (ret < reg)) {
+		if ((ret < reg)) {
+			cpu->P |= STATUS_FLAG_CF;
+		}
+		if ((reg == 0xff) && (ret == 0xff)) {
 			cpu->P |= STATUS_FLAG_CF;
 		}
 	}
