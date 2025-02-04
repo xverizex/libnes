@@ -870,7 +870,7 @@ void bit_zeropage (struct NESEmu *emu)
 	if (addr < RAM_MAX) {
 		off = 0;
 	} else {
-		off = 0x8000;
+		off = 0x0;
 	}
 	bit_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,

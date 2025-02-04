@@ -146,6 +146,8 @@ struct NESEmu {
     uint8_t *ppu;
     uint8_t *mem;
     uint8_t *chr;
+
+    uint32_t is_returned_from_nmi;
 };
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);
