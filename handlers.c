@@ -94,8 +94,9 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-#if 0
-			printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
+#if 1
+			if (*r == 200)
+				printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
 #endif
 			emu->oam[addr - 0x200] = *r;
 		} else {
@@ -210,10 +211,8 @@ void repetitive_acts (struct NESEmu *emu,
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t carry = 0;
-	if (cpu->P & STATUS_FLAG_CF) carry = 1;
 	cpu->P &= ~(flags);
 	check_flags (cpu, flags, *reg, result);
-	cpu->P |= (carry?STATUS_FLAG_CF:0);
 	eq (reg, result);
 	wait_cycles (emu, cycles_and_bytes >> 8);
 	emu->cpu.PC += (cycles_and_bytes & 0xff);

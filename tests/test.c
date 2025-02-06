@@ -978,6 +978,25 @@ static void test_cmp_immediate_0x07 (struct NESEmu *emu, const char *str)
 	}
 }
 
+static void test_cmp_immediate_0x08 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0xc9;
+	emu->mem[1] = 0xff;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+
+	cmp_immediate (emu);
+
+	if (!(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be nf flag, but %02x\n", emu->cpu.P);
+		exit (0);
+	}
+}
+
 static void test_cmp ()
 {
 	BEGIN_TEST;
@@ -990,6 +1009,7 @@ static void test_cmp ()
 	test_cmp_immediate_0x05 (emu, "CMP immediate 0x05:");
 	test_cmp_immediate_0x06 (emu, "CMP immediate 0x06:");
 	test_cmp_immediate_0x07 (emu, "CMP immediate 0x07:");
+	test_cmp_immediate_0x08 (emu, "CMP immediate 0x08:");
 
 	END_TEST;
 }
