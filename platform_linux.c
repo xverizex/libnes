@@ -552,7 +552,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 		uint8_t id_texture = emu->oam[idx + 1];
 #if 0
 		if (id_texture != 0 && id_texture != 244) {
-			printf ("%d %d|", idx, py);
+			printf ("%03d %03d %03d|", px, py, idx);
 		}
 #endif
 

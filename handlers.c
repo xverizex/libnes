@@ -94,9 +94,9 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-#if 1
-			if (*r == 200)
-				printf ("emu->cpu.PC = %04x\n", emu->cpu.PC);
+#if 0
+			if (*r == 1 || *r == 2)
+				printf ("emu->cpu.PC = %04x; A: %02x X: %02x Y: %02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y);
 #endif
 			emu->oam[addr - 0x200] = *r;
 		} else {
@@ -226,13 +226,14 @@ void asl_acts (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint16_t cycles_
 	cpu->P &= ~(flags);
 	if (bt & 0x80) {
 		cpu->P |= STATUS_FLAG_CF;
-	} else if (bt == 0x0) {
-		cpu->P |= STATUS_FLAG_ZF;
-	}
+	} 
 	if (bt & 0x40) {
 		cpu->P |= STATUS_FLAG_NF;
 	}
 	bt <<= 1;
+	if (bt == 0x0) {
+		cpu->P |= STATUS_FLAG_ZF;
+	}
 	*reg = bt;
 	wait_cycles (emu, cycles_and_bytes >> 8);
 	emu->cpu.PC += (cycles_and_bytes & 0xff);
@@ -247,10 +248,10 @@ void lsr_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_
 	if (bt & 0x01) {
 		cpu->P |= STATUS_FLAG_CF;
 	} 
+	bt >>= 1;
 	if (bt == 0) {
 		cpu->P |= STATUS_FLAG_ZF;
 	}
-	bt >>= 1;
 	*mem = bt;
 	wait_cycles (emu, cycles_and_bytes >> 8);
 	emu->cpu.PC += (cycles_and_bytes & 0xff);
@@ -266,13 +267,13 @@ void rol_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_
 	if (bt & 0x80) {
 		cpu->P |= STATUS_FLAG_CF;
 	} 
-	if (bt == 0x0) {
-		cpu->P |= STATUS_FLAG_ZF;
-	}
 	if (bt & 0x40) {
 		cpu->P |= STATUS_FLAG_NF;
 	}
 	bt <<= 1;
+	if (bt == 0x0) {
+		cpu->P |= STATUS_FLAG_ZF;
+	}
 	if (old_flag & STATUS_FLAG_CF) {
 		bt |= 0x01;
 	}
@@ -290,10 +291,10 @@ void ror_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_
 	if (bt & 0x01) {
 		cpu->P |= STATUS_FLAG_CF;
 	} 
+	bt >>= 1;
 	if (bt == 0x00) {
 		cpu->P |= STATUS_FLAG_ZF;
 	}
-	bt >>= 1;
 	if (old_flag & STATUS_FLAG_CF) {
 		bt |= 0x80;
 	}

@@ -530,9 +530,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		static uint32_t tick = 0;
 		if (!emu->is_nmi_works) {
 #if 0
-			if (emu->cpu.PC == 0xc789)
-				tick++;
-			if (emu->cpu.PC == 0xc789 && emu->cpu.X == 40) {
+			if (emu->cpu.PC == 0xc7b7) {
 				runs = 1;
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; tick: %d\n",
 						emu->cpu.A,
