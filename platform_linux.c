@@ -150,11 +150,32 @@ static void math_ortho_rh (float *e, float left, float right,
 
 	rl = 1.f / (right - left);
 	tb = 1.f / (top - bottom);
-	fn = -1.f / (far - near);
+	fn = 1.f / (far - near);
 
 	e[0] = 2.f * rl;
 	e[5] = 2.f * tb;
 	e[10] = 2.f * fn;
+	e[12] = -(right + left) * rl;
+	e[13] = -(top + bottom) * tb;
+	e[14] = (far + near) * fn;
+	e[15] = 1.f;
+}
+
+static void math_ortho_lh (float *e, float left, float right,
+		float bottom, float top,
+		float near, float far)
+{
+	memset (e, 0, sizeof (float) * 16);
+
+	float rl, tb, fn;
+
+	rl = 1.f / (right - left);
+	tb = 1.f / (top - bottom);
+	fn = -1.f / (far - near);
+
+	e[0] = 2.f * rl;
+	e[5] = 2.f * tb;
+	e[10] = -2.f * fn;
 	e[12] = -(right + left) * rl;
 	e[13] = -(top + bottom) * tb;
 	e[14] = (far + near) * fn;
@@ -235,7 +256,7 @@ struct render_linux_data {
 
 static void init_space (struct NESEmu *emu, struct render_linux_data *r)
 {
-	math_ortho_rh (r->ortho, 0, emu->width, emu->height, 0, -1, 10);
+	math_ortho_lh (r->ortho, 0, emu->width, emu->height, 0, -1, 10);
 	math_model (r->model, 1.f);
 	math_translate (r->transform, 0.f, 0.f, 0.f);
 	math_scale (r->scale, 1.f);
@@ -341,7 +362,7 @@ static void init_vao (struct NESEmu *emu, struct render_linux_data *r)
     glGenBuffers (1, &vbo);
     glBindVertexArray (vao);
     glBindBuffer (GL_ARRAY_BUFFER, vbo);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (vertices), vertices, GL_STATIC_DRAW);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (vertices), vertices, GL_DYNAMIC_DRAW);
     glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), (void *) 0);
     glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), (void *) (3 * sizeof (float)));
 
@@ -507,7 +528,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	uint8_t *sp = (uint8_t *) &r->sprites[id_texture][0];
 
 	for (int i = 0; i < 8; i++) {
-		uint8_t s = 0x01;
+		uint8_t s = 0x80;
 		uint8_t low = r->sprite_bits_one[i + 0];
 		uint8_t high = r->sprite_bits_one[i + 8];
 
@@ -520,7 +541,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
 			*sp++ = 0xff;
-			s <<= 1;
+			s >>= 1;
 		}
 	}
 
