@@ -16,6 +16,8 @@
 #define PPUCTRL_BACKGROUND_PATTERN		(1 << 4)
 #define PPUCTRL_VBLANK_NMI    			(1 << 7)
 
+#define FLIP_SPRITE_HORIZONTALLY		(1 << 6)
+
 enum {
 	PPUCTRL = 0x2000,
 	PPUMASK,

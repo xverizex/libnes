@@ -218,6 +218,7 @@ struct render_linux_data {
 	float transform[16];
 	float scale[16];
 	float model[16];
+	uint32_t count_bytes;
 	uint32_t id_ortho;
 	uint32_t id_transform;
 	uint32_t id_scale;
@@ -245,6 +246,7 @@ static void init_sprite_array (struct NESEmu *emu, struct render_linux_data *r)
 	uint32_t count = SPRITE_COUNT;
 	
 	uint32_t count_bytes = sizeof (uint32_t) * 8 * 8;
+	r->count_bytes = count_bytes;
 	for (uint32_t i = 0; i < count; i++) {
 		r->sprites[i] = malloc (count_bytes);
 		memset (r->sprites[i], 0, count_bytes);
@@ -267,6 +269,43 @@ static void init_textures (uint32_t *tex, uint32_t tex_width, uint32_t tex_heigh
 
 		glBindTexture (GL_TEXTURE_2D, 0);
 	}
+}
+
+static void flip_hor (struct render_linux_data *r, uint32_t is_h)
+{
+	float w = 8.f;
+	float h = 8.f;
+
+    	float vertices[] = {
+             0.f,    0.f,  0.f, 0.f, 0.f,
+             0.0f,     h,  0.f, 0.f, 1.f,
+                w,   0.f,  0.f, 1.f, 0.f,
+                w,   0.f,  0.f, 1.f, 0.f,
+                w,     h,  0.f, 1.f, 1.f,
+              0.f,     h,  0.f, 0.f, 1.f
+    	};
+
+    float *v = vertices;
+
+	if (!is_h) {
+		v[3]  = 1.f; v[4]  = 0.f;
+		v[8]  = 1.f; v[9]  = 1.f;
+		v[13] = 0.f; v[14] = 0.f;
+		v[18] = 0.f; v[19] = 0.f;
+		v[23] = 0.f; v[24] = 1.f;
+		v[28] = 1.f; v[29] = 1.f;
+	} else {
+		v[3]  = 0.f; v[4]  = 0.f;
+		v[8]  = 0.f; v[9]  = 1.f;
+		v[13] = 1.f; v[14] = 0.f;
+		v[18] = 1.f; v[19] = 0.f;
+		v[23] = 1.f; v[24] = 1.f;
+		v[28] = 0.f; v[29] = 1.f;
+	}
+
+
+    glBindBuffer (GL_ARRAY_BUFFER, r->vbo);
+    glBufferSubData (GL_ARRAY_BUFFER, 0, sizeof (vertices), vertices);
 }
 
 static void init_vao (struct NESEmu *emu, struct render_linux_data *r)
@@ -425,7 +464,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
 
-static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture)
+static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t flags)
 {
 	uint16_t addr_palette = 0x3f00;
 	uint8_t p[4][4];
@@ -445,6 +484,19 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 #endif
 	}
 
+	uint32_t is_hor = 0;
+
+	if (flags & FLIP_SPRITE_HORIZONTALLY) {
+		is_hor = 1;
+	}
+#if 1
+	if (is_hor) {
+		flip_hor (r, 1);
+	} else {
+		flip_hor (r, 0);
+	}
+#endif
+
 	uint16_t addr = ((emu->ctrl[REAL_PPUCTRL] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
 
 	uint8_t *ptr = &emu->chr[addr];
@@ -452,11 +504,10 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 
 	memcpy (r->sprite_bits_one, ptr, 16);
 
-
 	uint8_t *sp = (uint8_t *) &r->sprites[id_texture][0];
 
 	for (int i = 0; i < 8; i++) {
-		uint8_t s = 0x80;
+		uint8_t s = 0x01;
 		uint8_t low = r->sprite_bits_one[i + 0];
 		uint8_t high = r->sprite_bits_one[i + 8];
 
@@ -469,9 +520,8 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
 			*sp++ = 0xff;
-			s >>= 1;
+			s <<= 1;
 		}
-
 	}
 
 	glBindTexture (GL_TEXTURE_2D, r->sprite_texture[id_texture]);
@@ -558,7 +608,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 		math_translate (r->transform, px, py, 0.f);
 
-		build_texture (emu, r, id_texture);
+		build_texture (emu, r, id_texture, flags);
 
 		glActiveTexture (GL_TEXTURE0);
 		glBindTexture (GL_TEXTURE_2D, r->sprite_texture[id_texture]);

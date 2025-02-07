@@ -846,20 +846,10 @@ void jsr_absolute (struct NESEmu *emu)
 	emu->stack[--cpu->S] = (uint8_t) ((pc >> 8) & 0xff);
 	emu->stack[--cpu->S] = (uint8_t) (pc & 0xff);
 
-#if 0
-	uint16_t new_pc = 0;
-	printf ("cur pc: %x\n", cpu->PC);
-	new_pc = emu->mem[cpu->PC + 1];
-	new_pc |= (( emu->mem[cpu->PC + 2] << 8) & 0xff00);
-	cpu->PC = new_pc;
-	printf ("called pc: %x\n", cpu->PC);
-	printf ("returned pc: %x\n", pc);
-#else
 	uint16_t new_pc = 0;
 	new_pc = *(uint16_t *) &emu->mem[(cpu->PC + 1) - 0x8000];
 	cpu->PC = new_pc;
 	//printf ("called: %04x\n", new_pc);
-#endif
 
 	wait_cycles (emu, 6);
 }
