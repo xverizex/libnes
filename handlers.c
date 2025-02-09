@@ -95,7 +95,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
 #if 0
-			if (addr >= 0x215 && addr <= 0x224)
+			if (addr == 0x229 && ((*r == 0x10)||(*r == 0x11)))
 			printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
 #endif
 			emu->oam[addr - 0x200] = *r;

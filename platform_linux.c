@@ -44,7 +44,7 @@ int platform_delay (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ns = (tv.tv_sec * 1000000) + tv.tv_usec;
+    uint64_t ns = (tv.tv_sec * 1000000) + tv.tv_usec * 1000;
 
     uint64_t ls = emu->last_cycles_int64;
     uint64_t ret = ls - ns;
@@ -77,7 +77,7 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
     uint64_t diff_time = ms - emu->start_time_nmi;
 
     //printf ("difftime: %lu %lu\n", diff_time, full_cycle);
-    if (diff_time >= 2) {
+    if (diff_time >= 4) {
         emu->start_time_nmi = ms;
 	return 1;
     }
@@ -616,7 +616,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 		uint8_t px = emu->oam[idx + 3];
 #if 0
 		if (id_texture != 0 && id_texture != 244) {
-			printf ("%03d %03d %03d %02x idx: %02x\n", id_texture, px, py, flags, idx);
+			printf ("addr: %04x %03d %03d %03d %02x idx: %02x\n", 0x200 + idx, id_texture, px, py, flags, idx);
 		}
 #endif
 

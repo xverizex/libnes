@@ -495,6 +495,21 @@ int platform_delay (struct NESEmu *emu, void *_other_data);
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_data);
 void platform_render (struct NESEmu *emu, void *data);
 
+static void debug (struct NESEmu *emu, uint32_t cnt)
+{
+	uint16_t addr = 0;
+
+	printf ("\n%04x:", addr);
+	for (int i = 0; i < cnt; i++) {
+		if (i > 0 && i % 16 == 0) {
+			addr += 16;
+			printf ("\n%04x:", addr);
+		}
+		printf ("%02x ", emu->ram[i]);
+	}
+	printf ("\n");
+}
+
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data)
 {
 
@@ -529,8 +544,14 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		static uint32_t runs = 0;
 		static uint32_t tick = 0;
 		if (!emu->is_nmi_works) {
+			static uint32_t cnt = 0;
+			if (emu->cpu.PC == 0xc7a1) {
+				cnt++;
+//				printf ("cnt: %d\n", cnt);
+//				debug (emu, 0xe0);
+			}
 #if 0
-			if (emu->cpu.PC == 0xc786) {
+			if (emu->cpu.PC == 0xca59) {
 				runs = 1;
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; tick: %d\n",
 						emu->cpu.A,
