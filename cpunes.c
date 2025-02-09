@@ -210,9 +210,9 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->cpu.S = 0xff;
 	emu->cpu.P |= STATUS_FLAG_IF;
 
-	emu->nmi_handler = *(uint16_t *) &data[0xa + emu->sz_prg_rom];
-	emu->reset_handler = *(uint16_t *) &data[0xa + emu->sz_prg_rom + 2];
-	emu->irq_handler = *(uint16_t *) &data[0xa + emu->sz_prg_rom + 4];
+	emu->nmi_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 6];
+	emu->reset_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 4];
+	emu->irq_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 2];
 
 	emu->cpu.PC = emu->reset_handler;
 
@@ -530,7 +530,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		static uint32_t tick = 0;
 		if (!emu->is_nmi_works) {
 #if 0
-			if (emu->cpu.PC == 0xc7b7) {
+			if (emu->cpu.PC == 0xc786) {
 				runs = 1;
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; tick: %d\n",
 						emu->cpu.A,

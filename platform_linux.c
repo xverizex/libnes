@@ -334,8 +334,8 @@ static void init_vao (struct NESEmu *emu, struct render_linux_data *r)
     };
 #else
     float vertices[] = {
-         0.f,    0.f,  0.f, 0.f, 1.f,
-         0.0f,     h,  0.f, 0.f, 0.f,
+         0.f,    h,  0.f, 0.f, 1.f,
+         0.0f,    0,  0.f, 0.f, 0.f,
             w,   0.f,  0.f, 1.f, 1.f,
             w,   0.f,  0.f, 1.f, 1.f,
             w,     h,  0.f, 1.f, 0.f,
@@ -507,17 +507,18 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	}
 #endif
 
+	is_hor = 0;
 	uint16_t addr = ((emu->ctrl[REAL_PPUCTRL] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
 
 	uint8_t *ptr = &emu->chr[addr];
-	ptr += id_texture * 16; 
+	ptr += (id_texture * 16); 
 
 	memcpy (r->sprite_bits_one, ptr, 16);
 
 	uint8_t *sp = r->sprites;
 
 	for (int i = 0; i < 8; i++) {
-		uint8_t s = 0x80;
+		uint8_t s = is_hor? 0x01: 0x80;
 		uint8_t low = r->sprite_bits_one[i + 0];
 		uint8_t high = r->sprite_bits_one[i + 8];
 
@@ -530,7 +531,10 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
 			*sp++ = 0xff;
-			s >>= 1;
+			if (is_hor)
+				s <<= 1;
+			else
+				s >>= 1;
 		}
 	}
 
@@ -606,13 +610,13 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	idx = 0;
 	for (int i = 0; i < 64; i++) {
 
-		uint8_t px = emu->oam[idx + 3];
 		uint8_t py = emu->oam[idx + 0];
-		uint8_t flags = emu->oam[idx + 2];
 		uint8_t id_texture = emu->oam[idx + 1];
+		uint8_t flags = emu->oam[idx + 2];
+		uint8_t px = emu->oam[idx + 3];
 #if 0
 		if (id_texture != 0 && id_texture != 244) {
-			printf ("%03d %03d %03d|", px, py, idx);
+			printf ("%03d %03d %03d %02x idx: %02x\n", id_texture, px, py, flags, idx);
 		}
 #endif
 

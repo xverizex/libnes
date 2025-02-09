@@ -95,8 +95,8 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
 #if 0
-			if (*r == 1 || *r == 2)
-				printf ("emu->cpu.PC = %04x; A: %02x X: %02x Y: %02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y);
+			if (addr >= 0x215 && addr <= 0x224)
+			printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
 #endif
 			emu->oam[addr - 0x200] = *r;
 		} else {
@@ -210,7 +210,6 @@ void repetitive_acts (struct NESEmu *emu,
 		uint16_t cycles_and_bytes)
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint8_t carry = 0;
 	cpu->P &= ~(flags);
 	check_flags (cpu, flags, *reg, result);
 	eq (reg, result);
@@ -1259,12 +1258,10 @@ void lsr_absolute (struct NESEmu *emu)
 		off = 0x8000;
 	}
 
-	if (addr < RAM_MAX) {
-		lsr_acts (emu,
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
-			&m[addr - off],
-			(6 << 8) | 3);
-	}
+	lsr_acts (emu,
+		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
+		&m[addr - off],
+		(6 << 8) | 3);
 }
 
 void bvc_relative (struct NESEmu *emu) 
