@@ -66,7 +66,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		*r = emu->ppu[emu->ppu_addr++];
 	} else if (addr >= 0x4016 && addr <= 0x4017) {
-		*r = 0x40;
+		*r = 0x40; // JOYS
 	} else {
 		*r = emu->mem[addr - 0x8000];
 	}
@@ -155,20 +155,20 @@ void check_flags (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
 			cpu->P |= STATUS_FLAG_ZF;
 		}
 	}
-	if (flags & STATUS_FLAG_CF) {
-		if ((ret < reg)) {
-			cpu->P |= STATUS_FLAG_CF;
-		}
-		if ((reg == 0xff) && (ret == 0xff)) {
-			cpu->P |= STATUS_FLAG_CF;
+}
+
+void check_flags_cmp (struct CPUNes *cpu, uint8_t flags, uint8_t reg, uint8_t ret)
+{
+	if (flags & STATUS_FLAG_NF) {
+		if (ret & 0x80) {
+			cpu->P |= STATUS_FLAG_NF;
 		}
 	}
-#if 0
-	if ((ret & 0x80) && (!(reg & 0x80)))
-		cpu->P |= STATUS_FLAG_VF;
-	if ((!(ret & 0x80)) && (reg & 0x80))
-		cpu->P |= STATUS_FLAG_VF;
-#endif
+	if (flags & STATUS_FLAG_ZF) {
+		if (ret == 0) {
+			cpu->P |= STATUS_FLAG_ZF;
+		}
+	}
 }
 
 void eq (uint8_t *r0, uint8_t r1)
@@ -192,6 +192,11 @@ void adc_acts (struct NESEmu *emu, uint8_t flags,
 	cpu->P &= ~(flags);
 	result += carry;
 	check_flags (cpu, flags, *reg, result);
+	if (flags & STATUS_FLAG_CF) {
+		if ((result < *reg)) {
+			cpu->P |= STATUS_FLAG_CF;
+		}
+	}
 
 	if ((result & 0x80) && (!(*reg & 0x80)))
 		cpu->P |= STATUS_FLAG_VF;
@@ -199,9 +204,24 @@ void adc_acts (struct NESEmu *emu, uint8_t flags,
 		cpu->P |= STATUS_FLAG_VF;
 
 	eq (reg, result);
-//	*reg += carry;
 	wait_cycles (emu, (cycles_and_bytes >> 8) & 0xff);
 	cpu->PC += (cycles_and_bytes & 0xff);
+}
+
+void cmp_act (struct NESEmu *emu, 
+		uint8_t flags, 
+		uint8_t *reg,
+		uint8_t result, 
+		uint8_t val,
+		uint16_t cycles_and_bytes)
+{
+	struct CPUNes *cpu = &emu->cpu;
+	cpu->P &= ~(flags);
+	check_flags_cmp (cpu, flags, *reg, result);
+	if (*reg >= val)
+		cpu->P |= STATUS_FLAG_CF;
+	wait_cycles (emu, cycles_and_bytes >> 8);
+	emu->cpu.PC += (cycles_and_bytes & 0xff);
 }
 
 void repetitive_acts (struct NESEmu *emu, 
@@ -2226,11 +2246,11 @@ void cpy_immediate (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->Y,
 			cpu->Y - val,
-			void_eq,
+			val,
 			(2 << 8) | 2);
 }
 
@@ -2240,11 +2260,11 @@ void cmp_indirect_x (struct NESEmu *emu)
 	uint16_t addr = indirect_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->X,
 			cpu->X - val,
-			void_eq,
+			val,
 			(6 << 8) | 2);
 }
 
@@ -2255,11 +2275,11 @@ void cpy_zeropage (struct NESEmu *emu)
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->Y,
 			cpu->Y - val,
-			void_eq,
+			val,
 			(3 << 8) | 2);
 }
 
@@ -2270,11 +2290,11 @@ void cmp_zeropage (struct NESEmu *emu)
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			void_eq,
+			val,
 			(3 << 8) | 2);
 }
 
@@ -2314,11 +2334,11 @@ void cmp_immediate (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			void_eq,
+			val,
 			(2 << 8) | 2);
 }
 
@@ -2347,11 +2367,11 @@ void cpy_absolute (struct NESEmu *emu)
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->Y,
 			cpu->Y - val,
-			void_eq,
+			val,
 			(4 << 8) | 3);
 }
 
@@ -2361,11 +2381,11 @@ void cmp_absolute (struct NESEmu *emu)
 	uint16_t addr = absolute (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			void_eq,
+			val,
 			(4 << 8) | 3);
 
 	if (addr == 0x9b97) {
@@ -2431,11 +2451,11 @@ void cmp_indirect_y (struct NESEmu *emu)
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			void_eq,
+			val,
 			(5 << 8) | 2);
 }
 
@@ -2454,11 +2474,11 @@ void cmp_zeropage_x (struct NESEmu *emu)
 		off = 0x8000;
 	}
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - m[addr - off],
-			void_eq,
+			m[addr - off],
 			(4 << 8) | 2);
 }
 
@@ -2503,11 +2523,11 @@ void cmp_absolute_y (struct NESEmu *emu)
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			void_eq,
+			val,
 			(4 << 8) | 3);
 }
 
@@ -2518,11 +2538,11 @@ void cmp_absolute_x (struct NESEmu *emu)
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
 			cpu->A - val,
-			void_eq,
+			val,
 			(4 << 8) | 3);
 }
 
@@ -2554,11 +2574,11 @@ void cpx_immediate (struct NESEmu *emu)
 
 	uint8_t val = immediate_val (emu);
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->X,
 			cpu->X - val,
-			void_eq,
+			val,
 			(2 << 8) | 2);
 }
 
@@ -2595,11 +2615,11 @@ void cpx_zeropage (struct NESEmu *emu)
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->X,
 			cpu->X - val,
-			void_eq,
+			val,
 			(3 << 8) | 2);
 }
 
@@ -2709,11 +2729,11 @@ void cpx_absolute (struct NESEmu *emu)
 	uint16_t addr = absolute (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
-	repetitive_acts (emu, 
+	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->X,
 			cpu->X - val,
-			void_eq,
+			val,
 			(4 << 8) | 3);
 }
 void sbc_absolute (struct NESEmu *emu) 
