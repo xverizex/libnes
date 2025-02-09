@@ -10,7 +10,7 @@ void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 	//emu->last_cycles_float = (float) cycles * 0.000558730074f;
 	//emu->last_cycles_int64 = 16L;
-	emu->last_cycles_int64 = cycles * 558L;
+	emu->last_cycles_int64 = cycles * 559L;
 }
 
 void check_flags_ld (struct CPUNes *cpu, uint8_t flags, uint8_t reg)
@@ -56,7 +56,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		*r = 0x80;
 		return;
 	}
-	if (addr >= 0 && addr < RAM_MAX) {
+	if (addr < RAM_MAX) {
 		*r = emu->ram[addr];
 	} else if (addr == 0x2007) {
 		// TODO: what is return ppu data?
@@ -87,7 +87,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		return;
 	}
 
-	if (addr >= 0 && addr < RAM_MAX) {
+	if (addr < RAM_MAX) {
 		if (emu->oam_addr >= RAM_MAX) {
 			printf ("emu->oam_addr is overflow: %04x\n", emu->oam_addr);
 			emu->is_debug_exit = 1;
@@ -95,8 +95,10 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
 #if 0
-			if (addr == 0x229 && ((*r == 0x10)||(*r == 0x11)))
+			if (((addr >= 0x240) && (addr <= 0x248)) && (*r == 0xc7)) {
 			printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
+			emu->is_debug_exit = 1;
+			}
 #endif
 			emu->oam[addr - 0x200] = *r;
 		} else {

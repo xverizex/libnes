@@ -50,7 +50,7 @@ int platform_delay (struct NESEmu *emu, void *_other_data)
     uint64_t ret = ls - ns;
 
     if ((ret) > ls) {
-	    emu->last_cycles_int64 = 0;
+	    emu->last_cycles_int64 = ret - ls;
 	    return 1;
     } else {
 	    emu->last_cycles_int64 = ret;
@@ -64,8 +64,8 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
-    static uint64_t full_cycle = (558730L);
+    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec * 1000);
+    static uint64_t full_cycle = (558730);
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
@@ -77,7 +77,7 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
     uint64_t diff_time = ms - emu->start_time_nmi;
 
     //printf ("difftime: %lu %lu\n", diff_time, full_cycle);
-    if (diff_time >= 4) {
+    if (diff_time >= full_cycle) {
         emu->start_time_nmi = ms;
 	return 1;
     }
@@ -244,7 +244,7 @@ struct render_linux_data {
 	uint32_t id_model;
 	uint32_t id_sampler;
 	uint32_t texture;
-	uint8_t *sprites;
+	uint8_t *sprite_buffer;
 	uint32_t sprite_texture;
 	uint8_t sprite_bits_one[16];
 	uint32_t vao;
@@ -261,10 +261,10 @@ static void init_space (struct NESEmu *emu, struct render_linux_data *r)
 
 static void init_sprite_array (struct NESEmu *emu, struct render_linux_data *r)
 {
-	uint32_t count_bytes = sizeof (uint32_t) * 8 * 8;
+	uint32_t count_bytes = 4 * 8 * 8;
 	r->count_bytes = count_bytes;
-	r->sprites = malloc (count_bytes);
-	memset (r->sprites, 0, count_bytes);
+	r->sprite_buffer = malloc (count_bytes);
+	memset (r->sprite_buffer, 0, count_bytes);
 }
 
 static void init_textures (uint32_t *tex, uint32_t tex_width, uint32_t tex_height)
@@ -334,12 +334,12 @@ static void init_vao (struct NESEmu *emu, struct render_linux_data *r)
     };
 #else
     float vertices[] = {
-         0.f,    h,  0.f, 0.f, 1.f,
-         0.0f,    0,  0.f, 0.f, 0.f,
-            w,   0.f,  0.f, 1.f, 1.f,
-            w,   0.f,  0.f, 1.f, 1.f,
-            w,     h,  0.f, 1.f, 0.f,
-          0.f,     h,  0.f, 0.f, 0.f
+         w,    0,  0.f, 1.f, 0.f,
+         w,    h,  0.f, 1.f, 1.f,
+         0.f,  h,  0.f, 0.f, 1.f,
+         0.f,  h,  0.f, 0.f, 1.f,
+         0.f,  0.f,  0.f, 0.f, 0.f,
+         w,    0.f,  0.f, 1.f, 0.f
     };
 #endif
 
@@ -446,7 +446,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 
 	memcpy (r->sprite_bits_one, ptr, 16);
 
-	uint8_t *sp = r->sprites;
+	uint8_t *sp = r->sprite_buffer;
 
 	for (int i = 0; i < 8; i++) {
 		uint8_t s = 0x80;
@@ -469,7 +469,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 
 	glBindTexture (GL_TEXTURE_2D, r->sprite_texture);
 
-	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, r->sprites);
+	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, r->sprite_buffer);
 
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
@@ -507,7 +507,6 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	}
 #endif
 
-	is_hor = 0;
 	uint16_t addr = ((emu->ctrl[REAL_PPUCTRL] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
 
 	uint8_t *ptr = &emu->chr[addr];
@@ -515,7 +514,9 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 
 	memcpy (r->sprite_bits_one, ptr, 16);
 
-	uint8_t *sp = r->sprites;
+	uint8_t *sp = r->sprite_buffer;
+
+	uint8_t palette_cur = flags & 0x3;
 
 	for (int i = 0; i < 8; i++) {
 		uint8_t s = is_hor? 0x01: 0x80;
@@ -526,7 +527,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 			uint8_t n = 0;
 			if (low & s) n = 1;
 			if (high & s) n |= 2;
-			uint32_t plt = palette_get_color (emu, p[0][n]);
+			uint32_t plt = palette_get_color (emu, p[palette_cur][n]);
 			*sp++ = (plt >>  0) & 0xff;
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
@@ -540,7 +541,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 
 	glBindTexture (GL_TEXTURE_2D, r->sprite_texture);
 
-	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, r->sprites);
+	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, r->sprite_buffer);
 
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
@@ -616,7 +617,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 		uint8_t px = emu->oam[idx + 3];
 #if 0
 		if (id_texture != 0 && id_texture != 244) {
-			printf ("addr: %04x %03d %03d %03d %02x idx: %02x\n", 0x200 + idx, id_texture, px, py, flags, idx);
+			printf ("addr: %04x %02x %d %d %02x idx: %02x\n", 0x200 + idx, id_texture, px, py, flags, idx);
 		}
 #endif
 

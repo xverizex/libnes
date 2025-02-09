@@ -517,7 +517,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (emu->is_nmi_works) {
 		} else {
-			if (!platform_delay (emu, NULL)) {
+			if (platform_delay (emu, NULL)) {
 				if (i > 0) i--;
 				continue;
 			}
@@ -550,9 +550,11 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 //				printf ("cnt: %d\n", cnt);
 //				debug (emu, 0xe0);
 			}
+			//debug (emu, 0xe0);
 #if 0
-			if (emu->cpu.PC == 0xca59) {
+			if (pc == 0xc730) {
 				runs = 1;
+				debug (emu, 0xe0);
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; tick: %d\n",
 						emu->cpu.A,
 						emu->cpu.X,
@@ -562,14 +564,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 						tick
 						);
 				getc (stdin);
-			} else if (runs) {
-				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x\n",
-						emu->cpu.A,
-						emu->cpu.X,
-						emu->cpu.Y,
-						emu->cpu.P,
-						pc);
-				getc (stdin);
+				emu->is_debug_exit = 0;
 			}
 #endif
 		}
