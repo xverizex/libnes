@@ -10,7 +10,7 @@ void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 	//emu->last_cycles_float = (float) cycles * 0.000558730074f;
 	//emu->last_cycles_int64 = 16L;
-	emu->last_cycles_int64 = cycles * 559L;
+	emu->last_cycles_int64 += cycles * 559L;
 	emu->cur_cycles = cycles;
 }
 

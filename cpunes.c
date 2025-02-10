@@ -535,7 +535,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		if (emu->is_nmi_works) {
 		} else {
 			if (platform_delay (emu, NULL)) {
-				if (i > 0) i--;
 				continue;
 			}
 		}
@@ -545,6 +544,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		if (!(emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI)) {
 			emu->counter_for_nmi = 0;
 			emu->cur_cycles = 0;
+			emu->last_cycles_int64 = 0;
 		}
 
 		if (emu->is_nmi_works) {
@@ -568,8 +568,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		if (emu->is_nmi_works) {
 			emu->counter_for_nmi = 0;
 			emu->cur_cycles = 0;
+			emu->last_cycles_int64 = 0;
 		} else {
-			emu->counter_for_nmi += emu->cur_cycles;
+			emu->counter_for_nmi++; //TODO: fix this bug. working is too slow.
+			//emu->counter_for_nmi += emu->cur_cycles;
 		}
 
 		//printf ("pc: %04x\n", pc);

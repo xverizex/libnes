@@ -153,6 +153,7 @@ struct NESEmu {
     uint8_t *mem;
     uint8_t *chr;
 
+    uint64_t timestamp_cycles;
     uint32_t is_returned_from_nmi;
     uint32_t counter_for_nmi;
     uint32_t cur_cycles;
