@@ -18,7 +18,10 @@
 
 #define FLIP_SPRITE_HORIZONTALLY		(1 << 6)
 
-#define MAX_NMI_CYCLES		2273
+#define MAX_NMI_CYCLES		2250
+/*
+ * or 2273 cycles for MAX_NMI_CYCLES
+ */
 
 enum {
 	PPUCTRL = 0x2000,
