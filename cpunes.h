@@ -18,6 +18,8 @@
 
 #define FLIP_SPRITE_HORIZONTALLY		(1 << 6)
 
+#define MAX_NMI_CYCLES		2273
+
 enum {
 	PPUCTRL = 0x2000,
 	PPUMASK,
@@ -149,6 +151,7 @@ struct NESEmu {
     uint8_t *chr;
 
     uint32_t is_returned_from_nmi;
+    uint32_t counter_for_nmi;
 };
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);

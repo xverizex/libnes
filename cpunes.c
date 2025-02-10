@@ -209,6 +209,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->cpu.PC = 0x8000;
 	emu->cpu.S = 0xff;
 	emu->cpu.P |= STATUS_FLAG_IF;
+	emu->counter_for_nmi = 0;
 
 	emu->nmi_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 6];
 	emu->reset_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 4];
@@ -525,9 +526,13 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		uint16_t pc = emu->cpu.PC;
 
+		if (!(emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI)) {
+			emu->counter_for_nmi = 0;
+		}
+
 		if (emu->is_nmi_works) {
 		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
-			if (platform_delay_nmi (emu, NULL)) {
+			if (emu->counter_for_nmi >= MAX_NMI_CYCLES) {
 				uint16_t addr;
 				addr = 0x100 + --emu->cpu.S;
 				emu->ram[addr] = ( emu->cpu.PC >> 8 ) & 0xff;
@@ -542,6 +547,12 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 		pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
+
+		if (emu->is_nmi_works) {
+			emu->counter_for_nmi = 0;
+		} else {
+			emu->counter_for_nmi++;
+		}
 
 		//printf ("pc: %04x\n", pc);
 
