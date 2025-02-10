@@ -303,11 +303,11 @@ void rol_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_
 		cpu->P |= STATUS_FLAG_NF;
 	}
 	bt <<= 1;
-	if (bt == 0x0) {
-		cpu->P |= STATUS_FLAG_ZF;
-	}
 	if (old_flag & STATUS_FLAG_CF) {
 		bt |= 0x01;
+	}
+	if (bt == 0x0) {
+		cpu->P |= STATUS_FLAG_ZF;
 	}
 	*mem = bt;
 	wait_cycles (emu, cycles_and_bytes >> 8);
@@ -324,14 +324,14 @@ void ror_acts (struct NESEmu *emu, uint8_t flags, uint8_t *mem, uint16_t cycles_
 		cpu->P |= STATUS_FLAG_CF;
 	} 
 	bt >>= 1;
-	if (bt == 0x00) {
-		cpu->P |= STATUS_FLAG_ZF;
-	}
 	if (old_flag & STATUS_FLAG_CF) {
 		bt |= 0x80;
 	}
 	if (bt & 0x80) {
 		cpu->P |= STATUS_FLAG_NF;
+	}
+	if (bt == 0x00) {
+		cpu->P |= STATUS_FLAG_ZF;
 	}
 	*mem = bt;
 	wait_cycles (emu, cycles_and_bytes >> 8);

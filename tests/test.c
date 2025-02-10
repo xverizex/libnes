@@ -982,6 +982,202 @@ static void test_sbc ()
 	END_TEST;
 }
 
+static void test_rol_acc_0x00 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x2a;
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	rol_accumulator (emu);
+
+	if ((emu->cpu.A == 0x01) && !(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x01 cf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_rol_acc_0x01 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x2a;
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+	//emu->cpu.P |= STATUS_FLAG_CF;
+
+	rol_accumulator (emu);
+
+	if ((emu->cpu.A == 0x00) && (emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 cf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_rol_acc_0x02 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x2a;
+	emu->cpu.A = 0x40;
+	emu->cpu.PC = 0x8000;
+	//emu->cpu.P |= STATUS_FLAG_CF;
+
+	rol_accumulator (emu);
+
+	if ((emu->cpu.A == 0x80) && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x80 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_rol_acc_0x03 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x2a;
+	emu->cpu.A = 0x40;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	rol_accumulator (emu);
+
+	if ((emu->cpu.A == 0x81) && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x81 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_rol ()
+{
+	BEGIN_TEST;
+
+	test_rol_acc_0x00 (emu, "ROL accumulator 0x00:");
+	test_rol_acc_0x01 (emu, "ROL accumulator 0x01:");
+	test_rol_acc_0x02 (emu, "ROL accumulator 0x02:");
+	test_rol_acc_0x03 (emu, "ROL accumulator 0x03:");
+
+	END_TEST;
+}
+
+static void test_ror_acc_0x00 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x6a;
+	emu->cpu.A = 0x01;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	ror_accumulator (emu);
+
+	if ((emu->cpu.A == 0x80) && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x01 cf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_ror_acc_0x01 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x6a;
+	emu->cpu.A = 0x01;
+	emu->cpu.PC = 0x8000;
+	//emu->cpu.P |= STATUS_FLAG_CF;
+
+	ror_accumulator (emu);
+
+	if ((emu->cpu.A == 0x00) && (emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 cf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_ror_acc_0x02 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x6a;
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+	//emu->cpu.P |= STATUS_FLAG_CF;
+
+	ror_accumulator (emu);
+
+	if ((emu->cpu.A == 0x40) && !(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x80 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_ror_acc_0x03 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x6a;
+	emu->cpu.A = 0x00;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	ror_accumulator (emu);
+
+	if ((emu->cpu.A == 0x80) && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x80 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_ror_acc_0x04 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x6a;
+	emu->cpu.A = 0x01;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	ror_accumulator (emu);
+
+	if ((emu->cpu.A == 0x80) && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x80 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_ror ()
+{
+	BEGIN_TEST;
+
+	test_ror_acc_0x00 (emu, "ROR accumulator 0x00:");
+	test_ror_acc_0x01 (emu, "ROR accumulator 0x01:");
+	test_ror_acc_0x02 (emu, "ROR accumulator 0x02:");
+	test_ror_acc_0x03 (emu, "ROR accumulator 0x03:");
+	test_ror_acc_0x04 (emu, "ROR accumulator 0x04:");
+
+	END_TEST;
+}
+
 int main (int argc, char **argv)
 {
 	test_adc ();
@@ -989,4 +1185,6 @@ int main (int argc, char **argv)
 	test_cmp ();
 	test_lsr ();
 	test_sbc ();
+	test_rol ();
+	test_ror ();
 }
