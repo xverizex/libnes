@@ -192,8 +192,6 @@ void adc_acts (struct NESEmu *emu, uint8_t flags,
 	if (cpu->P & STATUS_FLAG_CF) carry = 1;
 	cpu->P &= ~(flags);
 	if (flags & STATUS_FLAG_CF) {
-		/* CHECK 0xff + 0xff with cf */
-		/* CHECK 0xff + 0x00 with cf */
 		if ((result < *reg)) {
 			cpu->P |= STATUS_FLAG_CF;
 		}
@@ -202,8 +200,6 @@ void adc_acts (struct NESEmu *emu, uint8_t flags,
 	check_flags (cpu, flags, *reg, result);
 	
 	if (flags & STATUS_FLAG_CF) {
-		/* CHECK 0xff + 0xff with cf */
-		/* CHECK 0xff + 0x00 with cf */
 		if ((result < *reg)) {
 			cpu->P |= STATUS_FLAG_CF;
 		}
