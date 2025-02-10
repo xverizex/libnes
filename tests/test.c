@@ -177,6 +177,86 @@ static void test_adc_immediate_0x06 (struct NESEmu *emu, const char *str)
 	}
 }
 
+static void test_adc_immediate_0x07 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x41;
+	emu->cpu.A = 0x40;
+	emu->cpu.PC = 0x8000;
+	//emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_immediate (emu);
+
+	if ((emu->cpu.A == 0x81) && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x81 nf vf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_adc_immediate_0x08 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x81;
+	emu->cpu.A = 0x81;
+	emu->cpu.PC = 0x8000;
+	//emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_immediate (emu);
+
+	if ((emu->cpu.A == 0x02) && !(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x02 cf vf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_adc_immediate_0x09 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x01;
+	emu->cpu.A = 0xff;
+	emu->cpu.PC = 0x8000;
+	//emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_immediate (emu);
+
+	if ((emu->cpu.A == 0x00) && (emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 cf zf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_adc_immediate_0x0a (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x00;
+	emu->cpu.A = 0xff;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	adc_immediate (emu);
+
+	if ((emu->cpu.A == 0x00) && (emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 cf zf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
 static void test_adc ()
 {
 	BEGIN_TEST;
@@ -188,6 +268,10 @@ static void test_adc ()
 	test_adc_immediate_0x04 (emu, "ADC immediate 0x04: ");
 	test_adc_immediate_0x05 (emu, "ADC immediate 0x05: ");
 	test_adc_immediate_0x06 (emu, "ADC immediate 0x06: ");
+	test_adc_immediate_0x07 (emu, "ADC immediate 0x07: ");
+	test_adc_immediate_0x08 (emu, "ADC immediate 0x08: ");
+	test_adc_immediate_0x09 (emu, "ADC immediate 0x09: ");
+	test_adc_immediate_0x0a (emu, "ADC immediate 0x0a: ");
 
 	END_TEST;
 }
