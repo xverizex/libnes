@@ -11,6 +11,7 @@ void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 	//emu->last_cycles_float = (float) cycles * 0.000558730074f;
 	//emu->last_cycles_int64 = 16L;
 	emu->last_cycles_int64 = cycles * 559L;
+	emu->cur_cycles = cycles;
 }
 
 void check_flags_ld (struct CPUNes *cpu, uint8_t flags, uint8_t reg)
@@ -742,7 +743,7 @@ void bpl_relative (struct NESEmu *emu)
 		new_offset = cpu->PC + offset + 2;
 	}
 
-	uint32_t ext_cycles;
+	uint32_t ext_cycles = 0;
 
 	if (emu->cpu.P & STATUS_FLAG_NF) {
 		cpu->PC += 2;
@@ -1039,7 +1040,7 @@ void bmi_relative (struct NESEmu *emu)
 		new_offset = cpu->PC + offset + 2;
 	}
 
-	uint32_t ext_cycles;
+	uint32_t ext_cycles = 0;
 
 	if (emu->cpu.P & STATUS_FLAG_NF) {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
@@ -1319,7 +1320,7 @@ void bvc_relative (struct NESEmu *emu)
 		new_offset = cpu->PC + offset + 2;
 	}
 
-	uint32_t ext_cycles;
+	uint32_t ext_cycles = 0;
 
 	if (emu->cpu.P & STATUS_FLAG_VF) {
 		cpu->PC += 2;
@@ -1635,7 +1636,7 @@ void bvs_relative (struct NESEmu *emu)
 		new_offset = cpu->PC + offset + 2;
 	}
 
-	uint32_t ext_cycles;
+	uint32_t ext_cycles = 0;
 
 	if (emu->cpu.P & STATUS_FLAG_VF) {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
@@ -1907,7 +1908,7 @@ void bcc_relative (struct NESEmu *emu)
 		new_offset = cpu->PC + offset + 2;
 	}
 
-	uint32_t ext_cycles;
+	uint32_t ext_cycles = 0;
 
 	if (emu->cpu.P & STATUS_FLAG_CF) {
 		cpu->PC += 2;
@@ -2149,7 +2150,7 @@ void bcs_relative (struct NESEmu *emu)
 		new_offset = cpu->PC + offset + 2;
 	}
 
-	uint32_t ext_cycles;
+	uint32_t ext_cycles = 0;
 
 	if (emu->cpu.P & STATUS_FLAG_CF) {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
@@ -2460,7 +2461,7 @@ void bne_relative (struct NESEmu *emu)
 		new_offset = cpu->PC + offset + 2;
 	}
 
-	uint32_t ext_cycles;
+	uint32_t ext_cycles = 0;
 
 	if (emu->cpu.P & STATUS_FLAG_ZF) {
 		cpu->PC += 2;
@@ -2832,7 +2833,7 @@ void beq_relative (struct NESEmu *emu)
 		new_offset = cpu->PC + offset + 2;
 	}
 
-	uint32_t ext_cycles;
+	uint32_t ext_cycles = 0;
 
 	if (emu->cpu.P & STATUS_FLAG_ZF) {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);

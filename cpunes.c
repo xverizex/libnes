@@ -210,6 +210,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->cpu.S = 0xff;
 	emu->cpu.P |= STATUS_FLAG_IF;
 	emu->counter_for_nmi = 0;
+	emu->cur_cycles = 0;
 
 	emu->nmi_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 6];
 	emu->reset_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 4];
@@ -244,6 +245,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (ora_absolute)		/* 0x0d */
 			ADD_HANDLER (asl_absolute)		/* 0x0e */
 			ADD_HANDLER (invalid_opcode)		/* 0x0f */
+
 			ADD_HANDLER (bpl_relative)		/* 0x10 */
 			ADD_HANDLER (ora_indirect_y)		/* 0x11 */
 			ADD_HANDLER (invalid_opcode)		/* 0x12 */
@@ -260,6 +262,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (ora_absolute_x)		/* 0x1d */
 			ADD_HANDLER (asl_absolute_x)		/* 0x1e */
 			ADD_HANDLER (invalid_opcode)		/* 0x1f */
+
 			ADD_HANDLER (jsr_absolute)		/* 0x20 */
 			ADD_HANDLER (and_indirect_x)		/* 0x21 */
 			ADD_HANDLER (invalid_opcode)		/* 0x22 */
@@ -276,6 +279,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (and_absolute)		/* 0x2d */
 			ADD_HANDLER (rol_absolute)		/* 0x2e */
 			ADD_HANDLER (invalid_opcode)		/* 0x2f */
+
 			ADD_HANDLER (bmi_relative)		/* 0x30 */
 			ADD_HANDLER (and_indirect_y)		/* 0x31 */
 			ADD_HANDLER (invalid_opcode)		/* 0x32 */
@@ -292,6 +296,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (and_absolute_x)		/* 0x3d */
 			ADD_HANDLER (rol_absolute_x)		/* 0x3e */
 			ADD_HANDLER (invalid_opcode)		/* 0x3f */
+
 			ADD_HANDLER (rti_implied)		/* 0x40 */
 			ADD_HANDLER (eor_indirect_x)		/* 0x41 */
 			ADD_HANDLER (invalid_opcode)		/* 0x42 */
@@ -308,6 +313,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (eor_absolute)		/* 0x4d */
 			ADD_HANDLER (lsr_absolute)		/* 0x4e */
 			ADD_HANDLER (invalid_opcode)		/* 0x4f */
+
 			ADD_HANDLER (bvc_relative)		/* 0x50 */
 			ADD_HANDLER (eor_indirect_y)		/* 0x51 */
 			ADD_HANDLER (invalid_opcode)		/* 0x52 */
@@ -324,6 +330,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (eor_absolute_x)		/* 0x5d */
 			ADD_HANDLER (lsr_absolute_x)		/* 0x5e */
 			ADD_HANDLER (invalid_opcode)		/* 0x5f */
+
 			ADD_HANDLER (rts_implied)		/* 0x60 */
 			ADD_HANDLER (adc_indirect_x)		/* 0x61 */
 			ADD_HANDLER (invalid_opcode)		/* 0x62 */
@@ -340,6 +347,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (adc_absolute)		/* 0x6d */
 			ADD_HANDLER (ror_absolute)		/* 0x6e */
 			ADD_HANDLER (invalid_opcode)		/* 0x6f */
+
 			ADD_HANDLER (bvs_relative)		/* 0x70 */
 			ADD_HANDLER (adc_indirect_y)		/* 0x71 */
 			ADD_HANDLER (invalid_opcode)		/* 0x72 */
@@ -356,6 +364,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (adc_absolute_x)		/* 0x7d */
 			ADD_HANDLER (ror_absolute_x)		/* 0x7e */
 			ADD_HANDLER (invalid_opcode)		/* 0x7f */
+
 			ADD_HANDLER (invalid_opcode)		/* 0x80 */
 			ADD_HANDLER (sta_indirect_x)		/* 0x81 */
 			ADD_HANDLER (invalid_opcode)		/* 0x82 */
@@ -372,6 +381,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (sta_absolute)		/* 0x8d */
 			ADD_HANDLER (stx_absolute)		/* 0x8e */
 			ADD_HANDLER (invalid_opcode)		/* 0x8f */
+
 			ADD_HANDLER (bcc_relative)		/* 0x90 */
 			ADD_HANDLER (sta_indirect_y)		/* 0x91 */
 			ADD_HANDLER (invalid_opcode)		/* 0x92 */
@@ -388,6 +398,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (sta_absolute_x)		/* 0x9d */
 			ADD_HANDLER (invalid_opcode)		/* 0x9e */
 			ADD_HANDLER (invalid_opcode)		/* 0x9f */
+
 			ADD_HANDLER (ldy_immediate)		/* 0xa0 */
 			ADD_HANDLER (lda_indirect_x)		/* 0xa1 */
 			ADD_HANDLER (ldx_immediate)		/* 0xa2 */
@@ -404,6 +415,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (lda_absolute)		/* 0xad */
 			ADD_HANDLER (ldx_absolute)		/* 0xae */
 			ADD_HANDLER (invalid_opcode)		/* 0xaf */
+
 			ADD_HANDLER (bcs_relative)		/* 0xb0 */
 			ADD_HANDLER (lda_indirect_y)		/* 0xb1 */
 			ADD_HANDLER (invalid_opcode)		/* 0xb2 */
@@ -420,6 +432,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (lda_absolute_x)		/* 0xbd */
 			ADD_HANDLER (ldx_absolute_y)		/* 0xbe */
 			ADD_HANDLER (invalid_opcode)		/* 0xbf */
+
 			ADD_HANDLER (cpy_immediate)		/* 0xc0 */
 			ADD_HANDLER (cmp_indirect_x)		/* 0xc1 */
 			ADD_HANDLER (invalid_opcode)		/* 0xc2 */
@@ -436,6 +449,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (cmp_absolute)		/* 0xcd */
 			ADD_HANDLER (dec_absolute)		/* 0xce */
 			ADD_HANDLER (invalid_opcode)		/* 0xcf */
+
 			ADD_HANDLER (bne_relative)		/* 0xd0 */
 			ADD_HANDLER (cmp_indirect_y)		/* 0xd1 */
 			ADD_HANDLER (invalid_opcode)		/* 0xd2 */
@@ -452,6 +466,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (cmp_absolute_x)		/* 0xdd */
 			ADD_HANDLER (dec_absolute_x)		/* 0xde */
 			ADD_HANDLER (invalid_opcode)		/* 0xdf */
+
 			ADD_HANDLER (cpx_immediate)		/* 0xe0 */
 			ADD_HANDLER (sbc_indirect_x)		/* 0xe1 */
 			ADD_HANDLER (invalid_opcode)		/* 0xe2 */
@@ -468,6 +483,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 			ADD_HANDLER (sbc_absolute)		/* 0xed */
 			ADD_HANDLER (inc_absolute)		/* 0xee */
 			ADD_HANDLER (invalid_opcode)		/* 0xef */
+
 			ADD_HANDLER (beq_relative)		/* 0xf0 */
 			ADD_HANDLER (sbc_indirect_y)		/* 0xf1 */
 			ADD_HANDLER (invalid_opcode)		/* 0xf2 */
@@ -528,6 +544,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (!(emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI)) {
 			emu->counter_for_nmi = 0;
+			emu->cur_cycles = 0;
 		}
 
 		if (emu->is_nmi_works) {
@@ -550,8 +567,9 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (emu->is_nmi_works) {
 			emu->counter_for_nmi = 0;
+			emu->cur_cycles = 0;
 		} else {
-			emu->counter_for_nmi++;
+			emu->counter_for_nmi += emu->cur_cycles;
 		}
 
 		//printf ("pc: %04x\n", pc);
