@@ -183,6 +183,7 @@ void void_eq (uint8_t *r0, uint8_t r1)
 void adc_acts (struct NESEmu *emu, uint8_t flags, 
 		uint8_t *reg,
 		uint8_t result, 
+		uint8_t val,
 		void (*eq) (uint8_t *r0, uint8_t r1),
 		uint16_t cycles_and_bytes)
 {
@@ -190,17 +191,27 @@ void adc_acts (struct NESEmu *emu, uint8_t flags,
 	uint8_t carry = 0;
 	if (cpu->P & STATUS_FLAG_CF) carry = 1;
 	cpu->P &= ~(flags);
+	if (flags & STATUS_FLAG_CF) {
+		/* CHECK 0xff + 0xff with cf */
+		/* CHECK 0xff + 0x00 with cf */
+		if ((result < *reg)) {
+			cpu->P |= STATUS_FLAG_CF;
+		}
+	}
 	result += carry;
 	check_flags (cpu, flags, *reg, result);
+	
 	if (flags & STATUS_FLAG_CF) {
+		/* CHECK 0xff + 0xff with cf */
+		/* CHECK 0xff + 0x00 with cf */
 		if ((result < *reg)) {
 			cpu->P |= STATUS_FLAG_CF;
 		}
 	}
 
-	if ((result & 0x80) && (!(*reg & 0x80)))
+	if (((*reg & 0x80) && (val & 0x80)) && !(result & 0x80))
 		cpu->P |= STATUS_FLAG_VF;
-	if ((!(result & 0x80)) && (*reg & 0x80))
+	else if ((!(*reg & 0x80) && !(val & 0x80)) && (result & 0x80))
 		cpu->P |= STATUS_FLAG_VF;
 
 	eq (reg, result);
@@ -1449,6 +1460,7 @@ void adc_indirect_x (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
+		m[addr - off],
 		eq,
 		(6 << 8) | (2)
 		);
@@ -1474,6 +1486,7 @@ void adc_zeropage (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
+		m[addr - off],
 		eq,
 		(3 << 8) | (2)
 		);
@@ -1530,6 +1543,7 @@ void adc_immediate (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + value, 
+		value,
 		eq,
 		(2 << 8) | (2)
 		);
@@ -1570,6 +1584,7 @@ void adc_absolute (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
+		m[addr - off],
 		eq,
 		(4 << 8) | (3)
 		);
@@ -1641,6 +1656,7 @@ void adc_indirect_y (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
+		m[addr - off],
 		eq,
 		(5 << 8) | (2)
 		);
@@ -1669,6 +1685,7 @@ void adc_zeropage_x (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
+		m[addr - off],
 		eq,
 		(4 << 8) | (2)
 		);
@@ -1720,6 +1737,7 @@ void adc_absolute_y (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
+		m[addr - off],
 		eq,
 		(4 << 8) | (3)
 		);
@@ -1747,6 +1765,7 @@ void adc_absolute_x (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
+		m[addr - off],
 		eq,
 		(4 << 8) | (3)
 		);
@@ -2592,6 +2611,7 @@ void sbc_indirect_x (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + ~val, 
+		~val,
 		eq,
 		(6 << 8) | (2)
 		);
@@ -2634,6 +2654,7 @@ void sbc_zeropage (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + ~val, 
+		~val,
 		eq,
 		(3 << 8) | (2)
 		);
@@ -2701,6 +2722,7 @@ void sbc_immediate (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + ~val, 
+		~val,
 		eq,
 		(2 << 8) | (2)
 		);
@@ -2746,6 +2768,7 @@ void sbc_absolute (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + ~val, 
+		~val,
 		eq,
 		(4 << 8) | (3)
 		);
@@ -2821,6 +2844,7 @@ void sbc_indirect_y (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + ~val, 
+		~val,
 		eq,
 		(5 << 8) | (2)
 		);
@@ -2845,6 +2869,7 @@ void sbc_zeropage_x (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + ~val, 
+		~val,
 		eq,
 		(4 << 8) | (2)
 		);
@@ -2901,6 +2926,7 @@ void sbc_absolute_y (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + ~val, 
+		~val,
 		eq,
 		(4 << 8) | (3)
 		);
@@ -2924,6 +2950,7 @@ void sbc_absolute_x (struct NESEmu *emu)
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + ~val, 
+		~val,
 		eq,
 		(4 << 8) | (3)
 		);
