@@ -827,10 +827,166 @@ static void test_lsr ()
 	END_TEST;
 }
 
+static void test_sbc_immediate_0x00 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0xe9;
+	emu->mem[1] = 0x00;
+	emu->cpu.A = 0xff;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	sbc_immediate (emu);
+
+	if (emu->cpu.A == 0xff && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0xff nf and cf flags, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_sbc_immediate_0x01 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x00;
+	emu->cpu.A = 0x7f;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	sbc_immediate (emu);
+
+	if (emu->cpu.A == 0x7f && !(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x80 cf flags, but %02x; P: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_sbc_immediate_0x02 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x40;
+	emu->cpu.A = 0x8f;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	sbc_immediate (emu);
+
+	if ((emu->cpu.A == 0x4f) && !(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x4f nf flag, but %02x; P: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_sbc_immediate_0x03 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0xf4;
+	emu->cpu.A = 0x10;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	sbc_immediate (emu);
+
+	if ((emu->cpu.A == 0x1c) && !(emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x1c, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_sbc_immediate_0x04 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x80;
+	emu->cpu.A = 0x7f;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	sbc_immediate (emu);
+
+	if ((emu->cpu.A == 0xff) && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0xff nf and vf flags, but %02x\n", emu->cpu.A);
+		exit (0);
+	}
+}
+
+static void test_sbc_immediate_0x05 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0x80;
+	emu->cpu.A = 0x7f;
+	emu->cpu.PC = 0x8000;
+	//emu->cpu.P |= STATUS_FLAG_CF;
+
+	sbc_immediate (emu);
+
+	if ((emu->cpu.A == 0xfe) && !(emu->cpu.P & STATUS_FLAG_ZF) && (emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & STATUS_FLAG_VF) && !(emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0xfe nf and vf flags, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_sbc_immediate_0x06 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->mem[0] = 0x69;
+	emu->mem[1] = 0xff;
+	emu->cpu.A = 0xff;
+	emu->cpu.PC = 0x8000;
+	emu->cpu.P |= STATUS_FLAG_CF;
+
+	sbc_immediate (emu);
+
+	if ((emu->cpu.A == 0x00) && (emu->cpu.P & STATUS_FLAG_ZF) && !(emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & STATUS_FLAG_VF) && (emu->cpu.P & STATUS_FLAG_CF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 zf cf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_sbc ()
+{
+	BEGIN_TEST;
+
+	test_sbc_immediate_0x00 (emu, "SBC immediate 0x00:");
+	test_sbc_immediate_0x01 (emu, "SBC immediate 0x01:");
+	test_sbc_immediate_0x02 (emu, "SBC immediate 0x02:");
+	test_sbc_immediate_0x03 (emu, "SBC immediate 0x03:");
+	test_sbc_immediate_0x04 (emu, "SBC immediate 0x04:");
+	test_sbc_immediate_0x05 (emu, "SBC immediate 0x05:");
+	test_sbc_immediate_0x06 (emu, "SBC immediate 0x06:");
+
+	END_TEST;
+}
+
 int main (int argc, char **argv)
 {
 	test_adc ();
 	test_bit ();
 	test_cmp ();
 	test_lsr ();
+	test_sbc ();
 }
