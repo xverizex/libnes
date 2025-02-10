@@ -586,7 +586,8 @@ void php_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	emu->stack[--cpu->S] = cpu->P;
+	uint16_t addr = 0x100 + --cpu->S;
+	emu->ram[addr] = cpu->P;
 
 	wait_cycles (emu, 3);
 
@@ -875,8 +876,12 @@ void jsr_absolute (struct NESEmu *emu)
 
 	pc--;
 
-	emu->stack[--cpu->S] = (uint8_t) ((pc >> 8) & 0xff);
-	emu->stack[--cpu->S] = (uint8_t) (pc & 0xff);
+	uint16_t addr;
+
+       	addr = 0x100 + --cpu->S;
+	emu->ram[addr] = (uint8_t) ((pc >> 8) & 0xff);
+	addr = 0x100 + --cpu->S;
+	emu->ram[addr] = (uint8_t) (pc & 0xff);
 
 	uint16_t new_pc = 0;
 	new_pc = *(uint16_t *) &emu->mem[(cpu->PC + 1) - 0x8000];
@@ -948,7 +953,8 @@ void plp_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	cpu->P = emu->stack[cpu->S++];
+	uint16_t addr = 0x100 + cpu->S++;
+	cpu->P = emu->ram[addr];
 
 	wait_cycles (emu, 4);
 
@@ -1159,10 +1165,13 @@ void rti_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	cpu->P = emu->stack[cpu->S++];
+	uint16_t addr = 0x100 + cpu->S++;
+	cpu->P = emu->ram[addr];
+
+	addr = 0x100 + cpu->S;
 
 	uint16_t new_pc = 0;
-	new_pc = *(uint16_t *) &emu->stack[cpu->S];
+	new_pc = *(uint16_t *) &emu->ram[addr];
 
 	cpu->S += 2;
 
@@ -1224,7 +1233,9 @@ void pha_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	emu->stack[--cpu->S] = cpu->A;
+	uint16_t addr = 0x100 + --cpu->S;
+
+	emu->ram[addr] = cpu->A;
 
 	wait_cycles (emu, 3);
 
@@ -1433,7 +1444,9 @@ void rts_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	cpu->PC = *(uint16_t *) &emu->stack[cpu->S];
+	uint16_t addr = 0x100 + cpu->S;
+
+	cpu->PC = *(uint16_t *) &emu->ram[addr];
 	cpu->S += 2;
 
 	cpu->PC++;
@@ -1515,7 +1528,9 @@ void pla_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	cpu->A = emu->stack[cpu->S++];
+	uint16_t addr = 0x100 + cpu->S++;
+
+	cpu->A = emu->ram[addr];
 
 	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF);
 	cpu->P &= ~(flags);

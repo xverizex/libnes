@@ -142,7 +142,6 @@ struct NESEmu {
     uint32_t is_debug_exit;
 
     uint8_t ctrl[0x100];
-    uint8_t stack[0x100];
     uint8_t ram[RAM_MAX];
     uint8_t oam[0x100];
     uint8_t *ppu;
