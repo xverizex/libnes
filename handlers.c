@@ -65,7 +65,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			printf ("ppu read exit; %04x\n", emu->ppu_addr);
 			emu->is_debug_exit = 1;
 		}
-		*r = emu->ppu[emu->ppu_addr++];
+		*r = emu->ppu[emu->ppu_addr];
 	} else if (addr >= 0x4016 && addr <= 0x4017) {
 		*r = 0x40; // JOYS
 	} else {
