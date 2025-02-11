@@ -394,26 +394,6 @@ uint16_t indirect_y (struct NESEmu *emu);
 
 #include <stdlib.h>
 
-void debug_info_regs (struct NESEmu *emu, uint16_t addr, uint8_t *r)
-{
-#if 0
-	printf ("\tdebug exit: A: %02x X: %02x Y: %02x P: %02x S: %04x PC: %04x *r: %02x\n",
-		emu->cpu.A,
-		emu->cpu.X,
-		emu->cpu.Y,
-		emu->cpu.P,
-		emu->cpu.S,
-		emu->cpu.PC,
-		*r
-	       );
-#endif
-	emu->is_debug_exit = 1;
-}
-
-
-
-
-
 uint16_t immediate (struct NESEmu *emu)
 {
     return (emu->cpu.PC + 1);
