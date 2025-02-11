@@ -95,14 +95,21 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-#if 0
+#if 1
 			if (((addr >= 0x240) && (addr <= 0x248)) && (*r == 0xc7)) {
-			printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
-			emu->is_debug_exit = 1;
+			//printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
+			//emu->is_debug_exit = 1;
+			//exit (0);
 			}
 #endif
 			emu->oam[addr - 0x200] = *r;
 		} else {
+#if 0
+			if (addr == 0xb8 && *r == 0xd1) {
+			printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
+				exit (0);
+			}
+#endif
 			emu->ram[addr] = *r;
 		}
 		return;
@@ -774,9 +781,9 @@ void ora_indirect_y (struct NESEmu *emu)
 void ora_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
+	uint8_t addr = zeropage_x (emu);
 
-	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint8_t val = emu->ram[addr];
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -790,19 +797,10 @@ void asl_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage_x (emu);
-	uint8_t *m;
-	uint16_t off;
-	if (addr < RAM_MAX) {
-		m = emu->ram;
-		off = 0;
-	} else {
-		m = emu->mem;
-		off = 0x8000;
-	}
 
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
-			&m[addr - off],
+			&emu->ram[addr],
 			(6 << 8) | 2);
 }
 void clc_implied (struct NESEmu *emu) 
@@ -1071,9 +1069,9 @@ void and_indirect_y (struct NESEmu *emu)
 void and_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
+	uint8_t addr = zeropage_x (emu);
 
-	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint8_t val = emu->ram[addr];
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1087,18 +1085,10 @@ void rol_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage_x (emu);
-	uint16_t off;
-	uint8_t *m;
-	if (addr < RAM_MAX) {
-		m = emu->ram;
-		off = 0;
-	} else {
-		m = emu->mem;
-		off = 0x8000;
-	}
+
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
-			&m[addr - off],
+			&emu->ram[addr],
 			(6 << 8) | 2);
 }
 
@@ -1350,9 +1340,9 @@ void eor_indirect_y (struct NESEmu *emu)
 void eor_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
+	uint8_t addr = zeropage_x (emu);
 
-	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint8_t val = emu->ram[addr];
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1365,19 +1355,11 @@ void eor_zeropage_x (struct NESEmu *emu)
 void lsr_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
-	uint8_t *m;
-	uint16_t off;
-	if (addr < RAM_MAX) {
-		m = emu->ram;
-		off = 0;
-	} else {
-		m = emu->mem;
-		off = 0x8000;
-	}
+	uint8_t addr = zeropage_x (emu);
+
 	lsr_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
-			&m[addr - off],
+			&emu->ram[addr],
 			(6 << 8) | 2);
 }
 
@@ -1681,23 +1663,13 @@ void adc_indirect_y (struct NESEmu *emu)
 void adc_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
-
-	uint8_t *m;
-	uint16_t off;
-	if (addr < RAM_MAX) {
-		m = emu->ram;
-		off = 0;
-	} else {
-		m = emu->mem;
-		off = 0x8000;
-	}
+	uint8_t addr = zeropage_x (emu);
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
-		cpu->A + m[addr - off], 
-		m[addr - off],
+		cpu->A + emu->ram[addr], 
+		emu->ram[addr],
 		eq,
 		(4 << 8) | (2)
 		);
@@ -1706,19 +1678,11 @@ void adc_zeropage_x (struct NESEmu *emu)
 void ror_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
-	uint16_t off;
-	uint8_t *m;
-	if (addr < RAM_MAX) {
-		m = emu->ram;
-		off = 0;
-	} else {
-		m = emu->mem;
-		off = 0x8000;
-	}
+	uint8_t addr = zeropage_x (emu);
+
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
-			&m[addr - off],
+			&emu->ram[addr],
 			(6 << 8) | 2);
 }
 
@@ -1931,20 +1895,20 @@ void sta_indirect_y (struct NESEmu *emu)
 void sty_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
+	uint8_t addr = zeropage_x (emu);
 	st_acts (emu, &cpu->Y, addr, (4 << 8) | 2);
 }
 
 void sta_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
+	uint8_t addr = zeropage_x (emu);
 	st_acts (emu, &cpu->A, addr, (4 << 8) | 2);
 }
 void stx_zeropage_y (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_y (emu);
+	uint8_t addr = zeropage_y (emu);
 	st_acts (emu, &cpu->X, addr, (4 << 8) | 2);
 }
 
@@ -2175,7 +2139,7 @@ void lda_indirect_y (struct NESEmu *emu)
 void ldy_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
+	uint8_t addr = zeropage_x (emu);
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
 			addr,
@@ -2185,7 +2149,7 @@ void ldy_zeropage_x (struct NESEmu *emu)
 void lda_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
+	uint8_t addr = zeropage_x (emu);
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
@@ -2195,7 +2159,7 @@ void lda_zeropage_x (struct NESEmu *emu)
 void ldx_zeropage_y (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_y (emu);
+	uint8_t addr = zeropage_y (emu);
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
 			addr,
@@ -2293,8 +2257,8 @@ void cmp_indirect_x (struct NESEmu *emu)
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
-			&cpu->X,
-			cpu->X - val,
+			&cpu->A,
+			cpu->A - val,
 			val,
 			(6 << 8) | 2);
 }
@@ -2302,9 +2266,9 @@ void cmp_indirect_x (struct NESEmu *emu)
 void cpy_zeropage (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage (emu);
+	uint8_t addr = zeropage (emu);
 
-	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint8_t val = emu->ram[addr];
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2317,9 +2281,9 @@ void cpy_zeropage (struct NESEmu *emu)
 void cmp_zeropage (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage (emu);
+	uint8_t addr = zeropage (emu);
 
-	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint8_t val = emu->ram[addr];
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2493,45 +2457,25 @@ void cmp_indirect_y (struct NESEmu *emu)
 void cmp_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
-
-	uint8_t *m;
-	uint16_t off;
-	if (addr < RAM_MAX) {
-		m = emu->ram;
-		off = 0;
-	} else {
-		m = emu->mem;
-		off = 0x8000;
-	}
+	uint8_t addr = zeropage_x (emu);
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
-			cpu->A - m[addr - off],
-			m[addr - off],
+			cpu->A - emu->ram[addr],
+			emu->ram[addr],
 			(4 << 8) | 2);
 }
 
 void dec_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
-
-	uint16_t off;
-	uint8_t *m;
-	if (addr < RAM_MAX) {
-		m = emu->ram;
-		off = 0;
-	} else {
-		m = emu->mem;
-		off = 0x8000;
-	}
+	uint8_t addr = zeropage_x (emu);
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
-			&m[addr - off],
-			--m[addr - off],
+			&emu->ram[addr],
+			--emu->ram[addr],
 			void_eq,
 			(6 << 8) | 2);
 }
@@ -2643,9 +2587,9 @@ void cpx_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	uint16_t addr = zeropage (emu);
+	uint8_t addr = zeropage (emu);
 
-	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint8_t val = emu->ram[addr];
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2874,8 +2818,8 @@ void sbc_indirect_y (struct NESEmu *emu)
 void sbc_zeropage_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
-	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint8_t addr = zeropage_x (emu);
+	uint8_t val = emu->ram[addr];
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -2897,23 +2841,12 @@ void sbc_zeropage_x (struct NESEmu *emu)
 
 void inc_zeropage_x (struct NESEmu *emu) {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = zeropage_x (emu);
-
-	uint8_t *mem;
-	uint16_t off;
-
-	if (addr < RAM_MAX) {
-		mem = emu->ram;
-		off = 0;
-	} else {
-		mem = emu->mem;
-		off = 0x8000;
-	}
+	uint8_t addr = zeropage_x (emu);
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
-			&mem[addr - off],
-			++mem[addr - off],
+			&emu->ram[addr],
+			++emu->ram[addr],
 			void_eq,
 			(6 << 8) | 2);
 }
