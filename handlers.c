@@ -55,6 +55,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		emu->addr_off = 0;
 		emu->ppu_addr = 0;
 		*r = 0x80;
+		printf ("%04x <- pc\n", emu->cpu.PC);
 		return;
 	}
 	if (addr < RAM_MAX) {

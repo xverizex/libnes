@@ -476,7 +476,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 
 static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t flags)
 {
-	uint16_t addr_palette = 0x3f00;
+	uint16_t addr_palette = 0x3f10;
 	uint8_t p[4][4];
 	for (int i = 0; i < 4; i++) {
 		p[i][0] = emu->ppu[addr_palette + 0];
