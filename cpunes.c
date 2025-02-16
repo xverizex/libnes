@@ -611,8 +611,8 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			emu->cur_cycles = 0;
 			emu->last_cycles_int64 = 0;
 		} else {
-			emu->counter_for_nmi++; //TODO: fix this bug. working is too slow.
-			//emu->counter_for_nmi += emu->cur_cycles;
+			//emu->counter_for_nmi++; //TODO: fix this bug. working is too slow.
+			emu->counter_for_nmi += emu->cur_cycles;
 		}
 
 		if (emu->is_returned_from_nmi) {

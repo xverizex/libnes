@@ -18,7 +18,7 @@
 
 #define FLIP_SPRITE_HORIZONTALLY		(1 << 6)
 
-#define MAX_NMI_CYCLES		2250
+#define MAX_NMI_CYCLES		1136
 /*
  * or 2273 cycles for MAX_NMI_CYCLES
  */

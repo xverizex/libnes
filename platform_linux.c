@@ -44,7 +44,7 @@ int platform_delay (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ns = (tv.tv_sec * 1000000) + tv.tv_usec * 1000;
+    uint64_t ns = tv.tv_usec;
 
     uint64_t ls = emu->last_cycles_int64;
     uint64_t ret = ns - emu->timestamp_cycles;
