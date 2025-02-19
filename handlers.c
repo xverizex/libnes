@@ -55,7 +55,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		emu->addr_off = 0;
 		emu->ppu_addr = 0;
 		*r = 0x80;
-		printf ("%04x <- pc\n", emu->cpu.PC);
+		//printf ("%04x <- pc\n", emu->cpu.PC);
 		return;
 	}
 	if (addr < RAM_MAX) {
@@ -96,11 +96,15 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-#if 1
-			if (((addr >= 0x240) && (addr <= 0x248)) && (*r == 0xc7)) {
-			//printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
-			//emu->is_debug_exit = 1;
-			//exit (0);
+#if 0
+			if (((addr == 0x243)&& (*r == 196))) {
+				printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", 
+						emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
+				emu->is_debug_exit = 1;
+				//exit (0);
+			} else if (addr == 0x243) {
+				static int cnt = 0;
+				printf ("cnt: %d; *r %02x %d\n", cnt++, *r, *r);
 			}
 #endif
 			emu->oam[addr - 0x200] = *r;
@@ -1255,7 +1259,7 @@ void bvc_relative (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	int8_t offset = emu->mem[cpu->PC + 1];
+	int8_t offset = emu->mem[(cpu->PC + 1) - 0x8000];
 
 	uint16_t new_offset;
 
@@ -1419,6 +1423,10 @@ void adc_zeropage (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint8_t addr = zeropage (emu);
+	if (addr == 0xb9) {
+		printf ("adc: %02x + %02x\n", cpu->A, emu->ram[addr]);
+		emu->is_debug_exit = 1;
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 

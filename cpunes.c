@@ -574,9 +574,9 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 				//debug (emu, 0xf0);
 			}
 			//debug (emu, 0xe0);
-#if 1
-			//if (pc == 0xc783 && cnt == 9) {
-			if (0) {
+#if 0
+			if (pc == 0xc7b0 && emu->cpu.X == 0x38) {
+			//if (emu->is_debug_exit) {
 				runs = 1;
 				debug (emu, 0xf0);
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; tick: %d\n",
@@ -588,7 +588,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 						tick
 						);
 				getc (stdin);
-				//emu->is_debug_exit = 0;
+				emu->is_debug_exit = 0;
 			} else if (runs) {
 				debug (emu, 0xf0);
 				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; tick: %d\n",
