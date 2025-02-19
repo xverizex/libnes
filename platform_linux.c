@@ -402,38 +402,30 @@ uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
 static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
 {
-#if 0
-	uint16_t addr_palette = 0x23c0;
-	uint8_t p[16];
-	for (int i = 0; i < 16; i++) {
-		p[i] = emu->ppu[addr_palette];
-		addr_palette++;
-#if 0
-		printf ("palette:\n");
-		printf ("\t%x\n", p[i][0]);
-#endif
-	}
-#endif
+
+	uint16_t id = y * 16 / 32 + x * 16 / 32;
 
 	uint16_t addr_palette = 0x3f00;
-	//uint16_t addr_palette = 0x23c0;
+	uint16_t palette = 0x23c0;
+
 	uint8_t p[4][4];
-	for (int i = 0; i < 4; i++) {
-		p[i][0] = emu->ppu[addr_palette + 0];
-		p[i][1] = emu->ppu[addr_palette + 1];
-		p[i][2] = emu->ppu[addr_palette + 2];
-		p[i][3] = emu->ppu[addr_palette + 3];
-
-		addr_palette += 4;
+	uint32_t indx = 0;
+	for (int i = 0; i < 16; i += 4) {
+		p[indx][0] = emu->ppu[addr_palette + 0 + i];
+		p[indx][1] = emu->ppu[addr_palette + 1 + i];
+		p[indx][2] = emu->ppu[addr_palette + 2 + i];
+		p[indx][3] = emu->ppu[addr_palette + 3 + i];
+		indx++;
 	}
-#if 0
-		printf ("palette:\n");
-		printf ("\t%x %x %x %x\n", p[0][0], p[0][1], p[0][2], p[0][3]);
-		printf ("\t%x %x %x %x\n", p[1][0], p[1][1], p[1][2], p[1][3]);
-		printf ("\t%x %x %x %x\n", p[2][0], p[2][1], p[2][2], p[2][3]);
-		printf ("\t%x %x %x %x\n", p[3][0], p[3][1], p[3][2], p[3][3]);
-#endif
 
+	printf ("id: %02x %d; %04x\n", id, id, palette + id);
+	uint8_t pal = emu->ppu[palette + id];
+
+	uint32_t xx = x * 16 % 32;
+	uint32_t yy = y * 16 % 32;
+
+	uint8_t col = yy > 0? 4: 0;
+	col += xx > 0? 2: 0;
 
 	uint16_t addr = ((emu->ctrl[REAL_PPUCTRL] & PPUCTRL_BACKGROUND_PATTERN) == 0x0? 0x0: 0x1000);
 
@@ -444,6 +436,8 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 
 	uint8_t *sp = r->sprite_buffer;
 
+	indx = (pal >> col) & 0x03;
+
 	for (int i = 0; i < 8; i++) {
 		uint8_t s = 0x80;
 		uint8_t low = r->sprite_bits_one[i + 0];
@@ -453,7 +447,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 			uint8_t n = 0;
 			if (low & s) n = 1;
 			if (high & s) n |= 2;
-			uint32_t plt = palette_get_color (emu, p[0][n]);
+			uint32_t plt = palette_get_color (emu, p[indx][n]);
 			*sp++ = (plt >>  0) & 0xff;
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
@@ -495,13 +489,6 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 	if (flags & FLIP_SPRITE_HORIZONTALLY) {
 		is_hor = 1;
 	}
-#if 0
-	if (is_hor) {
-		flip_hor (r, 1);
-	} else {
-		flip_hor (r, 0);
-	}
-#endif
 
 	uint16_t addr = ((emu->ctrl[REAL_PPUCTRL] & PPUCTRL_SPRITE_PATTERN) == 0x0? 0x0: 0x1000);
 
