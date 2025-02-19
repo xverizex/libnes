@@ -403,7 +403,9 @@ uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
 {
 
-	uint16_t id = y * 16 / 32 + x * 16 / 32;
+	uint16_t py = y * 4 / 8;
+	uint16_t px = x * 4 / 8;
+	uint16_t id = py * 2 + px;
 
 	uint16_t addr_palette = 0x3f00;
 	uint16_t palette = 0x23c0;
