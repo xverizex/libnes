@@ -64,20 +64,16 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec * 1000);
-    static uint64_t full_cycle = (558730);
+    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec);
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
             return 0;
     }
 
-    //uint64_t cycles = 2250 * full_cycle;
-
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    //printf ("difftime: %lu %lu\n", diff_time, full_cycle);
-    if (diff_time >= full_cycle) {
+    if (diff_time >= 16670) {
         emu->start_time_nmi = ms;
 	return 1;
     }
