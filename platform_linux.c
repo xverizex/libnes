@@ -403,9 +403,9 @@ uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
 {
 
-	uint16_t py = y * 4 / 8;
-	uint16_t px = x * 4 / 8;
-	uint16_t id = py * 2 + px;
+	uint32_t py = y * 8 / 32;
+	uint32_t px = x * 8 / 32; 
+	uint16_t id = py * 8 + px;
 
 	uint16_t addr_palette = 0x3f00;
 	uint16_t palette = 0x23c0;
@@ -420,14 +420,19 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 		indx++;
 	}
 
-	printf ("id: %02x %d; %04x\n", id, id, palette + id);
 	uint8_t pal = emu->ppu[palette + id];
 
-	uint32_t xx = x * 16 % 32;
-	uint32_t yy = y * 16 % 32;
+	float mx, my;
+	mx = my = 0.f;
+	mx = x;
+	my = y;
+	float mmx = mx * 8 / 32;
+	float mmy = my * 8 / 32;
+	float lx = mmx - px;
+	float ly = mmy - py;
 
-	uint8_t col = yy > 0? 4: 0;
-	col += xx > 0? 2: 0;
+	uint8_t col = ly >= 0.5f? 4: 0;
+	col += lx >= 0.5f? 2: 0;
 
 	uint16_t addr = ((emu->ctrl[REAL_PPUCTRL] & PPUCTRL_BACKGROUND_PATTERN) == 0x0? 0x0: 0x1000);
 

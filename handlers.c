@@ -1423,10 +1423,6 @@ void adc_zeropage (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint8_t addr = zeropage (emu);
-	if (addr == 0xb9) {
-		printf ("adc: %02x + %02x\n", cpu->A, emu->ram[addr]);
-		emu->is_debug_exit = 1;
-	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
