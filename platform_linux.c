@@ -246,9 +246,12 @@ struct render_linux_data {
 	uint32_t texture;
 	uint8_t *sprite_buffer;
 	uint32_t sprite_texture;
+	uint32_t background_texture[256];
 	uint8_t sprite_bits_one[16];
 	uint32_t vao;
 	uint32_t vbo;
+	uint8_t palette_background[4][4];
+	uint32_t is_need_reorder_palette_background;
 };
 
 static void init_space (struct NESEmu *emu, struct render_linux_data *r)
@@ -267,16 +270,29 @@ static void init_sprite_array (struct NESEmu *emu, struct render_linux_data *r)
 	memset (r->sprite_buffer, 0, count_bytes);
 }
 
-static void init_textures (uint32_t *tex, uint32_t tex_width, uint32_t tex_height)
+static void init_textures (struct render_linux_data *r, uint32_t tex_width, uint32_t tex_height)
 {
-	glGenTextures (1, tex);
+	glGenTextures (1, &r->sprite_texture);
 
-	glBindTexture (GL_TEXTURE_2D, *tex);
+	glBindTexture (GL_TEXTURE_2D, r->sprite_texture);
 	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glBindTexture (GL_TEXTURE_2D, 0);
+
+	// build background textures;
+	glGenTextures (256, r->background_texture);
+	for (int i = 0; i < 256; i++) {
+		glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
+		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	}
 
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
@@ -395,7 +411,7 @@ void platform_init (struct NESEmu *emu, void *_other_data)
 	r->program = compile_shader (vert_shader_str, frag_shader_str);
 	init_space (emu, r);
 	init_sprite_array (emu, r);
-	init_textures (&r->sprite_texture, 8, 8);
+	init_textures (r, 8, 8);
 	init_vao (emu, r);
 	init_id (emu, r);
 
@@ -406,23 +422,25 @@ uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
 static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
 {
+	static uint16_t addr_palette = 0x3f00;
+	static uint16_t palette = 0x23c0;
+
+	uint32_t indx = 0;
+	if (emu->is_new_palette_background) {
+		for (int i = 0; i < 16; i += 4) {
+			r->palette_background[indx][0] = emu->ppu[addr_palette + 0 + i];
+			r->palette_background[indx][1] = emu->ppu[addr_palette + 1 + i];
+			r->palette_background[indx][2] = emu->ppu[addr_palette + 2 + i];
+			r->palette_background[indx][3] = emu->ppu[addr_palette + 3 + i];
+			indx++;
+		}
+
+		emu->is_new_palette_background = 0;
+	}
 
 	uint32_t py = y * 8 / 32;
 	uint32_t px = x * 8 / 32; 
 	uint16_t id = py * 8 + px;
-
-	uint16_t addr_palette = 0x3f00;
-	uint16_t palette = 0x23c0;
-
-	uint8_t p[4][4];
-	uint32_t indx = 0;
-	for (int i = 0; i < 16; i += 4) {
-		p[indx][0] = emu->ppu[addr_palette + 0 + i];
-		p[indx][1] = emu->ppu[addr_palette + 1 + i];
-		p[indx][2] = emu->ppu[addr_palette + 2 + i];
-		p[indx][3] = emu->ppu[addr_palette + 3 + i];
-		indx++;
-	}
 
 	uint8_t pal = emu->ppu[palette + id];
 
@@ -458,7 +476,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 			uint8_t n = 0;
 			if (low & s) n = 1;
 			if (high & s) n |= 2;
-			uint32_t plt = palette_get_color (emu, p[indx][n]);
+			uint32_t plt = palette_get_color (emu, r->palette_background[indx][n]);
 			*sp++ = (plt >>  0) & 0xff;
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
@@ -468,7 +486,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 
 	}
 
-	glBindTexture (GL_TEXTURE_2D, r->sprite_texture);
+	glBindTexture (GL_TEXTURE_2D, r->background_texture[id_texture]);
 
 	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, r->sprite_buffer);
 
@@ -565,6 +583,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	int m = 0;
 
 	x = y = ppx = ppy = 0;
+
 	for (int i = 0; i < 960; i++) {
 
 		if ((i > 0) && ((i % 32) == 0)) {
@@ -578,10 +597,11 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 		math_translate (r->transform, ppx, ppy, 0.f);
 
-		build_background (emu, r, id_texture, x, y);
+		if (emu->is_new_textures)
+			build_background (emu, r, id_texture, x, y);
 
 		glActiveTexture (GL_TEXTURE0);
-		glBindTexture (GL_TEXTURE_2D, r->sprite_texture);
+		glBindTexture (GL_TEXTURE_2D, r->background_texture[id_texture]);
 		glUniform1i (r->id_sampler, 0);
 
 		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
@@ -598,6 +618,8 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 		x++;
 
 	}
+
+	emu->is_new_textures = 0;
 
 #endif
 
