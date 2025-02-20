@@ -424,21 +424,8 @@ uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
 static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
 {
-	static const uint16_t addr_palette = 0x3f00;
 	static const uint16_t palette = 0x23c0;
-
 	uint32_t indx = 0;
-//	if (emu->is_new_palette_background) {
-		for (int i = 0; i < 16; i += 4) {
-			r->palette_background[indx][0] = emu->ppu[addr_palette + 0 + i];
-			r->palette_background[indx][1] = emu->ppu[addr_palette + 1 + i];
-			r->palette_background[indx][2] = emu->ppu[addr_palette + 2 + i];
-			r->palette_background[indx][3] = emu->ppu[addr_palette + 3 + i];
-			indx++;
-		}
-
-		//emu->is_new_palette_background = 0;
-//	}
 
 	uint32_t py = y * 8 / 32;
 	uint32_t px = x * 8 / 32; 
@@ -478,7 +465,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 			uint8_t n = 0;
 			if (low & s) n = 1;
 			if (high & s) n |= 2;
-			uint32_t plt = palette_get_color (emu, r->palette_background[indx][n]);
+			uint32_t plt = palette_get_color (emu, emu->palette_image[indx * 4 + n]);
 			*sp++ = (plt >>  0) & 0xff;
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
@@ -574,6 +561,39 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 	glBindVertexArray (r->vao);
 
+	static const uint16_t addr_palette = 0x3f00;
+	uint16_t ix = 0;
+	uint32_t indx = 0;
+	static int cnt_pal = 0;
+	for (int y = 0; y < 16; y++) {
+		if ((emu->palette_image[ix] != emu->ppu[addr_palette + ix])) {
+			emu->is_new_palette_background = 1;
+		} else {
+			ix++;
+			continue;
+		}
+
+		cnt_pal = 0;
+		for (int i = 0; i < 16; i += 4) {
+			emu->palette_image[i + 0] = emu->ppu[addr_palette + 0 + i];
+			emu->palette_image[i + 1] = emu->ppu[addr_palette + 1 + i];
+			emu->palette_image[i + 2] = emu->ppu[addr_palette + 2 + i];
+			emu->palette_image[i + 3] = emu->ppu[addr_palette + 3 + i];
+		}
+		break;
+	}
+
+#if 0
+	uint16_t addr_palette = 0x3f00;
+	uint32_t indx = 0;
+	for (int i = 0; i < 16; i += 4) {
+		r->palette_background[indx][0] = emu->ppu[addr_palette + 0 + i];
+		r->palette_background[indx][1] = emu->ppu[addr_palette + 1 + i];
+		r->palette_background[indx][2] = emu->ppu[addr_palette + 2 + i];
+		r->palette_background[indx][3] = emu->ppu[addr_palette + 3 + i];
+		indx++;
+	}
+#endif
 #if 1
 	int32_t ppx = 0;
 	int32_t ppy = 0;
@@ -625,6 +645,11 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 	}
 
+	// TODO: This is a bug. If cnt_pal arrived to 30, then sprites deffects
+	if (cnt_pal == 30) {
+		printf ("!!!\n");
+		emu->is_new_palette_background = 0;
+	}
 #endif
 
 #if 1
@@ -665,4 +690,5 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 #endif
 	SDL_GL_SwapWindow (win);
+	cnt_pal++;
 }
