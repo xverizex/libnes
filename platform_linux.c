@@ -6,7 +6,7 @@
 #include <string.h>
 #include <GLES3/gl3.h>
 #include <stdlib.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 void linux_wait_cycles (struct NESEmu *emu)
 {
@@ -42,19 +42,19 @@ void platform_ppu_mask (struct NESEmu *emu, void *_other_data)
 int platform_delay (struct NESEmu *emu, void *_other_data)
 {
     struct timeval tv;
-    gettimeofday (&tv, NULL);
+    //gettimeofday (&tv, NULL);
 
-    uint64_t ns = tv.tv_usec;
+    uint64_t ns = SDL_GetTicksNS ();
 
     if (emu->timestamp_cycles == 0L) {
 	    emu->timestamp_cycles = ns;
     }
 
-    uint64_t ls = emu->last_cycles_int64;
     uint64_t ret = ns - emu->timestamp_cycles;
 
     if (ret >= emu->last_cycles_int64) {
-	    emu->last_cycles_int64 = 0;
+	    uint64_t last = ret - emu->last_cycles_int64;
+	    emu->last_cycles_int64 = last;
 	    emu->timestamp_cycles = ns;
 	    return 0;
     } else {
