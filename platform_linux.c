@@ -68,7 +68,7 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ms = SDL_GetTicks ();
+    uint64_t ms = SDL_GetTicksNS ();
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
@@ -77,7 +77,7 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 16) {
+    if (diff_time >= 16666670) {
         emu->start_time_nmi = ms;
 	return 1;
     }
@@ -437,7 +437,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 			indx++;
 		}
 
-		emu->is_new_palette_background = 0;
+		//emu->is_new_palette_background = 0;
 //	}
 
 	uint32_t py = y * 8 / 32;
@@ -601,7 +601,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 		math_translate (r->transform, ppx, ppy, 0.f);
 
-		if ((emu->ppu_copy[naddr] != emu->ppu[naddr])) {
+		if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
 			build_background (emu, r, id_texture, x, y);
 			emu->ppu_copy[naddr] = emu->ppu[naddr];
 		}
