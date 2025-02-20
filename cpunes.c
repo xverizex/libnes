@@ -225,7 +225,6 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->width = 256;
 	emu->height = 224;
 
-	emu->is_new_textures = 0;
 	emu->is_new_palette_background = 0;
 
 	platform_alloc_memory_map (emu);

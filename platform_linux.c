@@ -398,10 +398,12 @@ void platform_alloc_memory_map (struct NESEmu *emu)
 	emu->mem = malloc (emu->sz_prg_rom);
 	emu->chr = malloc (emu->sz_chr_rom);
 	emu->ppu = malloc (0x4000);
+	emu->ppu_copy = malloc (0x4000);
 
 	memset (emu->mem, 0, emu->sz_prg_rom);
 	memset (emu->chr, 0, emu->sz_chr_rom);
 	memset (emu->ppu, 0, 0x4000);
+	memset (emu->ppu_copy, 0, 0x4000);
 }
 
 void platform_init (struct NESEmu *emu, void *_other_data)
@@ -422,11 +424,11 @@ uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
 static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
 {
-	static uint16_t addr_palette = 0x3f00;
-	static uint16_t palette = 0x23c0;
+	static const uint16_t addr_palette = 0x3f00;
+	static const uint16_t palette = 0x23c0;
 
 	uint32_t indx = 0;
-	if (emu->is_new_palette_background) {
+//	if (emu->is_new_palette_background) {
 		for (int i = 0; i < 16; i += 4) {
 			r->palette_background[indx][0] = emu->ppu[addr_palette + 0 + i];
 			r->palette_background[indx][1] = emu->ppu[addr_palette + 1 + i];
@@ -436,7 +438,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 		}
 
 		emu->is_new_palette_background = 0;
-	}
+//	}
 
 	uint32_t py = y * 8 / 32;
 	uint32_t px = x * 8 / 32; 
@@ -584,7 +586,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 	x = y = ppx = ppy = 0;
 
-	for (int i = 0; i < 960; i++) {
+	for (uint16_t i = 0; i < 960; i++) {
 
 		if ((i > 0) && ((i % 32) == 0)) {
 			x = 0;
@@ -593,12 +595,16 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 			ppy += 8;
 		}
 
-		uint8_t id_texture = emu->ppu[i + addr];
+		uint16_t naddr = i + addr;
+
+		uint8_t id_texture = emu->ppu[naddr];
 
 		math_translate (r->transform, ppx, ppy, 0.f);
 
-		if (emu->is_new_textures)
+		if ((emu->ppu_copy[naddr] != emu->ppu[naddr])) {
 			build_background (emu, r, id_texture, x, y);
+			emu->ppu_copy[naddr] = emu->ppu[naddr];
+		}
 
 		glActiveTexture (GL_TEXTURE0);
 		glBindTexture (GL_TEXTURE_2D, r->background_texture[id_texture]);
@@ -618,8 +624,6 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 		x++;
 
 	}
-
-	emu->is_new_textures = 0;
 
 #endif
 

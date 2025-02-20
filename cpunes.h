@@ -150,6 +150,7 @@ struct NESEmu {
     uint8_t ram[RAM_MAX];
     uint8_t oam[0x100];
     uint8_t *ppu;
+    uint8_t *ppu_copy;
     uint8_t *mem;
     uint8_t *chr;
 
@@ -157,7 +158,6 @@ struct NESEmu {
     uint32_t is_returned_from_nmi;
     uint32_t counter_for_nmi;
     uint32_t cur_cycles;
-    uint32_t is_new_textures;
     uint32_t is_new_palette_background;
 };
 
