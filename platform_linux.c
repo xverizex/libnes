@@ -68,7 +68,7 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
-    uint64_t ms = (tv.tv_sec * 1000) + (tv.tv_usec);
+    uint64_t ms = SDL_GetTicks ();
 
     if (emu->start_time_nmi == 0L) {
             emu->start_time_nmi = ms;
@@ -77,7 +77,7 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 
     uint64_t diff_time = ms - emu->start_time_nmi;
 
-    if (diff_time >= 16670) {
+    if (diff_time >= 16) {
         emu->start_time_nmi = ms;
 	return 1;
     }
