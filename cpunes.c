@@ -539,11 +539,13 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		uint16_t pc = emu->cpu.PC;
 
+#if 0
 		if (!(emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI)) {
 			emu->counter_for_nmi = 0;
 			emu->cur_cycles = 0;
 			//emu->last_cycles_int64 = 0;
 		}
+#endif
 
 		if (emu->is_nmi_works) {
 		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
@@ -568,11 +570,13 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		static uint32_t tick = 0;
 		if (!emu->is_nmi_works) {
 			static uint32_t cnt = 0;
+#if 0
 			if (emu->cpu.PC == 0xc783) {
 				cnt++;
 				//printf ("cnt: %d\n", cnt);
 				//debug (emu, 0xf0);
 			}
+#endif
 			//debug (emu, 0xe0);
 #if 0
 			if (pc == 0xc7b0 && emu->cpu.X == 0x38) {
@@ -605,15 +609,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 		pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
-
-		if (emu->is_nmi_works) {
-			emu->counter_for_nmi = 0;
-			emu->cur_cycles = 0;
-			emu->last_cycles_int64 = 0;
-		} else {
-			//emu->counter_for_nmi++; //TODO: fix this bug. working is too slow.
-			emu->counter_for_nmi += emu->cur_cycles;
-		}
 
 		if (emu->is_returned_from_nmi) {
 			platform_render (emu, _data);

@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-I.
-LDFLAGS=-lGLESv2 -lSDL2 -fPIC -shared -g
+LDFLAGS=-lGLESv2 -lSDL2 -fPIC -shared -O3
 SOURCES=cpunes.c handlers.c platform_linux.c palette.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=libnes.so
