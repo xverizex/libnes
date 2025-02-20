@@ -46,12 +46,16 @@ int platform_delay (struct NESEmu *emu, void *_other_data)
 
     uint64_t ns = tv.tv_usec;
 
+    if (emu->timestamp_cycles == 0L) {
+	    emu->timestamp_cycles = ns;
+    }
+
     uint64_t ls = emu->last_cycles_int64;
     uint64_t ret = ns - emu->timestamp_cycles;
 
     if (ret >= emu->last_cycles_int64) {
 	    emu->last_cycles_int64 = 0;
-	    emu->timestamp_cycles = ns + ret;
+	    emu->timestamp_cycles = ns;
 	    return 0;
     } else {
 	    return 1;

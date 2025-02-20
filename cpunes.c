@@ -218,6 +218,9 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 
 	emu->cpu.PC = emu->reset_handler;
 
+	emu->timestamp_cycles = 0;
+	emu->last_cycles_int64 = 0;
+
 	emu->scale = 4;
 	emu->width = 256;
 	emu->height = 224;
