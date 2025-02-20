@@ -122,6 +122,8 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 	if (addr == PPUCTRL) {
 		emu->ctrl[REAL_PPUCTRL] = *r;
+		if (*r & PPUCTRL_VBLANK_NMI)
+			emu->is_new_textures = 1;
 	} else if (addr == PPUMASK) {
 		emu->ctrl[REAL_PPUMASK] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
@@ -152,7 +154,6 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->is_new_palette_background = 1;
 
 		emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
-		emu->is_new_textures = 1;
 	} else if (addr >= PPUCTRL && addr <= PPUDATA) {
 		emu->ctrl[addr - 0x2000] = *r;
 	} else if (addr >= 0x4000 && addr < 0x6000) {
