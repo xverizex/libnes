@@ -31,8 +31,6 @@ int main (int argc, char **argv)
 	uint32_t flags = SDL_WINDOW_OPENGL;
 
 	win = SDL_CreateWindow ("Test NES",
-			SDL_WINDOWPOS_CENTERED,
-			SDL_WINDOWPOS_CENTERED,
 			width,
 			height,
 			flags);
@@ -65,14 +63,14 @@ int main (int argc, char **argv)
 	struct NESEmu *emu = malloc (sizeof (struct NESEmu));
 
 	nes_emu_init (emu, data, sz_file);
-	nes_emu_rescale (emu, scale);
+	//nes_emu_rescale (emu, scale);
 
 	SDL_Event event;
 
 	while (1) {
 		while (SDL_PollEvent (&event)) {
 			switch (event.type) {
-				case SDL_QUIT:
+				case SDL_EVENT_QUIT:
 					exit (0);
 					break;
 			}
