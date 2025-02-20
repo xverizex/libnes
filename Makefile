@@ -1,4 +1,4 @@
 all:
-	make -f Makefile.linux
+	make -f Makefile.linux_app
 clean:
-	make clean -f Makefile.linux
+	make clean -f Makefile.linux_app

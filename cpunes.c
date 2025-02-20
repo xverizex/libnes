@@ -536,6 +536,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 	for (int i = 0; i < count_instructions; i++) {
 
 		if (emu->is_nmi_works) {
+			while (platform_delay (emu, NULL));
 		} else {
 			while (platform_delay (emu, NULL));
 		}
