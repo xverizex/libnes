@@ -646,8 +646,7 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	}
 
 	// TODO: This is a bug. If cnt_pal arrived to 30, then sprites deffects
-	if (cnt_pal == 30) {
-		printf ("!!!\n");
+	if (cnt_pal == 20) {
 		emu->is_new_palette_background = 0;
 	}
 #endif
