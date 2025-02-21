@@ -246,11 +246,11 @@ struct render_linux_data {
 	uint32_t texture;
 	uint8_t *sprite_buffer;
 	uint32_t sprite_texture;
-	uint32_t background_texture[256];
+	uint32_t background_texture[960];
 	uint8_t sprite_bits_one[16];
 	uint32_t vao;
 	uint32_t vbo;
-	uint8_t palette_background[4][4];
+	uint8_t palette_image[16];
 	uint32_t is_need_reorder_palette_background;
 };
 
@@ -284,8 +284,8 @@ static void init_textures (struct render_linux_data *r, uint32_t tex_width, uint
 	glBindTexture (GL_TEXTURE_2D, 0);
 
 	// build background textures;
-	glGenTextures (256, r->background_texture);
-	for (int i = 0; i < 256; i++) {
+	glGenTextures (960, r->background_texture);
+	for (int i = 0; i < 960; i++) {
 		glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
 		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -367,7 +367,7 @@ static void init_vao (struct NESEmu *emu, struct render_linux_data *r)
     glGenBuffers (1, &vbo);
     glBindVertexArray (vao);
     glBindBuffer (GL_ARRAY_BUFFER, vbo);
-    glBufferData (GL_ARRAY_BUFFER, sizeof (vertices), vertices, GL_DYNAMIC_DRAW);
+    glBufferData (GL_ARRAY_BUFFER, sizeof (vertices), vertices, GL_STATIC_DRAW);
     glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), (void *) 0);
     glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), (void *) (3 * sizeof (float)));
 
@@ -422,7 +422,7 @@ void platform_init (struct NESEmu *emu, void *_other_data)
 
 uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
-static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y)
+static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y, uint16_t naddr)
 {
 	static const uint16_t palette = 0x23c0;
 	uint32_t indx = 0;
@@ -465,7 +465,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 			uint8_t n = 0;
 			if (low & s) n = 1;
 			if (high & s) n |= 2;
-			uint32_t plt = palette_get_color (emu, emu->palette_image[indx * 4 + n]);
+			uint32_t plt = palette_get_color (emu, r->palette_image[indx * 4 + n]);
 			*sp++ = (plt >>  0) & 0xff;
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
@@ -475,7 +475,7 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 
 	}
 
-	glBindTexture (GL_TEXTURE_2D, r->background_texture[id_texture]);
+	glBindTexture (GL_TEXTURE_2D, r->background_texture[naddr]);
 
 	glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, r->sprite_buffer);
 
@@ -549,7 +549,7 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 
 static uint8_t pp[256];
 static int is_pp;
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 void platform_render (struct NESEmu *emu, void *_other_data)
 {
 	SDL_Window *win = _other_data;
@@ -564,36 +564,23 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	static const uint16_t addr_palette = 0x3f00;
 	uint16_t ix = 0;
 	uint32_t indx = 0;
-	static int cnt_pal = 0;
 	for (int y = 0; y < 16; y++) {
-		if ((emu->palette_image[ix] != emu->ppu[addr_palette + ix])) {
+		if ((r->palette_image[ix] != emu->ppu[addr_palette + ix])) {
 			emu->is_new_palette_background = 1;
 		} else {
 			ix++;
 			continue;
 		}
 
-		cnt_pal = 0;
 		for (int i = 0; i < 16; i += 4) {
-			emu->palette_image[i + 0] = emu->ppu[addr_palette + 0 + i];
-			emu->palette_image[i + 1] = emu->ppu[addr_palette + 1 + i];
-			emu->palette_image[i + 2] = emu->ppu[addr_palette + 2 + i];
-			emu->palette_image[i + 3] = emu->ppu[addr_palette + 3 + i];
+			r->palette_image[i + 0] = emu->ppu[addr_palette + 0 + i];
+			r->palette_image[i + 1] = emu->ppu[addr_palette + 1 + i];
+			r->palette_image[i + 2] = emu->ppu[addr_palette + 2 + i];
+			r->palette_image[i + 3] = emu->ppu[addr_palette + 3 + i];
 		}
 		break;
 	}
 
-#if 0
-	uint16_t addr_palette = 0x3f00;
-	uint32_t indx = 0;
-	for (int i = 0; i < 16; i += 4) {
-		r->palette_background[indx][0] = emu->ppu[addr_palette + 0 + i];
-		r->palette_background[indx][1] = emu->ppu[addr_palette + 1 + i];
-		r->palette_background[indx][2] = emu->ppu[addr_palette + 2 + i];
-		r->palette_background[indx][3] = emu->ppu[addr_palette + 3 + i];
-		indx++;
-	}
-#endif
 #if 1
 	int32_t ppx = 0;
 	int32_t ppy = 0;
@@ -622,12 +609,12 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 		math_translate (r->transform, ppx, ppy, 0.f);
 
 		if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
-			build_background (emu, r, id_texture, x, y);
+			build_background (emu, r, id_texture, x, y, i);
 			emu->ppu_copy[naddr] = emu->ppu[naddr];
 		}
 
 		glActiveTexture (GL_TEXTURE0);
-		glBindTexture (GL_TEXTURE_2D, r->background_texture[id_texture]);
+		glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
 		glUniform1i (r->id_sampler, 0);
 
 		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
@@ -645,8 +632,8 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 	}
 
-	// TODO: This is a bug. If cnt_pal arrived to 30, then sprites deffects
-	if (cnt_pal == 20) {
+
+	if (emu->is_new_palette_background) {
 		emu->is_new_palette_background = 0;
 	}
 #endif
@@ -689,5 +676,4 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 #endif
 	SDL_GL_SwapWindow (win);
-	cnt_pal++;
 }

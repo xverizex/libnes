@@ -159,7 +159,6 @@ struct NESEmu {
     uint32_t counter_for_nmi;
     uint32_t cur_cycles;
     uint32_t is_new_palette_background;
-    uint8_t palette_image[16];
 };
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);

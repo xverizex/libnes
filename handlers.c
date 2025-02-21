@@ -122,27 +122,6 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 	if (addr == PPUCTRL) {
 		emu->ctrl[REAL_PPUCTRL] = *r;
-#if 0
-		if (*r & PPUCTRL_VBLANK_NMI) {
-			static const uint16_t addr_palette = 0x3f00;
-			uint16_t ix = 0;
-			uint32_t indx = 0;
-			for (int y = 0; y < 16; y++) {
-				if ((emu->palette_image[ix] != emu->ppu[addr_palette + ix])) {
-					emu->is_new_palette_background = 1;
-				}
-
-				for (int i = 0; i < 16; i += 4) {
-					emu->palette_image[i + 0] = emu->ppu[addr_palette + 0 + i];
-					emu->palette_image[i + 1] = emu->ppu[addr_palette + 1 + i];
-					emu->palette_image[i + 2] = emu->ppu[addr_palette + 2 + i];
-					emu->palette_image[i + 3] = emu->ppu[addr_palette + 3 + i];
-				}
-				if (emu->is_new_palette_background)
-					break;
-			}
-		}
-#endif
 	} else if (addr == PPUMASK) {
 		emu->ctrl[REAL_PPUMASK] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {
