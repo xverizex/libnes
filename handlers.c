@@ -68,10 +68,32 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		*r = emu->ppu[emu->ppu_addr];
 	} else if (addr >= 0x4016 && addr <= 0x4017) {
-		*r = 0x40; // JOYS
+		if (addr == 0x4016) {
+			if (emu->new_state <= 7) {
+				*r = 0x40 | ((emu->joy0 & (1 << emu->new_state)) >> emu->new_state);
+				emu->new_state++;
+			} else {
+				*r = 0x40; // JOYS
+			}
+		} else if (addr == 0x4017) {
+			if (*r == 0x01) {
+				emu->new_state = 8;
+				emu->joy0 = 0;
+				emu->state_buttons0 = 0;
+			} else if (*r == 0x00) {
+				emu->new_state = 0;
+				emu->joy0 = 0;
+				emu->state_buttons0 = 0;
+			}
+		}
 	} else {
 		*r = emu->mem[addr - 0x8000];
 	}
+}
+
+void nes_write_state (struct NESEmu *emu)
+{
+	emu->joy0 |= emu->state_buttons0;
 }
 
 #include <stdlib.h>

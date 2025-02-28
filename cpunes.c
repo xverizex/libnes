@@ -182,6 +182,7 @@ static void set_dump_format (struct NESEmu *emu)
 	}
 }
 
+
 static void parse_header (struct NESEmu *emu)
 {
 	uint8_t *d = emu->dump;

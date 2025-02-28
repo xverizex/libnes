@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <SDL3/SDL.h>
 #include <GLES3/gl3.h>
+#include "controller.h"
+#include <handlers.h>
 
 SDL_GLContext ctx;
 SDL_Window *win;
@@ -33,6 +35,57 @@ static void close_all_joystick ()
 	}
 }
 
+static void state_hat_buttons_get (uint8_t *state, uint8_t value)
+{
+	switch (value) {
+		case SDL_HAT_UP:
+			(*state) |= (1 << JOY_UP);
+			printf ("up state\n");
+			break;
+		case SDL_HAT_RIGHT:
+			(*state) |= (1 << JOY_RIGHT);
+			printf ("right state\n");
+			break;
+		case SDL_HAT_DOWN:
+			(*state) |= (1 << JOY_DOWN);
+			printf ("down state\n");
+			break;
+		case SDL_HAT_LEFT:
+			(*state) |= (1 << JOY_LEFT);
+			printf ("left state\n");
+			break;
+		case SDL_HAT_RIGHTUP:
+			break;
+		case SDL_HAT_RIGHTDOWN:
+			break;
+		case SDL_HAT_LEFTUP:
+			break;
+		case SDL_HAT_LEFTDOWN:
+			break;
+	}
+}
+
+enum {
+	BUTTON_A = 0,
+	BUTTON_B = 1,
+	BUTTON_START = 7
+};
+
+static void state_button_get (uint8_t *state, uint8_t value, uint8_t is_down)
+{
+	switch (value) {
+		case BUTTON_START:
+			(*state) |= (1 << JOY_START);
+			break;
+		case BUTTON_A:
+			(*state) |= (1 << JOY_A);
+			break;
+		case BUTTON_B:
+			(*state) |= (1 << JOY_B);
+			break;
+	}
+}
+
 int main (int argc, char **argv)
 {
 	SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK);
@@ -48,7 +101,7 @@ int main (int argc, char **argv)
 
 	SDL_DisableScreenSaver ();
 
-	uint32_t scale = 2;
+	uint32_t scale = 8;
 
 	uint32_t width = 256 * scale;
 	uint32_t height = 224 * scale;
@@ -96,7 +149,8 @@ int main (int argc, char **argv)
 		while (SDL_PollEvent (&event)) {
 			switch (event.type) {
 				case SDL_EVENT_JOYSTICK_HAT_MOTION:
-					printf ("hat %d %d\n", event.jhat.hat, event.jhat.value);
+					state_hat_buttons_get (&emu->state_buttons0, event.jhat.value);
+					nes_write_state (emu);
 					break;
 				case SDL_EVENT_JOYSTICK_BALL_MOTION:
 					printf ("ball %d\n", event.jball.ball);
@@ -106,6 +160,8 @@ int main (int argc, char **argv)
 					break;
 				case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
 					printf ("button %d\n", event.jbutton.button);
+					state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
+					nes_write_state (emu);
 					break;
 				case SDL_EVENT_JOYSTICK_ADDED:
 					connect_joystick ();
@@ -117,7 +173,7 @@ int main (int argc, char **argv)
 			}
 		}
 
-		nes_emu_execute (emu, 300, win);
+		nes_emu_execute (emu, 50, win);
 	}
 
 }

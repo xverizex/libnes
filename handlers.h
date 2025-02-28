@@ -163,4 +163,6 @@ void platform_render (struct NESEmu *emu, void *_data);
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data);
 void platform_ppu_mask (struct NESEmu *emu, void *_other_data);
 
+void nes_write_state (struct NESEmu *emu);
+
 #endif
