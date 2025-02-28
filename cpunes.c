@@ -625,10 +625,5 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			emu->last_cycles_int64 = 0;
 			emu->start_time_nmi = 0;
 		}
-
-		if (emu->is_new_state == 1)
-			emu->is_new_state = 0;
-			return;
-
 	}
 }

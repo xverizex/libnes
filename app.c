@@ -209,7 +209,7 @@ int main (int argc, char **argv)
 			nes_write_state (emu);
 		}
 
-		nes_emu_execute (emu, 100, win);
+		nes_emu_execute (emu, 300, win);
 	}
 
 }
