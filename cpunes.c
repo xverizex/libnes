@@ -226,6 +226,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->width = 256;
 	emu->height = 224;
 
+	emu->new_state = 0;
 	emu->is_new_palette_background = 1;
 
 	platform_alloc_memory_map (emu);
@@ -624,6 +625,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			emu->last_cycles_int64 = 0;
 			emu->start_time_nmi = 0;
 		}
+
+		if (emu->is_new_state == 1)
+			emu->is_new_state = 0;
+			return;
 
 	}
 }

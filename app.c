@@ -38,21 +38,20 @@ static void close_all_joystick ()
 static void state_hat_buttons_get (uint8_t *state, uint8_t value)
 {
 	switch (value) {
+		case SDL_HAT_CENTERED:
+			(*state) &= 0x0f;
+			break;
 		case SDL_HAT_UP:
 			(*state) |= (1 << JOY_UP);
-			printf ("up state\n");
 			break;
 		case SDL_HAT_RIGHT:
 			(*state) |= (1 << JOY_RIGHT);
-			printf ("right state\n");
 			break;
 		case SDL_HAT_DOWN:
 			(*state) |= (1 << JOY_DOWN);
-			printf ("down state\n");
 			break;
 		case SDL_HAT_LEFT:
 			(*state) |= (1 << JOY_LEFT);
-			printf ("left state\n");
 			break;
 		case SDL_HAT_RIGHTUP:
 			break;
@@ -75,13 +74,22 @@ static void state_button_get (uint8_t *state, uint8_t value, uint8_t is_down)
 {
 	switch (value) {
 		case BUTTON_START:
-			(*state) |= (1 << JOY_START);
+			if (is_down)
+				(*state) |= (1 << JOY_START);
+			else
+				(*state) &= 0xf7;
 			break;
 		case BUTTON_A:
-			(*state) |= (1 << JOY_A);
+			if (is_down)
+				(*state) |= (1 << JOY_A);
+			else
+				(*state) &= 0xf6;
 			break;
 		case BUTTON_B:
-			(*state) |= (1 << JOY_B);
+			if (is_down)
+				(*state) |= (1 << JOY_B);
+			else
+				(*state) &= 0xf5;
 			break;
 	}
 }
@@ -145,23 +153,48 @@ int main (int argc, char **argv)
 
 	SDL_Event event;
 
+	uint8_t state = 0;
+
 	while (1) {
+		uint32_t is_written = 0;
 		while (SDL_PollEvent (&event)) {
 			switch (event.type) {
 				case SDL_EVENT_JOYSTICK_HAT_MOTION:
-					state_hat_buttons_get (&emu->state_buttons0, event.jhat.value);
-					nes_write_state (emu);
+					if (emu->new_state == 0) {
+						uint8_t temp = emu->state_buttons0 & 0x0f;
+						emu->state_buttons0 &= (state & 0xf0);
+						emu->state_buttons0 |= (temp);
+						state_hat_buttons_get (&emu->state_buttons0, event.jhat.value);
+						is_written = 1;
+					} else {
+						state_hat_buttons_get (&state, event.jhat.value);
+					}
 					break;
 				case SDL_EVENT_JOYSTICK_BALL_MOTION:
-					printf ("ball %d\n", event.jball.ball);
 					break;
 				case SDL_EVENT_JOYSTICK_AXIS_MOTION:
-					printf ("axis %d\n", event.jaxis.axis);
 					break;
 				case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-					printf ("button %d\n", event.jbutton.button);
-					state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
-					nes_write_state (emu);
+					if (emu->new_state == 0) {
+						uint8_t temp = emu->state_buttons0 & 0xf0;
+						emu->state_buttons0 &= (state & 0x0f);
+						emu->state_buttons0 |= (temp);
+						state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
+						is_written = 1;
+					} else {
+						state_button_get (&state, event.jbutton.button, event.jbutton.down);
+					}
+					break;
+				case SDL_EVENT_JOYSTICK_BUTTON_UP:
+					if (emu->new_state == 0) {
+						uint8_t temp = emu->state_buttons0 & 0xf0;
+						emu->state_buttons0 &= (state & 0x0f);
+						emu->state_buttons0 |= (temp);
+						state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
+						is_written = 1;
+					} else {
+						state_button_get (&state, event.jbutton.button, event.jbutton.down);
+					}
 					break;
 				case SDL_EVENT_JOYSTICK_ADDED:
 					connect_joystick ();
@@ -172,8 +205,11 @@ int main (int argc, char **argv)
 					break;
 			}
 		}
+		if (is_written) {
+			nes_write_state (emu);
+		}
 
-		nes_emu_execute (emu, 50, win);
+		nes_emu_execute (emu, 100, win);
 	}
 
 }

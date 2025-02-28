@@ -70,21 +70,17 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	} else if (addr >= 0x4016 && addr <= 0x4017) {
 		if (addr == 0x4016) {
 			if (emu->new_state <= 7) {
-				*r = 0x40 | ((emu->joy0 & (1 << emu->new_state)) >> emu->new_state);
+				*r = 0x40 | (((emu->joy0 & (1 << emu->new_state)) >> emu->new_state) & 0x01);
 				emu->new_state++;
+				if (emu->new_state == 8) {
+					//emu->joy0 = 0;
+					//emu->state_buttons0 = 0;
+				}
 			} else {
 				*r = 0x40; // JOYS
 			}
-		} else if (addr == 0x4017) {
-			if (*r == 0x01) {
-				emu->new_state = 8;
-				emu->joy0 = 0;
-				emu->state_buttons0 = 0;
-			} else if (*r == 0x00) {
-				emu->new_state = 0;
-				emu->joy0 = 0;
-				emu->state_buttons0 = 0;
-			}
+		} else {
+			*r = 0x40;
 		}
 	} else {
 		*r = emu->mem[addr - 0x8000];
@@ -93,7 +89,8 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 
 void nes_write_state (struct NESEmu *emu)
 {
-	emu->joy0 |= emu->state_buttons0;
+	emu->joy0 = emu->state_buttons0;
+	emu->new_state = 0;
 }
 
 #include <stdlib.h>
@@ -175,6 +172,18 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	if (addr >= PPUCTRL && addr <= PPUDATA) {
 		emu->ctrl[addr - 0x2000] = *r;
 	} 
+	if (addr == 0x4017) {
+		//printf ("0x4017 %02x\n", *r);
+		if (*r & 0x01) {
+			emu->new_state = 8;
+			emu->state_buttons0 = 0;
+		} else if (!(*r & 0x01)) {
+			emu->new_state = 0;
+			emu->is_new_state = 1;
+			//emu->joy0 = 0;
+			//emu->state_buttons0 = 0;
+		}
+	}
 	if (addr >= 0x4000 && addr < 0x6000) {
 	}
 }
