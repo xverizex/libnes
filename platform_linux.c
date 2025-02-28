@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <SDL3/SDL.h>
 
+uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
+
 void linux_wait_cycles (struct NESEmu *emu)
 {
 #if 0
@@ -36,6 +38,16 @@ void platform_ppu_mask (struct NESEmu *emu, void *_other_data)
 	nes_get_colors_background_clear (emu, &r, &g, &b);
 
 	glClearColor (r, g, b, 1.0f);
+	glClear (GL_COLOR_BUFFER_BIT);
+}
+
+void platform_clear_mask (struct NESEmu *emu, uint8_t indx, void *_other_data)
+{
+	uint32_t plt = palette_get_color (emu, indx);
+	uint8_t r = plt >> 24;
+	uint8_t g = plt >> 16;
+	uint8_t b = plt >> 8;
+	glClearColor (r / 255.f, g / 255.f, b / 255.f, 1.0f);
 	glClear (GL_COLOR_BUFFER_BIT);
 }
 
@@ -420,7 +432,6 @@ void platform_init (struct NESEmu *emu, void *_other_data)
 	emu->_render_data = r;
 }
 
-uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
 static void build_background (struct NESEmu *emu, struct render_linux_data *r, uint8_t id_texture, uint8_t x, uint8_t y, uint16_t naddr)
 {
@@ -469,7 +480,10 @@ static void build_background (struct NESEmu *emu, struct render_linux_data *r, u
 			*sp++ = (plt >>  0) & 0xff;
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
-			*sp++ = 0xff;
+			if (n == 0)
+				*sp++ = 0x00;
+			else
+				*sp++ = 0xff;
 			s >>= 1;
 		}
 
@@ -532,7 +546,10 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 			*sp++ = (plt >>  0) & 0xff;
 			*sp++ = (plt >>  8) & 0xff;
 			*sp++ = (plt >> 16) & 0xff;
-			*sp++ = 0xff;
+			if (n == 0)
+				*sp++ = 0x00;
+			else
+				*sp++ = 0xff;
 			if (is_hor)
 				s <<= 1;
 			else
@@ -549,7 +566,58 @@ static void build_texture (struct NESEmu *emu, struct render_linux_data *r, uint
 
 static uint8_t pp[256];
 static int is_pp;
-#include <SDL3/SDL.h>
+
+enum {
+	SPRITE_BEFORE_BACKGROUND,
+	SPRITE_AFTER_BACKGROUND,
+	N_SPRITE_CONDITION
+};
+
+static void draw_sprite_if (struct NESEmu *emu, uint32_t condition)
+{
+	struct render_linux_data *r = emu->_render_data;
+
+	uint8_t LOWER_BACKGROUND = 32;
+	uint32_t idx = 0;
+	for (int i = 0; i < 64; i++) {
+
+		uint8_t py = emu->oam[idx + 0];
+		uint8_t id_texture = emu->oam[idx + 1];
+		uint8_t flags = emu->oam[idx + 2];
+		uint8_t px = emu->oam[idx + 3];
+
+		if ((flags & LOWER_BACKGROUND) && (condition == SPRITE_AFTER_BACKGROUND)) {
+			idx += 4;
+			continue;
+		}
+		
+		if (!(flags & LOWER_BACKGROUND) && (condition == SPRITE_BEFORE_BACKGROUND)) {
+			idx += 4;
+			continue;
+		}
+
+		math_translate (r->transform, px, py, 0.f);
+
+		build_texture (emu, r, id_texture, flags);
+
+		glActiveTexture (GL_TEXTURE0);
+		glBindTexture (GL_TEXTURE_2D, r->sprite_texture);
+		glUniform1i (r->id_sampler, 0);
+
+		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
+		glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
+		glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
+		glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
+
+		glEnableVertexAttribArray (0);
+		glEnableVertexAttribArray (1);
+
+		glDrawArrays (GL_TRIANGLES, 0, 6);
+
+		idx += 4;
+	}
+}
+
 void platform_render (struct NESEmu *emu, void *_other_data)
 {
 	SDL_Window *win = _other_data;
@@ -590,6 +658,10 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	int ind = 0;
 	int ddt = 0;
 	int m = 0;
+
+	platform_clear_mask (emu, r->palette_image[0], NULL);
+
+	draw_sprite_if (emu, SPRITE_BEFORE_BACKGROUND);
 
 	x = y = ppx = ppy = 0;
 
@@ -632,48 +704,13 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 
 	}
 
+	draw_sprite_if (emu, SPRITE_AFTER_BACKGROUND);
+
 
 	if (emu->is_new_palette_background) {
 		emu->is_new_palette_background = 0;
 	}
 #endif
 
-#if 1
-	idx = 0;
-	for (int i = 0; i < 64; i++) {
-
-		uint8_t py = emu->oam[idx + 0];
-		uint8_t id_texture = emu->oam[idx + 1];
-		uint8_t flags = emu->oam[idx + 2];
-		uint8_t px = emu->oam[idx + 3];
-#if 0
-		if (id_texture != 0 && id_texture != 244) {
-			printf ("addr: %04x %02x %d %d %02x idx: %02x\n", 0x200 + idx, id_texture, px, py, flags, idx);
-		}
-#endif
-
-		math_translate (r->transform, px, py, 0.f);
-
-		build_texture (emu, r, id_texture, flags);
-
-		glActiveTexture (GL_TEXTURE0);
-		glBindTexture (GL_TEXTURE_2D, r->sprite_texture);
-		glUniform1i (r->id_sampler, 0);
-
-		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
-		glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
-		glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
-		glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
-
-		glEnableVertexAttribArray (0);
-		glEnableVertexAttribArray (1);
-
-		glDrawArrays (GL_TRIANGLES, 0, 6);
-
-		idx += 4;
-	}
-	//printf ("\n---------------------------------------------------------------\n");
-
-#endif
 	SDL_GL_SwapWindow (win);
 }
