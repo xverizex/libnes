@@ -1,0 +1,15 @@
+#ifndef NES_CONTROLLER
+#define NES_CONTROLLER
+
+enum {
+	JOY_A,
+	JOY_B,
+	JOY_SELECT,
+	JOY_START,
+	JOY_UP,
+	JOY_DOWN,
+	JOY_LEFT,
+	JOY_RIGHT
+};
+
+#endif
