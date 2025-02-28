@@ -8,9 +8,34 @@
 SDL_GLContext ctx;
 SDL_Window *win;
 
+static SDL_Joystick *joy[2];
+static int joystick_count = 0;
+
+static void connect_joystick ()
+{
+	SDL_JoystickID *joystick_ids = SDL_GetJoysticks (&joystick_count);
+
+	if (joystick_count == 0)
+		return;
+
+	for (int i = 0; i < joystick_count; i++) {
+		SDL_JoystickID id = joystick_ids[i];
+
+		joy[i] = SDL_OpenJoystick (id);
+	}
+
+}
+
+static void close_all_joystick ()
+{
+	for (int i = 0; i < joystick_count; i++) {
+		SDL_CloseJoystick (joy[i]);
+	}
+}
+
 int main (int argc, char **argv)
 {
-	SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS);
+	SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK);
 
 	SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 8);
 	SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE, 8);
@@ -23,7 +48,7 @@ int main (int argc, char **argv)
 
 	SDL_DisableScreenSaver ();
 
-	uint32_t scale = 2;
+	uint32_t scale = 4;
 
 	uint32_t width = 256 * scale;
 	uint32_t height = 224 * scale;
@@ -70,7 +95,23 @@ int main (int argc, char **argv)
 	while (1) {
 		while (SDL_PollEvent (&event)) {
 			switch (event.type) {
+				case SDL_EVENT_JOYSTICK_HAT_MOTION:
+					printf ("hat %d %d\n", event.jhat.hat, event.jhat.value);
+					break;
+				case SDL_EVENT_JOYSTICK_BALL_MOTION:
+					printf ("ball %d\n", event.jball.ball);
+					break;
+				case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+					printf ("axis %d\n", event.jaxis.axis);
+					break;
+				case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+					printf ("button %d\n", event.jbutton.button);
+					break;
+				case SDL_EVENT_JOYSTICK_ADDED:
+					connect_joystick ();
+					break;
 				case SDL_EVENT_QUIT:
+					close_all_joystick ();
 					exit (0);
 					break;
 			}
@@ -78,4 +119,5 @@ int main (int argc, char **argv)
 
 		nes_emu_execute (emu, 300, win);
 	}
+
 }
