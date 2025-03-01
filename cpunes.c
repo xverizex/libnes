@@ -442,6 +442,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 				emu->cpu.PC = emu->nmi_handler;
 				emu->is_nmi_works = 1;
 			}
+		} else {
+			if (platform_delay_nmi (emu, NULL)) {
+				emu->ppu_status |= 0x80;
+			}
 		}
 
 

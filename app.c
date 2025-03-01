@@ -129,8 +129,8 @@ int main (int argc, char **argv)
 
 	glViewport (0, 0, width, height);
 
-	FILE *fp = fopen ("mario.nes", "r");
-	//FILE *fp = fopen ("Bomberman (U) [!].nes", "r");
+	//FILE *fp = fopen ("mario.nes", "r");
+	FILE *fp = fopen ("Bomberman (U) [!].nes", "r");
 
 	uint64_t sz_file = 0L;
 
