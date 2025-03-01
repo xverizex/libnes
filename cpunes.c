@@ -2,6 +2,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <handlers.h>
 
 static uint32_t is_init_global_func;
 
@@ -17,158 +19,6 @@ static handler_opcode *pnes_handler;
 #define ADD_HANDLER(func) \
 	func,
 
-void invalid_opcode (struct NESEmu *);
-void brk_implied (struct NESEmu *);
-void ora_indirect_x (struct NESEmu *);
-void ora_zeropage (struct NESEmu *);
-void asl_zeropage (struct NESEmu *);
-void php_implied (struct NESEmu *);
-void ora_immediate (struct NESEmu *);
-void asl_accumulator (struct NESEmu *);
-void ora_absolute (struct NESEmu *);
-void asl_absolute (struct NESEmu *);
-void bpl_relative (struct NESEmu *);
-void ora_indirect_y (struct NESEmu *);
-void ora_zeropage_x (struct NESEmu *);
-void asl_zeropage_x (struct NESEmu *);
-void clc_implied (struct NESEmu *);
-void ora_absolute_y (struct NESEmu *);
-void ora_absolute_x (struct NESEmu *);
-void asl_absolute_x (struct NESEmu *);
-void jsr_absolute (struct NESEmu *);
-void and_indirect_x (struct NESEmu *);
-void bit_zeropage (struct NESEmu *);
-void and_zeropage (struct NESEmu *);
-void rol_zeropage (struct NESEmu *);
-void plp_implied (struct NESEmu *);
-void and_immediate (struct NESEmu *);
-void rol_accumulator (struct NESEmu *);
-void bit_absolute (struct NESEmu *);
-void and_absolute (struct NESEmu *);
-void rol_absolute (struct NESEmu *);
-void bmi_relative (struct NESEmu *);
-void and_indirect_y (struct NESEmu *);
-void and_zeropage_x (struct NESEmu *);
-void rol_zeropage_x (struct NESEmu *);
-void sec_implied (struct NESEmu *);
-void and_absolute_y (struct NESEmu *);
-void and_absolute_x (struct NESEmu *);
-void rol_absolute_x (struct NESEmu *);
-void rti_implied (struct NESEmu *);
-void eor_zeropage (struct NESEmu *);
-void lsr_zeropage (struct NESEmu *);
-void pha_implied (struct NESEmu *);
-void eor_immediate (struct NESEmu *);
-void lsr_accumulator (struct NESEmu *);
-void jmp_absolute (struct NESEmu *);
-void eor_absolute (struct NESEmu *);
-void lsr_absolute (struct NESEmu *);
-void bvc_relative (struct NESEmu *);
-void eor_indirect_y (struct NESEmu *);
-void eor_zeropage_x (struct NESEmu *);
-void lsr_zeropage_x (struct NESEmu *);
-void cli_implied (struct NESEmu *);
-void eor_absolute_y (struct NESEmu *);
-void eor_absolute_x (struct NESEmu *);
-void lsr_absolute_x (struct NESEmu *);
-void rts_implied (struct NESEmu *);
-void adc_indirect_x (struct NESEmu *);
-void adc_zeropage (struct NESEmu *);
-void ror_zeropage (struct NESEmu *);
-void pla_implied (struct NESEmu *);
-void adc_immediate (struct NESEmu *);
-void ror_accumulator (struct NESEmu *);
-void jmp_indirect (struct NESEmu *);
-void adc_absolute (struct NESEmu *);
-void ror_absolute (struct NESEmu *);
-void bvs_relative (struct NESEmu *);
-void adc_indirect_y (struct NESEmu *);
-void adc_zeropage_x (struct NESEmu *);
-void ror_zeropage_x (struct NESEmu *);
-void sei_implied (struct NESEmu *);
-void adc_absolute_y (struct NESEmu *);
-void adc_absolute_x (struct NESEmu *);
-void ror_absolute_x (struct NESEmu *);
-void sta_indirect_x (struct NESEmu *);
-void sty_zeropage (struct NESEmu *);
-void sta_zeropage (struct NESEmu *);
-void stx_zeropage (struct NESEmu *);
-void dey_implied (struct NESEmu *);
-void txa_implied (struct NESEmu *);
-void sty_absolute (struct NESEmu *);
-void sta_absolute (struct NESEmu *);
-void stx_absolute (struct NESEmu *);
-void bcc_relative (struct NESEmu *);
-void sta_indirect_y (struct NESEmu *);
-void sty_zeropage_x (struct NESEmu *);
-void sta_zeropage_x (struct NESEmu *);
-void stx_zeropage_y (struct NESEmu *);
-void tya_implied (struct NESEmu *);
-void txs_implied (struct NESEmu *);
-void sta_absolute_x (struct NESEmu *);
-void ldy_immediate (struct NESEmu *);
-void lda_indirect_x (struct NESEmu *);
-void ldx_immediate (struct NESEmu *);
-void ldy_zeropage (struct NESEmu *);
-void lda_zeropage (struct NESEmu *);
-void ldx_zeropage (struct NESEmu *);
-void tay_implied (struct NESEmu *);
-void lda_immediate (struct NESEmu *);
-void tax_implied (struct NESEmu *);
-void ldy_absolute (struct NESEmu *);
-void lda_absolute (struct NESEmu *);
-void ldx_absolute (struct NESEmu *);
-void bcs_relative (struct NESEmu *);
-void lda_indirect_y (struct NESEmu *);
-void ldy_zeropage_x (struct NESEmu *);
-void lda_zeropage_x (struct NESEmu *);
-void ldx_zeropage_y (struct NESEmu *);
-void clv_implied (struct NESEmu *);
-void lda_absolute_y (struct NESEmu *);
-void tsx_implied (struct NESEmu *);
-void ldy_absolute_x (struct NESEmu *);
-void lda_absolute_x (struct NESEmu *);
-void ldx_absolute_y (struct NESEmu *);
-void cpy_immediate (struct NESEmu *);
-void cpy_absolute (struct NESEmu *);
-void eor_indirect_x (struct NESEmu *);
-void sta_absolute_y (struct NESEmu *);
-void cmp_indirect_x (struct NESEmu *);
-void cpy_zeropage (struct NESEmu *);
-void cmp_zeropage (struct NESEmu *);
-void dec_zeropage (struct NESEmu *);
-void iny_implied (struct NESEmu *);
-void cmp_immediate (struct NESEmu *);
-void dex_implied (struct NESEmu *);
-void dec_absolute (struct NESEmu *);
-void bne_relative (struct NESEmu *);
-void cmp_indirect_y (struct NESEmu *);
-void cmp_zeropage_x (struct NESEmu *);
-void dec_zeropage_x (struct NESEmu *);
-void cld_implied (struct NESEmu *);
-void cmp_absolute_y (struct NESEmu *);
-void cmp_absolute (struct NESEmu *);
-void cmp_absolute_x (struct NESEmu *);
-void dec_absolute_x (struct NESEmu *);
-void cpx_immediate (struct NESEmu *);
-void sbc_indirect_x (struct NESEmu *);
-void cpx_zeropage (struct NESEmu *);
-void sbc_zeropage (struct NESEmu *);
-void inc_zeropage (struct NESEmu *);
-void inc_zeropage_x (struct NESEmu *);
-void inx_implied (struct NESEmu *);
-void sbc_immediate (struct NESEmu *);
-void nop_implied (struct NESEmu *);
-void cpx_absolute (struct NESEmu *);
-void sbc_absolute (struct NESEmu *);
-void inc_absolute (struct NESEmu *);
-void beq_relative (struct NESEmu *);
-void sbc_indirect_y (struct NESEmu *);
-void sbc_zeropage_x (struct NESEmu *);
-void sed_implied (struct NESEmu *);
-void sbc_absolute_y (struct NESEmu *);
-void sbc_absolute_x (struct NESEmu *);
-void inc_absolute_x (struct NESEmu *);
 static handler_opcode *pnes_handler = NULL;
 
 static void set_dump_format (struct NESEmu *emu)
@@ -178,6 +28,9 @@ static void set_dump_format (struct NESEmu *emu)
 		emu->fmt_dump = FORMAT_INES;
 		if ((d[7] & 0x0c) == 0x08) {
 			emu->fmt_dump = FORMAT_NES20;
+			printf ("FORMAT NES20\n");
+		} else {
+			printf ("FORMAT INES\n");
 		}
 	}
 }
@@ -190,6 +43,11 @@ static void parse_header (struct NESEmu *emu)
 	emu->sz_chr_rom = d[5] == 0? 8192: d[5] * 8192;
 	emu->mapper = (d[6] >> 4) | (d[7] & 0xf0);
 	emu->sz_prg_ram = d[8] * 8192;
+
+	printf ("size prg rom: %d bytes\n", emu->sz_prg_rom);
+	printf ("size chr rom: %d bytes\n", emu->sz_chr_rom);
+	printf ("size prg ram: %d\n", emu->sz_prg_ram);
+	printf ("mapper: %d\n", emu->mapper);
 }
 
 #include <stdio.h>
@@ -216,6 +74,10 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->nmi_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 6];
 	emu->reset_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 4];
 	emu->irq_handler = *(uint16_t *) &data[0x10 + emu->sz_prg_rom - 2];
+
+	printf ("nmi: %04x\n", emu->nmi_handler);
+	printf ("reset: %04x\n", emu->reset_handler);
+	printf ("irq: %04x\n", emu->irq_handler);
 
 	emu->cpu.PC = emu->reset_handler;
 
@@ -617,6 +479,20 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 		pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
+		if (emu->is_debug_exit) {
+			printf ("###### debug exit error #######\n");
+			printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; bytes: %02x %02x %02x\n",
+					emu->cpu.A,
+					emu->cpu.X,
+					emu->cpu.Y,
+					emu->cpu.P,
+					pc,
+					emu->mem[pc - 0x8000 + 0],
+					emu->mem[pc - 0x8000 + 1],
+					emu->mem[pc - 0x8000 + 2]
+					);
+			exit (0);
+		}
 
 		if (emu->is_returned_from_nmi) {
 			platform_render (emu, _data);
