@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-I.
 LDFLAGS=-lGLESv2 -lSDL3 -g
-SOURCES=cpunes.c handlers.c platform_linux.c palette.c app.c
+SOURCES=cpunes.c handlers.c sdl3_opengl3.c palette.c app.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=app
 LIB_DIR=/usr/local/lib64
