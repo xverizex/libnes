@@ -4,8 +4,7 @@
 #include <stdint.h>
 #include <SDL3/SDL.h>
 #include <GLES3/gl3.h>
-#include "controller.h"
-#include <handlers.h>
+#include <controller.h>
 
 SDL_GLContext ctx;
 SDL_Window *win;
@@ -163,8 +162,20 @@ int main (int argc, char **argv)
 					if (emu->new_state == 0) {
 						uint8_t temp = emu->state_buttons0 & 0x0f;
 						emu->state_buttons0 &= (state & 0xf0);
-						emu->state_buttons0 |= (temp);
 						state_hat_buttons_get (&emu->state_buttons0, event.jhat.value);
+						if ((emu->state_buttons0 & 0x80) && (temp & 0x40)) {
+							emu->state_buttons0 &= ~(0x80);
+							emu->state_buttons0 |= (temp);
+						} else if ((emu->state_buttons0 & 0x40) && (temp & 0x80)) {
+							emu->state_buttons0 &= ~(0x40);
+							emu->state_buttons0 |= (temp);
+						} else if ((emu->state_buttons0 & 0x10) && (temp & 0x20)) {
+							emu->state_buttons0 &= ~(0x10);
+							emu->state_buttons0 |= (temp);
+						} else if ((emu->state_buttons0 & 0x20) && (temp & 0x10)) {
+							emu->state_buttons0 &= ~(0x20);
+							emu->state_buttons0 |= (temp);
+						}
 						is_written = 1;
 					} else {
 						state_hat_buttons_get (&state, event.jhat.value);

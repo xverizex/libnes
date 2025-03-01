@@ -87,11 +87,6 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 }
 
-void nes_write_state (struct NESEmu *emu)
-{
-	emu->joy0 = emu->state_buttons0;
-	emu->new_state = 0;
-}
 
 #include <stdlib.h>
 void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
