@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-I.
-LDFLAGS=-lGLESv2 -lSDL3 -g
+LDFLAGS=-lGLESv2 -lSDL3 -g -fsanitize=address
 SOURCES=cpunes.c handlers.c sdl3_opengl3.c palette.c app.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=app
