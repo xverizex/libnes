@@ -163,6 +163,7 @@ struct NESEmu {
     uint32_t new_state;
     uint8_t state_buttons0;
     uint32_t is_new_state;
+    uint8_t ppu_status;
 };
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);

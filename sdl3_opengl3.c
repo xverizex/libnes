@@ -720,4 +720,6 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	}
 
 	SDL_GL_SwapWindow (win);
+
+	emu->ppu_status |= 0x80;
 }

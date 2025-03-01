@@ -54,7 +54,10 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	if (addr == PPUSTATUS) {
 		emu->addr_off = 0;
 		emu->ppu_addr = 0;
-		*r = 0x80;
+		*r = emu->ppu_status;
+		if (emu->ppu_status & 0x80) {
+			emu->ppu_status &= 0x7f;
+		}
 		//printf ("%04x <- pc\n", emu->cpu.PC);
 		return;
 	}

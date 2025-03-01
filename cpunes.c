@@ -94,6 +94,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	uint32_t is_mirrored_rom = 0;
 	if ((emu->sz_prg_rom - 0x8000) > emu->sz_prg_rom) {
 		is_mirrored_rom = 1;
+		printf ("is_mirrored_rom\n");
 	}
 
 	platform_alloc_memory_map (emu);
@@ -428,7 +429,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 #endif
 
 		if (emu->is_nmi_works) {
-		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+		} else { //if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (platform_delay_nmi (emu, NULL)) {
 				uint16_t addr;
 				addr = 0x100 + --emu->cpu.S;
