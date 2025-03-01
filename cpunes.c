@@ -91,10 +91,20 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->new_state = 0;
 	emu->is_new_palette_background = 1;
 
+	uint32_t is_mirrored_rom = 0;
+	if ((emu->sz_prg_rom - 0x8000) > emu->sz_prg_rom) {
+		is_mirrored_rom = 1;
+	}
+
 	platform_alloc_memory_map (emu);
 
 	memcpy (emu->mem, &data[0x10], emu->sz_prg_rom);
 	memcpy (emu->chr, &data[0x10 + emu->sz_prg_rom], 0x2000);
+
+	if (is_mirrored_rom) {
+		emu->mem = realloc (emu->mem, emu->sz_prg_rom * 2);
+		memcpy (&emu->mem[emu->sz_prg_rom], emu->mem, emu->sz_prg_rom);
+	}
 
 	if (!is_init_global_func) {
 		DEFINE_STATIC_STRUCT_NES_HANDLER ()
