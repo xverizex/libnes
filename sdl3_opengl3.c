@@ -431,16 +431,20 @@ void platform_init (struct NESEmu *emu, void *_other_data)
 }
 
 
-static void build_background (struct NESEmu *emu, struct render_opengl_data *r, uint8_t id_texture, uint8_t x, uint8_t y, uint16_t naddr)
+static void build_background (struct NESEmu *emu, struct render_opengl_data *r, uint8_t id_texture, uint8_t x, uint8_t y, uint16_t naddr, uint32_t indx_screen)
 {
-	static const uint16_t palette = 0x23c0;
+	static const uint16_t palette[2] = {
+		0x23c0,
+		0x27c0
+	};
+
 	uint32_t indx = 0;
 
 	uint32_t py = y * 8 / 32;
 	uint32_t px = x * 8 / 32; 
 	uint16_t id = py * 8 + px;
 
-	uint8_t pal = emu->ppu[palette + id];
+	uint8_t pal = emu->ppu[palette[indx_screen] + id];
 
 	float mx, my;
 	mx = my = 0.f;
@@ -622,49 +626,60 @@ static void draw_ppu (struct NESEmu *emu)
 	int32_t ppy = 0;
 	uint8_t x, y;
 	x = y = 0;
-	uint16_t addr = 0x2000;
 	int ind = 0;
 	int ddt = 0;
 	int m = 0;
 	x = y = ppx = ppy = 0;
 
-	for (uint16_t i = 0; i < 960; i++) {
+	uint16_t addr[2] = {
+		0x2000,
+		0x2400
+	};
 
-		if ((i > 0) && ((i % 32) == 0)) {
-			x = 0;
-			y++;
-			ppx = 0;
-			ppy += 8;
+	uint32_t indx_screen = 0;
+
+	while (indx_screen <= 0) {
+
+		for (uint16_t i = 0; i < 960; i++) {
+
+			if ((i > 0) && ((i % 32) == 0)) {
+				x = 0;
+				y++;
+				ppx = 0;
+				ppy += 8;
+			}
+
+			uint16_t naddr = i + addr[indx_screen];
+
+			uint8_t id_texture = emu->ppu[naddr];
+
+			math_translate (r->transform, ppx, ppy, 0.f);
+
+			if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
+				build_background (emu, r, id_texture, x, y, i, indx_screen);
+				emu->ppu_copy[naddr] = emu->ppu[naddr];
+			}
+
+			glActiveTexture (GL_TEXTURE0);
+			glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
+			glUniform1i (r->id_sampler, 0);
+
+			glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
+			glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
+			glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
+			glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
+
+			glEnableVertexAttribArray (0);
+			glEnableVertexAttribArray (1);
+
+			glDrawArrays (GL_TRIANGLES, 0, 6);
+
+			ppx += 8;
+			x++;
+
 		}
 
-		uint16_t naddr = i + addr;
-
-		uint8_t id_texture = emu->ppu[naddr];
-
-		math_translate (r->transform, ppx, ppy, 0.f);
-
-		if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
-			build_background (emu, r, id_texture, x, y, i);
-			emu->ppu_copy[naddr] = emu->ppu[naddr];
-		}
-
-		glActiveTexture (GL_TEXTURE0);
-		glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
-		glUniform1i (r->id_sampler, 0);
-
-		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
-		glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
-		glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
-		glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
-
-		glEnableVertexAttribArray (0);
-		glEnableVertexAttribArray (1);
-
-		glDrawArrays (GL_TRIANGLES, 0, 6);
-
-		ppx += 8;
-		x++;
-
+		indx_screen++;
 	}
 }
 

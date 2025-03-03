@@ -449,7 +449,8 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 
-		//printf ("pc: %04x\n", pc);
+		//printf ("pc: %04x: ", pc);
+		//printf ("%02x\n", emu->ram[0xb]);
 
 		static uint32_t runs = 0;
 		static uint32_t tick = 0;
