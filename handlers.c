@@ -74,8 +74,12 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		if (addr == 0x4016) {
 			if (emu->new_state <= 7) {
 				*r = 0x40 | (((emu->joy0 & (1 << emu->new_state)) >> emu->new_state) & 0x01);
-				printf ("emu->pc read joy: %04x\n", emu->cpu.PC);
+				//printf ("emu->pc read joy: %04x\n", emu->cpu.PC);
 				emu->new_state++;
+#if 0
+				if (*r != 0x40)
+					printf ("%02x\n", *r);
+#endif
 				if (emu->new_state == 8) {
 					//emu->joy0 = 0;
 					//emu->state_buttons0 = 0;
@@ -134,6 +138,9 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			}
 #endif
 			emu->ram[addr] = *r;
+			if ((addr == 0x12) && (*r > 0)) {
+				//printf ("%02x\n", *r);
+			}
 		}
 		return;
 	}
@@ -176,12 +183,12 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		emu->ctrl[addr - 0x2000] = *r;
 	} 
-	if (addr == 0x4017) {
+	if ((addr == 0x4017) || (addr == 0x4016)) {
 		//printf ("0x4017 %02x\n", *r);
 		if (*r & 0x01) {
 			emu->new_state = 8;
 			emu->state_buttons0 = 0;
-		} else if (!(*r & 0x01)) {
+		} else if ((*r & 0x01) == 0x0) {
 			emu->new_state = 0;
 			emu->is_new_state = 1;
 			//emu->joy0 = 0;

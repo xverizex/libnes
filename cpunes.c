@@ -449,12 +449,12 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 
-		//printf ("pc: %04x: ", pc);
+		//printf ("pc: %04x: \n", pc);
 		//printf ("%02x\n", emu->ram[0xb]);
 
 		static uint32_t runs = 0;
 		static uint32_t tick = 0;
-		if (!emu->is_nmi_works) {
+		if (emu->is_nmi_works) {
 			static uint32_t cnt = 0;
 #if 0
 			if (emu->cpu.PC == 0xc783) {
@@ -465,29 +465,25 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 #endif
 			//debug (emu, 0xe0);
 #if 0
-			if (pc == 0xc7b0 && emu->cpu.X == 0x38) {
-			//if (emu->is_debug_exit) {
+			if (pc == 0xc1cf) {
 				runs = 1;
 				debug (emu, 0xf0);
-				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; tick: %d\n",
+				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x;\n",
 						emu->cpu.A,
 						emu->cpu.X,
 						emu->cpu.Y,
 						emu->cpu.P,
-						pc,
-						tick
+						pc
 						);
 				getc (stdin);
-				emu->is_debug_exit = 0;
 			} else if (runs) {
 				debug (emu, 0xf0);
-				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; tick: %d\n",
+				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x;\n",
 						emu->cpu.A,
 						emu->cpu.X,
 						emu->cpu.Y,
 						emu->cpu.P,
-						pc,
-						tick
+						pc
 						);
 				getc (stdin);
 			}
@@ -495,17 +491,15 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 		pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
+
 		if (emu->is_debug_exit) {
 			printf ("###### debug exit error #######\n");
-			printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x; bytes: %02x %02x %02x\n",
+			printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x;",
 					emu->cpu.A,
 					emu->cpu.X,
 					emu->cpu.Y,
 					emu->cpu.P,
-					pc,
-					emu->mem[pc - 0x8000 + 0],
-					emu->mem[pc - 0x8000 + 1],
-					emu->mem[pc - 0x8000 + 2]
+					pc
 					);
 			exit (0);
 		}
