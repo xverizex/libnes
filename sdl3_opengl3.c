@@ -631,55 +631,55 @@ static void draw_ppu (struct NESEmu *emu)
 	int m = 0;
 	x = y = ppx = ppy = 0;
 
-	uint16_t addr[2] = {
+	uint16_t ppu_addr[4] = {
 		0x2000,
-		0x2400
+		0x2400,
+		0x2800,
+		0x2c00
+
 	};
+
+
+	uint16_t addr = ppu_addr[emu->ctrl[REAL_PPUCTRL] & 0x3];
 
 	uint32_t indx_screen = 0;
 
-	while (indx_screen <= 0) {
+	for (uint16_t i = 0; i < 960; i++) {
 
-		for (uint16_t i = 0; i < 960; i++) {
-
-			if ((i > 0) && ((i % 32) == 0)) {
-				x = 0;
-				y++;
-				ppx = 0;
-				ppy += 8;
-			}
-
-			uint16_t naddr = i + addr[indx_screen];
-
-			uint8_t id_texture = emu->ppu[naddr];
-
-			math_translate (r->transform, ppx, ppy, 0.f);
-
-			if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
-				build_background (emu, r, id_texture, x, y, i, indx_screen);
-				emu->ppu_copy[naddr] = emu->ppu[naddr];
-			}
-
-			glActiveTexture (GL_TEXTURE0);
-			glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
-			glUniform1i (r->id_sampler, 0);
-
-			glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
-			glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
-			glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
-			glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
-
-			glEnableVertexAttribArray (0);
-			glEnableVertexAttribArray (1);
-
-			glDrawArrays (GL_TRIANGLES, 0, 6);
-
-			ppx += 8;
-			x++;
-
+		if ((i > 0) && ((i % 32) == 0)) {
+			x = 0;
+			y++;
+			ppx = 0;
+			ppy += 8;
 		}
 
-		indx_screen++;
+		uint16_t naddr = i + addr;
+
+		uint8_t id_texture = emu->ppu[naddr];
+
+		math_translate (r->transform, ppx, ppy, 0.f);
+
+		if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
+			build_background (emu, r, id_texture, x, y, i, indx_screen);
+			emu->ppu_copy[naddr] = emu->ppu[naddr];
+		}
+
+		glActiveTexture (GL_TEXTURE0);
+		glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
+		glUniform1i (r->id_sampler, 0);
+
+		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
+		glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
+		glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
+		glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
+
+		glEnableVertexAttribArray (0);
+		glEnableVertexAttribArray (1);
+
+		glDrawArrays (GL_TRIANGLES, 0, 6);
+
+		ppx += 8;
+		x++;
 	}
 }
 
@@ -708,6 +708,7 @@ static void recreate_palette (struct NESEmu *emu, struct render_opengl_data *r)
 			r->palette_image[i + 2] = emu->ppu[addr_palette + 2 + i];
 			r->palette_image[i + 3] = emu->ppu[addr_palette + 3 + i];
 		}
+		printf ("recreate palette\n");
 		break;
 	}
 }

@@ -173,7 +173,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			printf ("write to ppu %04x = %02x\n", emu->ppu_addr, *r);
 			emu->is_debug_exit = 1;
 		}
-		//printf ("%04x ppu\n", emu->ppu_addr);
+		//printf ("%04x ppu = %02x\n", emu->ppu_addr, *r);
 		emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
 	} 
 	if (addr >= PPUCTRL && addr <= PPUDATA) {
@@ -181,6 +181,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			if (*r > 0x0)
 				printf ("ppuscroll %02x\n", *r);
 		}
+		//printf ("%04x:%02x\n", addr, *r);
 		emu->ctrl[addr - 0x2000] = *r;
 	} 
 	if ((addr == 0x4017) || (addr == 0x4016)) {
@@ -893,9 +894,14 @@ void jsr_absolute (struct NESEmu *emu)
 
 	uint16_t addr;
 
-       	addr = 0x100 + --cpu->S;
+	--cpu->S;
+
+       	addr = 0x100 + cpu->S;
+
 	emu->ram[addr] = (uint8_t) ((pc >> 8) & 0xff);
-	addr = 0x100 + --cpu->S;
+	--cpu->S;
+
+	addr = 0x100 + cpu->S;
 	emu->ram[addr] = (uint8_t) (pc & 0xff);
 
 	uint16_t new_pc = 0;
@@ -1169,12 +1175,15 @@ void rti_implied (struct NESEmu *emu)
 
 	addr = 0x100 + cpu->S;
 
-	uint16_t new_pc = 0;
-	new_pc = *(uint16_t *) &emu->ram[addr];
+	cpu->PC = 0;
+	cpu->PC = (emu->ram[addr] & 0xff);
+	cpu->S++;
 
-	cpu->S += 2;
+	addr = 0x100 + cpu->S;
 
-	cpu->PC = new_pc;
+	cpu->S++;
+
+	cpu->PC |= ((emu->ram[addr] << 8) & 0xff00);
 
 	emu->is_returned_from_nmi = 1;
 
@@ -1429,8 +1438,15 @@ void rts_implied (struct NESEmu *emu)
 
 	uint16_t addr = 0x100 + cpu->S;
 
-	cpu->PC = *(uint16_t *) &emu->ram[addr];
-	cpu->S += 2;
+	cpu->PC = 0;
+	cpu->PC |= (emu->ram[addr] & 0xff);
+	cpu->S++;
+
+	addr = 0x100 + cpu->S;
+
+	cpu->S++;
+
+	cpu->PC |= ((emu->ram[addr] << 8) & 0xff00);
 
 	cpu->PC++;
 	//printf ("rts %04x\n", cpu->PC);

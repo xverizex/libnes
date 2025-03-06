@@ -429,7 +429,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 #endif
 
 		if (emu->is_nmi_works) {
-		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+		} if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (platform_delay_nmi (emu, NULL)) {
 				uint16_t addr;
 				addr = 0x100 + --emu->cpu.S;
@@ -494,13 +494,21 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (emu->is_debug_exit) {
 			printf ("###### debug exit error #######\n");
-			printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x;",
+			printf ("A: %02x X: %02x Y: %02x P: %02x S: %02x PC: %04x;\n",
 					emu->cpu.A,
 					emu->cpu.X,
 					emu->cpu.Y,
 					emu->cpu.P,
+					emu->cpu.S,
 					pc
 					);
+
+			printf ("stack: ");
+			while (emu->cpu.S <= 0xff) {
+				if (emu->cpu.S == 0x0)
+					break;
+				printf ("%02x ", emu->ram[0x0100 | emu->cpu.S++]);
+			}
 			exit (0);
 		}
 
