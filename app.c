@@ -167,7 +167,8 @@ int main (int argc, char **argv)
 		while (SDL_PollEvent (&event)) {
 			switch (event.type) {
 				case SDL_EVENT_JOYSTICK_HAT_MOTION:
-					if (emu->new_state == 0) {
+					//if (emu->new_state == 0) {
+					if (emu->is_new_state) {
 						uint8_t temp = emu->state_buttons0 & 0x0f;
 						emu->state_buttons0 &= (state & 0xf0);
 						if ((state & 0xf0) == 0)
@@ -189,6 +190,7 @@ int main (int argc, char **argv)
 						}
 						state = emu->state_buttons0;
 						is_written = 1;
+						emu->is_new_state = 0;
 					} else {
 						state_hat_buttons_get (&state, event.jhat.value);
 					}
@@ -198,19 +200,23 @@ int main (int argc, char **argv)
 				case SDL_EVENT_JOYSTICK_AXIS_MOTION:
 					break;
 				case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-					if (emu->new_state == 0) {
+					//if (emu->new_state == 0) {
+					if (emu->is_new_state) {
 						state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
 						emu->state_buttons0 |= state;
 						is_written = 1;
+						emu->is_new_state = 0;
 					} else {
 						state_button_get (&state, event.jbutton.button, event.jbutton.down);
 					}
 					break;
 				case SDL_EVENT_JOYSTICK_BUTTON_UP:
-					if (emu->new_state == 0) {
+					if (emu->is_new_state) {
+					//if (emu->new_state == 0) {
 						state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
 						emu->state_buttons0 |= state;
 						is_written = 1;
+						emu->is_new_state = 0;
 					} else {
 						state_button_get (&state, event.jbutton.button, event.jbutton.down);
 					}
@@ -225,7 +231,6 @@ int main (int argc, char **argv)
 			}
 		}
 		if (is_written) {
-			printf ("written: %02x\n", emu->state_buttons0);
 			nes_write_state (emu);
 		}
 
