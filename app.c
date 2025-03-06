@@ -66,12 +66,19 @@ static void state_hat_buttons_get (uint8_t *state, uint8_t value)
 enum {
 	BUTTON_A = 0,
 	BUTTON_B = 1,
+	BUTTON_SELECT = 6,
 	BUTTON_START = 7
 };
 
 static void state_button_get (uint8_t *state, uint8_t value, uint8_t is_down)
 {
 	switch (value) {
+		case BUTTON_SELECT:
+			if (is_down)
+				(*state) |= (1 << JOY_SELECT);
+			else
+				(*state) &= 0xfb;
+			break;
 		case BUTTON_START:
 			if (is_down)
 				(*state) |= (1 << JOY_START);
@@ -108,7 +115,7 @@ int main (int argc, char **argv)
 
 	SDL_DisableScreenSaver ();
 
-	uint32_t scale = 8;
+	uint32_t scale = 3;
 
 	uint32_t width = 256 * scale;
 	uint32_t height = 224 * scale;
@@ -170,7 +177,8 @@ int main (int argc, char **argv)
 						} else if ((emu->state_buttons0 & 0x40) && (temp & 0x80)) {
 							emu->state_buttons0 &= ~(0x40);
 							emu->state_buttons0 |= (temp);
-						} else if ((emu->state_buttons0 & 0x10) && (temp & 0x20)) {
+						} 
+						if ((emu->state_buttons0 & 0x10) && (temp & 0x20)) {
 							emu->state_buttons0 &= ~(0x10);
 							emu->state_buttons0 |= (temp);
 						} else if ((emu->state_buttons0 & 0x20) && (temp & 0x10)) {

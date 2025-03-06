@@ -74,6 +74,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		if (addr == 0x4016) {
 			if (emu->new_state <= 7) {
 				*r = 0x40 | (((emu->joy0 & (1 << emu->new_state)) >> emu->new_state) & 0x01);
+				printf ("emu->pc read joy: %04x\n", emu->cpu.PC);
 				emu->new_state++;
 				if (emu->new_state == 8) {
 					//emu->joy0 = 0;
