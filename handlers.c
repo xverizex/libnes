@@ -173,7 +173,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			printf ("write to ppu %04x = %02x\n", emu->ppu_addr, *r);
 			emu->is_debug_exit = 1;
 		}
-		//printf ("%04x ppu = %02x\n", emu->ppu_addr, *r);
+		printf ("%04x -> %04x ppu = %02x\n", emu->cpu.PC, emu->ppu_addr, *r);
 		emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
 	} 
 	if (addr >= PPUCTRL && addr <= PPUDATA) {
@@ -611,7 +611,8 @@ void php_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	uint16_t addr = 0x100 + --cpu->S;
+	--cpu->S;
+	uint16_t addr = 0x100 + cpu->S;
 	emu->ram[addr] = cpu->P;
 
 	wait_cycles (emu, 3);
@@ -966,7 +967,8 @@ void plp_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	uint16_t addr = 0x100 + cpu->S++;
+	uint16_t addr = 0x100 + cpu->S;
+	cpu->S++;
 	cpu->P = emu->ram[addr];
 
 	wait_cycles (emu, 4);
@@ -1170,8 +1172,10 @@ void rti_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	uint16_t addr = 0x100 + cpu->S++;
+	uint16_t addr = 0x100 + cpu->S;
+
 	cpu->P = emu->ram[addr];
+	cpu->S++;
 
 	addr = 0x100 + cpu->S;
 
@@ -1233,7 +1237,8 @@ void pha_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	uint16_t addr = 0x100 + --cpu->S;
+	--cpu->S;
+	uint16_t addr = 0x100 + cpu->S;
 
 	emu->ram[addr] = cpu->A;
 
@@ -1509,7 +1514,8 @@ void pla_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	uint16_t addr = 0x100 + cpu->S++;
+	uint16_t addr = 0x100 + cpu->S;
+	cpu->S++;
 
 	cpu->A = emu->ram[addr];
 

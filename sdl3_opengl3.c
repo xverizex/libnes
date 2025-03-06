@@ -702,13 +702,13 @@ static void recreate_palette (struct NESEmu *emu, struct render_opengl_data *r)
 			continue;
 		}
 
+		printf ("recreate palette\n");
 		for (int i = 0; i < 16; i += 4) {
 			r->palette_image[i + 0] = emu->ppu[addr_palette + 0 + i];
 			r->palette_image[i + 1] = emu->ppu[addr_palette + 1 + i];
 			r->palette_image[i + 2] = emu->ppu[addr_palette + 2 + i];
 			r->palette_image[i + 3] = emu->ppu[addr_palette + 3 + i];
 		}
-		printf ("recreate palette\n");
 		break;
 	}
 }

@@ -431,12 +431,16 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		if (emu->is_nmi_works) {
 		} if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (platform_delay_nmi (emu, NULL)) {
+				static uint32_t called = 0;
 				uint16_t addr;
-				addr = 0x100 + --emu->cpu.S;
+				--emu->cpu.S;
+				addr = 0x100 + emu->cpu.S;
 				emu->ram[addr] = ( emu->cpu.PC >> 8 ) & 0xff;
-				addr = 0x100 + --emu->cpu.S;
+				--emu->cpu.S;
+				addr = 0x100 + emu->cpu.S;
 				emu->ram[addr] = ((emu->cpu.PC) & 0xff);
-				addr = 0x100 + --emu->cpu.S;
+				--emu->cpu.S;
+				addr = 0x100 + emu->cpu.S;
 				emu->ram[addr] = emu->cpu.P;
 
 				emu->cpu.PC = emu->nmi_handler;
