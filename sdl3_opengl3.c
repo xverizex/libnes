@@ -435,7 +435,7 @@ static void build_background (struct NESEmu *emu, struct render_opengl_data *r, 
 {
 	static const uint16_t palette[2] = {
 		0x23c0,
-		0x27c0
+		0x27c0,
 	};
 
 	uint32_t indx = 0;
@@ -639,10 +639,9 @@ static void draw_ppu (struct NESEmu *emu)
 
 	};
 
+	uint32_t indx_screen = emu->ctrl[REAL_PPUCTRL] & 0x3;
 
-	uint16_t addr = ppu_addr[emu->ctrl[REAL_PPUCTRL] & 0x3];
-
-	uint32_t indx_screen = 0;
+	uint16_t addr = ppu_addr[indx_screen];
 
 	for (uint16_t i = 0; i < 960; i++) {
 
