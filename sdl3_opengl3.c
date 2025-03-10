@@ -433,10 +433,21 @@ void platform_init (struct NESEmu *emu, void *_other_data)
 
 static void build_background (struct NESEmu *emu, struct render_opengl_data *r, uint8_t id_texture, uint8_t x, uint8_t y, uint16_t naddr, uint32_t indx_screen)
 {
-	static const uint16_t palette[2] = {
+#if 0
+	static const uint16_t palette[4] = {
 		0x23c0,
 		0x27c0,
+		0x2bc0,
+		0x2fc0
 	};
+#else
+	static const uint16_t palette[4] = {
+		0x23c0,
+		0x23c0,
+		0x27c0,
+		0x27c0
+	};
+#endif
 
 	uint32_t indx = 0;
 
@@ -626,9 +637,6 @@ static void draw_ppu (struct NESEmu *emu)
 	int32_t ppy = 0;
 	uint8_t x, y;
 	x = y = 0;
-	int ind = 0;
-	int ddt = 0;
-	int m = 0;
 	x = y = ppx = ppy = 0;
 
 	uint16_t ppu_addr[4] = {
@@ -640,9 +648,17 @@ static void draw_ppu (struct NESEmu *emu)
 	};
 
 	uint32_t indx_screen = emu->ctrl[REAL_PPUCTRL] & 0x3;
-
 	uint16_t addr = ppu_addr[indx_screen];
 
+
+	uint32_t count = 0;
+
+try:
+	ppx = ppy = x = y = 0;
+	if (count == 1) {
+		indx_screen += 2;
+	}
+	addr = ppu_addr[indx_screen];
 	for (uint16_t i = 0; i < 960; i++) {
 
 		if ((i > 0) && ((i % 32) == 0)) {
@@ -661,6 +677,7 @@ static void draw_ppu (struct NESEmu *emu)
 		if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
 			build_background (emu, r, id_texture, x, y, i, indx_screen);
 			emu->ppu_copy[naddr] = emu->ppu[naddr];
+			printf ("%d\n", i);
 		}
 
 		glActiveTexture (GL_TEXTURE0);
@@ -680,6 +697,10 @@ static void draw_ppu (struct NESEmu *emu)
 		ppx += 8;
 		x++;
 	}
+
+	count++;
+	if (count == 1)
+		goto try;
 }
 
 static void bind_vertex_group (struct render_opengl_data *r)
