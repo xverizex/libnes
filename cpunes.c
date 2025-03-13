@@ -428,9 +428,14 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 #endif
 
+		static int bc = 0;
+
 		if (emu->is_nmi_works) {
-		} if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+			//check_collision (emu);
+		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (platform_delay_nmi (emu, NULL)) {
+				bc = 0;
+				printf ("delay nmi\n");
 				static uint32_t called = 0;
 				uint16_t addr;
 				--emu->cpu.S;
@@ -453,45 +458,12 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 
-		//printf ("pc: %04x: \n", pc);
+		printf ("pc: %04x: \n", pc);
 		//printf ("%02x\n", emu->ram[0xb]);
 
 		static uint32_t runs = 0;
 		static uint32_t tick = 0;
 		if (emu->is_nmi_works) {
-			static uint32_t cnt = 0;
-#if 0
-			if (emu->cpu.PC == 0xc783) {
-				cnt++;
-				//printf ("cnt: %d\n", cnt);
-				//debug (emu, 0xf0);
-			}
-#endif
-			//debug (emu, 0xe0);
-#if 0
-			if (pc == 0xc1cf) {
-				runs = 1;
-				debug (emu, 0xf0);
-				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x;\n",
-						emu->cpu.A,
-						emu->cpu.X,
-						emu->cpu.Y,
-						emu->cpu.P,
-						pc
-						);
-				getc (stdin);
-			} else if (runs) {
-				debug (emu, 0xf0);
-				printf ("A: %02x X: %02x Y: %02x P: %02x PC: %04x;\n",
-						emu->cpu.A,
-						emu->cpu.X,
-						emu->cpu.Y,
-						emu->cpu.P,
-						pc
-						);
-				getc (stdin);
-			}
-#endif
 		}
 
 		pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);

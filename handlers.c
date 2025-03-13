@@ -48,6 +48,33 @@ static inline void set_ext_cycles (struct CPUNes *cpu, int8_t offset, uint16_t n
 	}
 }
 
+void check_collision (struct NESEmu *emu)
+{
+	uint8_t sprite_0_y = emu->oam[0];
+	uint8_t sprite_0_id_texture = emu->oam[1];
+	uint8_t sprite_0_flags = emu->oam[2];
+	uint8_t sprite_0_x = emu->oam[3];
+
+	uint32_t idx = 4;
+	for (int i = 0; i < 63; i++) {
+
+		uint8_t flags = emu->oam[idx + 2];
+
+		uint8_t py = emu->oam[idx + 0];
+		uint8_t id_texture = emu->oam[idx + 1];
+		uint8_t px = emu->oam[idx + 3];
+
+		if ((sprite_0_x <= px) && ((sprite_0_x + 8) >= px)) {
+			if ((sprite_0_y <= py) && ((sprite_0_y + 8) >= py)) {
+				emu->ppu_status |= 0x40;
+				printf ("collision detected\n");
+				break;
+			}
+		}	
+		idx += 4;
+	}
+}
+
 void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	//printf ("\tread from addr: %04x = %02x\n", addr, *r);
@@ -117,19 +144,9 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->is_debug_exit = 1;
 			return;
 		}
-		if (((emu->oam_addr >= 0x200) && (emu->oam_addr <= 0x2ff)) && ((addr >= 0x200) && (addr <= 0x2ff))) {
-#if 0
-			if (((addr == 0x243)&& (*r == 196))) {
-				printf (">> PC = %04x; A: %02x X: %02x Y: %02x P: %02x addr: %04x; *r=%02x\n", 
-						emu->cpu.PC, emu->cpu.A, emu->cpu.X, emu->cpu.Y, emu->cpu.P, addr, *r);
-				emu->is_debug_exit = 1;
-				//exit (0);
-			} else if (addr == 0x243) {
-				static int cnt = 0;
-				printf ("cnt: %d; *r %02x %d\n", cnt++, *r, *r);
-			}
-#endif
-			emu->oam[addr - 0x200] = *r;
+		if ((emu->oam_addr > 0x100) && ((addr) >= emu->oam_addr) && ((addr) <= (emu->oam_addr + 0xff))) {
+			printf ("writing to %04x value %02x from pc %04x\n", addr, *r, emu->cpu.PC);
+			emu->oam[addr - emu->oam_addr] = *r;
 		} else {
 #if 0
 			if (addr == 0xb8 && *r == 0xd1) {
@@ -185,7 +202,8 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			if (*r > 0x0)
 				printf ("ppuscroll %02x\n", *r);
 		}
-		//printf ("%04x:%02x\n", addr, *r);
+		if (addr == PPUCTRL)
+			printf ("%04x:%02x from %04x\n", addr, *r, emu->cpu.PC);
 		emu->ctrl[addr - 0x2000] = *r;
 	} 
 	if ((addr == 0x4017) || (addr == 0x4016)) {
@@ -1196,6 +1214,8 @@ void rti_implied (struct NESEmu *emu)
 	emu->is_returned_from_nmi = 1;
 
 	wait_cycles (emu, 6);
+
+	printf ("rti\n");
 }
 
 void eor_indirect_x (struct NESEmu *emu) 

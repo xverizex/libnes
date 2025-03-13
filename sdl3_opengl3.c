@@ -587,6 +587,7 @@ static void draw_sprite_if (struct NESEmu *emu, uint32_t condition)
 {
 	struct render_opengl_data *r = emu->_render_data;
 
+
 	uint8_t LOWER_BACKGROUND = 32;
 	uint32_t idx = 0;
 	for (int i = 0; i < 64; i++) {
@@ -651,14 +652,6 @@ static void draw_ppu (struct NESEmu *emu)
 	uint16_t addr = ppu_addr[indx_screen];
 
 
-	uint32_t count = 0;
-
-try:
-	ppx = ppy = x = y = 0;
-	if (count == 1) {
-		indx_screen += 2;
-	}
-	addr = ppu_addr[indx_screen];
 	for (uint16_t i = 0; i < 960; i++) {
 
 		if ((i > 0) && ((i % 32) == 0)) {
@@ -677,7 +670,6 @@ try:
 		if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
 			build_background (emu, r, id_texture, x, y, i, indx_screen);
 			emu->ppu_copy[naddr] = emu->ppu[naddr];
-			printf ("%d\n", i);
 		}
 
 		glActiveTexture (GL_TEXTURE0);
@@ -697,10 +689,6 @@ try:
 		ppx += 8;
 		x++;
 	}
-
-	count++;
-	if (count == 1)
-		goto try;
 }
 
 static void bind_vertex_group (struct render_opengl_data *r)
@@ -733,8 +721,11 @@ static void recreate_palette (struct NESEmu *emu, struct render_opengl_data *r)
 	}
 }
 
+
 void platform_render (struct NESEmu *emu, void *_other_data)
 {
+	static int in = 0;
+	printf ("draw: %d\n", in++);
 	SDL_Window *win = _other_data;
 
 	struct render_opengl_data *r = emu->_render_data;
