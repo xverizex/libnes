@@ -55,23 +55,26 @@ void check_collision (struct NESEmu *emu)
 	uint8_t sprite_0_flags = emu->oam[2];
 	uint8_t sprite_0_x = emu->oam[3];
 
-	uint32_t idx = 4;
-	for (int i = 0; i < 63; i++) {
+	if ((sprite_0_y <= emu->scanline) && ((sprite_0_y + 8) >= emu->scanline)) {
+		uint32_t idx = 4;
+		for (int i = 0; i < 63; i++) {
 
-		uint8_t flags = emu->oam[idx + 2];
+			uint8_t flags = emu->oam[idx + 2];
 
-		uint8_t py = emu->oam[idx + 0];
-		uint8_t id_texture = emu->oam[idx + 1];
-		uint8_t px = emu->oam[idx + 3];
+			uint8_t py = emu->oam[idx + 0];
+			uint8_t id_texture = emu->oam[idx + 1];
+			uint8_t px = emu->oam[idx + 3];
 
-		if ((sprite_0_x <= px) && ((sprite_0_x + 8) >= px)) {
-			if ((sprite_0_y <= py) && ((sprite_0_y + 8) >= py)) {
-				emu->ppu_status |= 0x40;
-				printf ("collision detected\n");
-				break;
-			}
-		}	
-		idx += 4;
+			if ((sprite_0_x <= px) && ((sprite_0_x + 8) >= px)) {
+				if ((sprite_0_y <= py) && ((sprite_0_y + 8) >= py)) {
+					emu->ppu_status |= 0x40;
+					break;
+				}
+			}	
+			idx += 4;
+		}
+	} else {
+		emu->ppu_status &= ~(0x40);
 	}
 }
 
@@ -87,6 +90,15 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 		//printf ("%04x <- pc\n", emu->cpu.PC);
 		return;
+	}
+	if (addr == PPUSCROLL) {
+		if (emu->cnt_read_scrollxy == 0) {
+			*r = emu->offx;
+			emu->cnt_read_scrollxy++;
+		} else {
+			*r = emu->offy;
+			emu->cnt_read_scrollxy = 0;
+		}
 	}
 	if (addr < RAM_MAX) {
 		*r = emu->ram[addr];
@@ -117,6 +129,8 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		} else {
 			*r = 0x40;
 		}
+	} else if ((addr >= PPUCTRL) && (addr <= PPUDATA)) {
+		*r = emu->ctrl[addr - 0x2000];
 	} else {
 		*r = emu->mem[addr - 0x8000];
 	}
@@ -145,7 +159,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			return;
 		}
 		if ((emu->oam_addr > 0x100) && ((addr) >= emu->oam_addr) && ((addr) <= (emu->oam_addr + 0xff))) {
-			printf ("writing to %04x value %02x from pc %04x\n", addr, *r, emu->cpu.PC);
+			//printf ("writing to %04x value %02x from pc %04x\n", addr, *r, emu->cpu.PC);
 			emu->oam[addr - emu->oam_addr] = *r;
 		} else {
 #if 0
@@ -162,7 +176,16 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		return;
 	}
 
-	if (addr == PPUCTRL) {
+	if (addr == PPUSCROLL) {
+		if (emu->cnt_write_scrollxy == 0) {
+			emu->offx = *r;
+			emu->cnt_write_scrollxy++;
+		} else {
+			emu->offy = *r;
+			emu->cnt_write_scrollxy = 0;
+		}
+		return;
+	} else if (addr == PPUCTRL) {
 		emu->ctrl[REAL_PPUCTRL] = *r;
 	} else if (addr == PPUMASK) {
 		emu->ctrl[REAL_PPUMASK] = *r;
@@ -196,14 +219,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 #endif
 		emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
-	} 
-	if (addr >= PPUCTRL && addr <= PPUDATA) {
-		if (addr == PPUSCROLL) {
-			if (*r > 0x0)
-				printf ("ppuscroll %02x\n", *r);
-		}
-		if (addr == PPUCTRL)
-			printf ("%04x:%02x from %04x\n", addr, *r, emu->cpu.PC);
+	}  else if (addr >= PPUCTRL && addr <= PPUDATA) {
 		emu->ctrl[addr - 0x2000] = *r;
 	} 
 	if ((addr == 0x4017) || (addr == 0x4016)) {
@@ -1214,8 +1230,6 @@ void rti_implied (struct NESEmu *emu)
 	emu->is_returned_from_nmi = 1;
 
 	wait_cycles (emu, 6);
-
-	printf ("rti\n");
 }
 
 void eor_indirect_x (struct NESEmu *emu) 

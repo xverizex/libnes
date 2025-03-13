@@ -51,6 +51,34 @@ void platform_clear_mask (struct NESEmu *emu, uint8_t indx, void *_other_data)
 	glClear (GL_COLOR_BUFFER_BIT);
 }
 
+int scanline_delay (struct NESEmu *emu)
+{
+    struct timeval tv;
+    //gettimeofday (&tv, NULL);
+
+    uint64_t ms = SDL_GetTicksNS ();
+
+    if (emu->timestamp_scanline == 0L) {
+	    emu->timestamp_scanline = ms;
+	    return 0;
+    }
+
+    uint64_t ret = ms - emu->timestamp_scanline;
+
+    if (ret >= 52000) {
+	    uint64_t last = ret - emu->last_scanline_int64;
+	    emu->last_scanline_int64 = last;
+	    emu->timestamp_scanline = ms;
+	    emu->scanline++;
+	    if (emu->scanline >= 262) {
+		    emu->scanline = 0;
+	    }
+	    return 1;
+    } else {
+	    return 0;
+    }
+}
+
 int platform_delay (struct NESEmu *emu, void *_other_data)
 {
     struct timeval tv;
@@ -651,8 +679,8 @@ static void draw_ppu (struct NESEmu *emu)
 	uint32_t indx_screen = emu->ctrl[REAL_PPUCTRL] & 0x3;
 	uint16_t addr = ppu_addr[indx_screen];
 
-
-	for (uint16_t i = 0; i < 960; i++) {
+	uint16_t off_screen = 960;
+	for (uint16_t i = 0; i < off_screen; i++) {
 
 		if ((i > 0) && ((i % 32) == 0)) {
 			x = 0;
@@ -665,11 +693,11 @@ static void draw_ppu (struct NESEmu *emu)
 
 		uint8_t id_texture = emu->ppu[naddr];
 
-		math_translate (r->transform, ppx, ppy, 0.f);
+		math_translate (r->transform, ppx - emu->offx, ppy - emu->offy, 0.f);
 
-		if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
+		if ((emu->ppu_copy[i] != emu->ppu[naddr]) || emu->is_new_palette_background) {
 			build_background (emu, r, id_texture, x, y, i, indx_screen);
-			emu->ppu_copy[naddr] = emu->ppu[naddr];
+			emu->ppu_copy[i] = emu->ppu[naddr];
 		}
 
 		glActiveTexture (GL_TEXTURE0);
@@ -725,7 +753,6 @@ static void recreate_palette (struct NESEmu *emu, struct render_opengl_data *r)
 void platform_render (struct NESEmu *emu, void *_other_data)
 {
 	static int in = 0;
-	printf ("draw: %d\n", in++);
 	SDL_Window *win = _other_data;
 
 	struct render_opengl_data *r = emu->_render_data;

@@ -114,6 +114,7 @@ struct NESEmu {
     uint16_t reset_handler;
     uint16_t irq_handler;
 
+    uint64_t last_scanline_int64;
     float last_cycles_float;
     uint64_t last_cycles_int64;
     uint64_t tmp_last_cycles_int64;
@@ -154,6 +155,8 @@ struct NESEmu {
     uint8_t *mem;
     uint8_t *chr;
 
+    uint32_t scanline;
+    uint64_t timestamp_scanline;
     uint64_t timestamp_cycles;
     uint32_t is_returned_from_nmi;
     uint32_t counter_for_nmi;
@@ -164,6 +167,10 @@ struct NESEmu {
     uint8_t state_buttons0;
     uint32_t is_new_state;
     uint8_t ppu_status;
+    uint8_t cnt_write_scrollxy;
+    uint8_t cnt_read_scrollxy;
+    int8_t offx;
+    int8_t offy;
 };
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);

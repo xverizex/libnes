@@ -407,6 +407,8 @@ static void debug (struct NESEmu *emu, uint32_t cnt)
 	printf ("\n");
 }
 
+uint32_t scanline_delay (struct NESEmu *emu);
+
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data)
 {
 
@@ -431,11 +433,12 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		static int bc = 0;
 
 		if (emu->is_nmi_works) {
-			//check_collision (emu);
+			if (scanline_delay (emu)) {
+				check_collision (emu);
+			}
 		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (platform_delay_nmi (emu, NULL)) {
 				bc = 0;
-				printf ("delay nmi\n");
 				static uint32_t called = 0;
 				uint16_t addr;
 				--emu->cpu.S;
@@ -458,7 +461,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 
-		printf ("pc: %04x: \n", pc);
+		//printf ("pc: %04x: \n", pc);
 		//printf ("%02x\n", emu->ram[0xb]);
 
 		static uint32_t runs = 0;
