@@ -152,6 +152,7 @@ struct NESEmu {
     uint16_t height;
 
     void *_render_data;
+    void *_window_data;
     uint32_t is_return;
 
     uint32_t scale;
@@ -192,6 +193,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 void nes_write_state (struct NESEmu *emu);
 void platform_init (struct NESEmu *emu, void *data);
 void platform_get_rom (const char *filename, uint8_t **data, uint64_t *filesize);
+uint32_t platform_event (struct NESEmu *emu, void *_data);
 
 #ifdef __cplusplus
 }

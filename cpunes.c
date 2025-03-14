@@ -522,3 +522,4 @@ void nes_write_state (struct NESEmu *emu)
 	emu->joy0 = emu->state_buttons0;
 	emu->new_state = 0;
 }
+
