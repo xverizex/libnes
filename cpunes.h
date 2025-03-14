@@ -152,6 +152,7 @@ struct NESEmu {
     uint8_t oam[0x100];
     uint8_t *ppu;
     uint8_t *ppu_copy;
+    uint8_t *ppu_scroll;
     uint8_t *mem;
     uint8_t *chr;
 
@@ -169,8 +170,8 @@ struct NESEmu {
     uint8_t ppu_status;
     uint8_t cnt_write_scrollxy;
     uint8_t cnt_read_scrollxy;
-    int8_t offx;
-    int8_t offy;
+    uint8_t offx;
+    uint8_t offy;
 };
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);

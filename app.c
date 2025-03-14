@@ -115,7 +115,7 @@ int main (int argc, char **argv)
 
 	SDL_DisableScreenSaver ();
 
-	uint32_t scale = 3;
+	uint32_t scale = 8;
 
 	uint32_t width = 256 * scale;
 	uint32_t height = 224 * scale;

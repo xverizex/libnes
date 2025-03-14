@@ -213,12 +213,10 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			printf ("write to ppu %04x = %02x\n", emu->ppu_addr, *r);
 			emu->is_debug_exit = 1;
 		}
-#if 0
-		if (emu->ppu_addr >= 0x23c0) {
-			printf ("%04x -> %04x ppu = %02x\n", emu->cpu.PC, emu->ppu_addr, *r);
-		}
-#endif
-		emu->ppu[emu->ppu_addr++] = *r; //screen on the 0x2000 //TODO: fix
+		emu->ppu_scroll[emu->ppu_addr] = emu->offx;
+		emu->ppu[emu->ppu_addr] = *r;
+		emu->ppu_addr++;
+					  
 	}  else if (addr >= PPUCTRL && addr <= PPUDATA) {
 		emu->ctrl[addr - 0x2000] = *r;
 	} 
