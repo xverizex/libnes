@@ -63,6 +63,7 @@ int main (int argc, char **argv)
 
 	SDL_Event event;
 
+
 	while (1) {
 		uint32_t is_written = 0;
 		while (SDL_PollEvent (&event)) {
