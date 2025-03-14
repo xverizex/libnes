@@ -1,5 +1,10 @@
 #ifndef CPUNES_H
 #define CPUNES_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 #define STATUS_FLAG_CF        (1 << 0)
@@ -96,6 +101,10 @@ struct NESCallbacks {
 
 #define RAM_MAX                 0x800
 
+
+#define TV_SYSTEM_NTSC             0
+#define TV_SYSTEM_PAL              1
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
@@ -114,6 +123,7 @@ struct NESEmu {
     uint16_t reset_handler;
     uint16_t irq_handler;
 
+    uint8_t tv_system;
     uint64_t last_scanline_int64;
     float last_cycles_float;
     uint64_t last_cycles_int64;
@@ -180,5 +190,10 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz);
 void nes_emu_rescale (struct NESEmu *emu, uint32_t scale);
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data);
 void nes_write_state (struct NESEmu *emu);
+void platform_init (struct NESEmu *emu, void *data);
+void platform_get_rom (const char *filename, uint8_t **data, uint64_t *filesize);
 
+#ifdef __cplusplus
+}
+#endif
 #endif // CPUNES_H

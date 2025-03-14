@@ -100,8 +100,14 @@ static void state_button_get (uint8_t *state, uint8_t value, uint8_t is_down)
 	}
 }
 
+
 int main (int argc, char **argv)
 {
+	if (argc < 3) {
+		fprintf (stderr, "./app [rom file] [scale]\n");
+		exit (EXIT_FAILURE);
+	}
+
 	SDL_Init (SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS | SDL_INIT_JOYSTICK);
 
 	SDL_GL_SetAttribute (SDL_GL_RED_SIZE, 8);
@@ -115,10 +121,19 @@ int main (int argc, char **argv)
 
 	SDL_DisableScreenSaver ();
 
-	uint32_t scale = 8;
+	uint8_t *data = NULL;
+	uint64_t sz_file = 0;
 
-	uint32_t width = 256 * scale;
-	uint32_t height = 224 * scale;
+	platform_get_rom (argv[1], &data, &sz_file);
+
+	struct NESEmu *emu = malloc (sizeof (struct NESEmu));
+
+	nes_emu_init (emu, data, sz_file);
+
+	uint32_t scale = atoi (argv[2]);
+
+	uint32_t width = emu->width * scale;
+	uint32_t height = emu->height * scale;
 
 	uint32_t flags = SDL_WINDOW_OPENGL;
 
@@ -136,27 +151,7 @@ int main (int argc, char **argv)
 
 	glViewport (0, 0, width, height);
 
-	//FILE *fp = fopen ("mario.nes", "r");
-	FILE *fp = fopen ("Bomberman (U) [!].nes", "r");
-
-	uint64_t sz_file = 0L;
-
-	fseek (fp, 0, SEEK_END);
-
-	sz_file = ftell (fp);
-
-	fseek (fp, 0, SEEK_SET);
-
-	uint8_t *data = malloc (sz_file);
-
-	fread (data, 1, sz_file, fp);
-	
-	fclose (fp);
-
-	struct NESEmu *emu = malloc (sizeof (struct NESEmu));
-
-	nes_emu_init (emu, data, sz_file);
-	//nes_emu_rescale (emu, scale);
+	platform_init (emu, NULL);
 
 	SDL_Event event;
 

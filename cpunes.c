@@ -53,8 +53,24 @@ static void parse_header (struct NESEmu *emu)
 #include <stdio.h>
 #include <stdlib.h>
 
-void platform_init (struct NESEmu *emu, void *data);
 void platform_alloc_memory_map (struct NESEmu *emu);
+
+
+static void get_tv_system (struct NESEmu *emu)
+{
+	emu->tv_system = emu->dump[9] & 0x01;
+
+	switch (emu->tv_system) {
+		case TV_SYSTEM_NTSC:
+			emu->width = 256;
+			emu->height = 224;
+			break;
+		case TV_SYSTEM_PAL:
+			emu->width = 256;
+			emu->height = 240;
+			break;
+	}
+}
 
 void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 {
@@ -84,9 +100,10 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->timestamp_cycles = 0;
 	emu->last_cycles_int64 = 0;
 
-	emu->scale = 4;
-	emu->width = 256;
-	emu->height = 224;
+	get_tv_system (emu);
+	printf ("screen type: %s %dx%d\n", emu->tv_system == TV_SYSTEM_NTSC? "NTSC": "PAL", emu->width, emu->height);
+
+	emu->scale = 8;
 
 	emu->new_state = 0;
 	emu->is_new_palette_background = 1;
@@ -385,7 +402,6 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 		pnes_handler = nes_handler;
 	}
 
-	platform_init (emu, NULL);
 }
 
 int platform_delay (struct NESEmu *emu, void *_other_data);
