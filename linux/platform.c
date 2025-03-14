@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-void platform_get_rom (const char *filename, uint8_t **data, uint64_t *filesize)
+void nes_get_rom (const char *filename, uint8_t **data, uint64_t *filesize)
 {
 	FILE *fp = fopen (filename, "r");
 	uint64_t sz_file = 0L;

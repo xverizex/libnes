@@ -159,7 +159,7 @@ void inc_absolute_x (struct NESEmu *);
 void platform_alloc_memory_map (struct NESEmu *emu);
 void platform_init (struct NESEmu *emu, void *_data);
 int platform_delay (struct NESEmu *emu, void *_data);
-void platform_render (struct NESEmu *emu, void *_data);
+void nes_render (struct NESEmu *emu, void *_data);
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data);
 void platform_ppu_mask (struct NESEmu *emu, void *_other_data);
 void check_collision (struct NESEmu *emu);

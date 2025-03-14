@@ -191,9 +191,9 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *buffer, uint32_t sz);
 void nes_emu_rescale (struct NESEmu *emu, uint32_t scale);
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data);
 void nes_write_state (struct NESEmu *emu);
-void platform_init (struct NESEmu *emu, void *data);
-void platform_get_rom (const char *filename, uint8_t **data, uint64_t *filesize);
-uint32_t platform_event (struct NESEmu *emu, void *_data);
+void nes_platform_init (struct NESEmu *emu, void *data);
+void nes_get_rom (const char *filename, uint8_t **data, uint64_t *filesize);
+uint32_t nes_event (struct NESEmu *emu, void *_data);
 
 #ifdef __cplusplus
 }

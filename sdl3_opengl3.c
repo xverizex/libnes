@@ -34,6 +34,11 @@ struct render_opengl_data {
 	uint32_t rbo;
 };
 
+struct sdl_data {
+	SDL_Joystick *joy[2];
+	int joystick_count;
+};
+
 uint32_t palette_get_color (struct NESEmu *emu, uint8_t idx);
 
 void linux_wait_cycles (struct NESEmu *emu)
@@ -477,11 +482,16 @@ void platform_alloc_memory_map (struct NESEmu *emu)
 	memset (emu->ppu_scroll, 0, 0x4000);
 }
 
-void platform_init (struct NESEmu *emu, void *_other_data)
+void nes_platform_init (struct NESEmu *emu, void *_other_data)
 {
 	struct render_opengl_data *r = malloc (sizeof (struct render_opengl_data));
 	memset (r, 0, sizeof (struct render_opengl_data));
 	emu->_render_data = r;
+
+	struct sdl_data *s = malloc (sizeof (struct sdl_data));
+	memset (s, 0, sizeof (struct sdl_data));
+	emu->_window_data = s;
+
 	r->program = compile_shader (vert_shader_str, frag_shader_str);
 	init_space (emu, r);
 	init_sprite_array (emu, r);
@@ -489,7 +499,6 @@ void platform_init (struct NESEmu *emu, void *_other_data)
 	init_vao (emu, r);
 	init_id (emu, r);
 	framebuffer_init (emu);
-
 }
 
 
@@ -900,7 +909,7 @@ static void render_to_framebuffer (struct NESEmu *emu)
 	glBindFramebuffer (GL_FRAMEBUFFER, 0);
 }
 
-void platform_render (struct NESEmu *emu, void *_other_data)
+void nes_render (struct NESEmu *emu, void *_other_data)
 {
 	static int in = 0;
 	SDL_Window *win = _other_data;
@@ -912,24 +921,17 @@ void platform_render (struct NESEmu *emu, void *_other_data)
 	emu->ppu_status |= 0x80;
 }
 
-static SDL_Joystick *joy[2];
-static int joystick_count = 0;
-
-struct sdl_data {
-	SDL_Joystick *joy[2];
-	int joystick_count;
-};
 
 static void connect_joystick (struct NESEmu *emu)
 {
 	struct sdl_data *s = emu->_window_data;
 
-	SDL_JoystickID *joystick_ids = SDL_GetJoysticks (&joystick_count);
+	SDL_JoystickID *joystick_ids = SDL_GetJoysticks (&s->joystick_count);
 
-	if (joystick_count == 0)
+	if (s->joystick_count == 0)
 		return;
 
-	for (int i = 0; i < joystick_count; i++) {
+	for (int i = 0; i < s->joystick_count; i++) {
 		SDL_JoystickID id = joystick_ids[i];
 
 		s->joy[i] = SDL_OpenJoystick (id);
@@ -941,7 +943,7 @@ static void close_all_joystick (struct NESEmu *emu)
 {
 	struct sdl_data *s = emu->_window_data;
 
-	for (int i = 0; i < joystick_count; i++) {
+	for (int i = 0; i < s->joystick_count; i++) {
 		SDL_CloseJoystick (s->joy[i]);
 	}
 }
@@ -1012,7 +1014,7 @@ static void state_button_get (uint8_t *state, uint8_t value, uint8_t is_down)
 	}
 }
 
-uint32_t platform_event (struct NESEmu *emu, void *_data)
+uint32_t nes_event (struct NESEmu *emu, void *_data)
 {
 	SDL_Event event = *((SDL_Event *) _data);
 

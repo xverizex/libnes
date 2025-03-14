@@ -32,7 +32,7 @@ int main (int argc, char **argv)
 	uint8_t *data = NULL;
 	uint64_t sz_file = 0;
 
-	platform_get_rom (argv[1], &data, &sz_file);
+	nes_get_rom (argv[1], &data, &sz_file);
 
 	struct NESEmu *emu = malloc (sizeof (struct NESEmu));
 
@@ -59,7 +59,7 @@ int main (int argc, char **argv)
 
 	glViewport (0, 0, width, height);
 
-	platform_init (emu, NULL);
+	nes_platform_init (emu, NULL);
 
 	SDL_Event event;
 
@@ -67,7 +67,7 @@ int main (int argc, char **argv)
 	while (1) {
 		uint32_t is_written = 0;
 		while (SDL_PollEvent (&event)) {
-			is_written = platform_event (emu, &event);
+			is_written = nes_event (emu, &event);
 		}
 		if (is_written) {
 			nes_write_state (emu);

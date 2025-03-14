@@ -406,7 +406,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 
 int platform_delay (struct NESEmu *emu, void *_other_data);
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_data);
-void platform_render (struct NESEmu *emu, void *data);
+void nes_render (struct NESEmu *emu, void *data);
 
 static void debug (struct NESEmu *emu, uint32_t cnt)
 {
@@ -508,7 +508,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 		if (emu->is_returned_from_nmi) {
-			platform_render (emu, _data);
+			nes_render (emu, _data);
 			emu->is_returned_from_nmi = 0;
 			emu->is_nmi_works = 0;
 			emu->last_cycles_int64 = 0;
