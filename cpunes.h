@@ -132,6 +132,7 @@ struct NESEmu {
 
     uint64_t start_time_nmi;
 
+    uint8_t state;
     uint8_t is_debug_list;
     uint8_t is_show_address;
     uint8_t is_show_bytes;
@@ -194,6 +195,7 @@ void nes_write_state (struct NESEmu *emu);
 void nes_platform_init (struct NESEmu *emu, void *data);
 void nes_get_rom (const char *filename, uint8_t **data, uint64_t *filesize);
 uint32_t nes_event (struct NESEmu *emu, void *_data);
+void nes_init_surface (struct NESEmu *emu);
 
 #ifdef __cplusplus
 }

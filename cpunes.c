@@ -100,10 +100,10 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 	emu->timestamp_cycles = 0;
 	emu->last_cycles_int64 = 0;
 
+	emu->scale = 1;
+
 	get_tv_system (emu);
 	printf ("screen type: %s %dx%d\n", emu->tv_system == TV_SYSTEM_NTSC? "NTSC": "PAL", emu->width, emu->height);
-
-	emu->scale = 8;
 
 	emu->new_state = 0;
 	emu->is_new_palette_background = 1;

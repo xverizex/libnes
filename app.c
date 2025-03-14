@@ -42,6 +42,7 @@ int main (int argc, char **argv)
 
 	uint32_t width = emu->width * scale;
 	uint32_t height = emu->height * scale;
+	emu->scale = scale;
 
 	uint32_t flags = SDL_WINDOW_OPENGL;
 
@@ -57,21 +58,23 @@ int main (int argc, char **argv)
 	glEnable (GL_BLEND);
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glViewport (0, 0, width, height);
-
 	nes_platform_init (emu, NULL);
 
-	SDL_Event event;
+	nes_init_surface (emu);
 
+	SDL_Event event;
 
 	while (1) {
 		uint32_t is_written = 0;
 		while (SDL_PollEvent (&event)) {
-			is_written = nes_event (emu, &event);
+			nes_event (emu, &event);
 		}
+
+#if 0
 		if (is_written) {
 			nes_write_state (emu);
 		}
+#endif
 
 		nes_emu_execute (emu, 300, win);
 	}

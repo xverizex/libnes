@@ -32,6 +32,8 @@ struct render_opengl_data {
 	uint32_t fbo;
 	uint32_t tex_fbo;
 	uint32_t rbo;
+	uint32_t framebuffer_vao;
+	uint32_t framebuffer_vbo;
 };
 
 struct sdl_data {
@@ -67,11 +69,14 @@ static void framebuffer_init (struct NESEmu *emu)
 {
 	struct render_opengl_data *r = emu->_render_data;
 
+	uint32_t width = emu->width;
+	uint32_t height = emu->height;
+
 	glGenFramebuffers (1, &r->fbo);
 	glBindFramebuffer (GL_FRAMEBUFFER, r->fbo);
 	glGenTextures (1, &r->tex_fbo);
 	glBindTexture (GL_TEXTURE_2D, r->tex_fbo);
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, emu->width, emu->height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -80,7 +85,7 @@ static void framebuffer_init (struct NESEmu *emu)
 	glFramebufferTexture2D (GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, r->tex_fbo, 0);
 	glGenRenderbuffers (1, &r->rbo);
 	glBindRenderbuffer (GL_RENDERBUFFER, r->rbo);
-	glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, emu->width, emu->height);
+	glRenderbufferStorage (GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 	glFramebufferRenderbuffer (GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, r->rbo);
 	if (glCheckFramebufferStatus (GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		assert (1 == 0);
@@ -371,6 +376,171 @@ static void init_textures (struct render_opengl_data *r, uint32_t tex_width, uin
 	glBindTexture (GL_TEXTURE_2D, 0);
 }
 
+static void connect_joystick (struct NESEmu *emu)
+{
+	struct sdl_data *s = emu->_window_data;
+
+	SDL_JoystickID *joystick_ids = SDL_GetJoysticks (&s->joystick_count);
+
+	if (s->joystick_count == 0)
+		return;
+
+	for (int i = 0; i < s->joystick_count; i++) {
+		SDL_JoystickID id = joystick_ids[i];
+
+		s->joy[i] = SDL_OpenJoystick (id);
+	}
+
+}
+
+static void close_all_joystick (struct NESEmu *emu)
+{
+	struct sdl_data *s = emu->_window_data;
+
+	for (int i = 0; i < s->joystick_count; i++) {
+		SDL_CloseJoystick (s->joy[i]);
+	}
+}
+
+static void state_hat_buttons_get (uint8_t *state, uint8_t value)
+{
+	switch (value) {
+		case SDL_HAT_CENTERED:
+			(*state) &= 0x0f;
+			break;
+		case SDL_HAT_UP:
+			(*state) |= (1 << JOY_UP);
+			break;
+		case SDL_HAT_RIGHT:
+			(*state) |= (1 << JOY_RIGHT);
+			break;
+		case SDL_HAT_DOWN:
+			(*state) |= (1 << JOY_DOWN);
+			break;
+		case SDL_HAT_LEFT:
+			(*state) |= (1 << JOY_LEFT);
+			break;
+		case SDL_HAT_RIGHTUP:
+			break;
+		case SDL_HAT_RIGHTDOWN:
+			break;
+		case SDL_HAT_LEFTUP:
+			break;
+		case SDL_HAT_LEFTDOWN:
+			break;
+	}
+}
+
+enum {
+	BUTTON_A = 0,
+	BUTTON_B = 1,
+	BUTTON_SELECT = 6,
+	BUTTON_START = 7
+};
+
+static void state_button_get (uint8_t *state, uint8_t value, uint8_t is_down)
+{
+	switch (value) {
+		case BUTTON_A:
+			if (is_down)
+				(*state) |= (1 << JOY_A);
+			else
+				(*state) &= 0xfe;
+			break;
+		case BUTTON_B:
+			if (is_down)
+				(*state) |= (1 << JOY_B);
+			else
+				(*state) &= 0xfd;
+			break;
+		case BUTTON_SELECT:
+			if (is_down)
+				(*state) |= (1 << JOY_SELECT);
+			else
+				(*state) &= 0xfb;
+			break;
+		case BUTTON_START:
+			if (is_down)
+				(*state) |= (1 << JOY_START);
+			else
+				(*state) &= 0xf7;
+			break;
+	}
+}
+
+uint32_t nes_event (struct NESEmu *emu, void *_data)
+{
+	SDL_Event event = *((SDL_Event *) _data);
+
+	uint32_t is_written = 0;
+
+	switch (event.type) {
+		case SDL_EVENT_JOYSTICK_HAT_MOTION:
+			if (emu->is_new_state) {
+				uint8_t temp = emu->state_buttons0 & 0x0f;
+				emu->state_buttons0 &= (emu->state & 0xf0);
+				if ((emu->state & 0xf0) == 0)
+					emu->state_buttons0 &= 0x0f;
+				state_hat_buttons_get (&emu->state_buttons0, event.jhat.value);
+				if ((emu->state_buttons0 & 0x80) && (temp & 0x40)) {
+					emu->state_buttons0 &= ~(0x80);
+					emu->state_buttons0 |= (temp);
+				} else if ((emu->state_buttons0 & 0x40) && (temp & 0x80)) {
+					emu->state_buttons0 &= ~(0x40);
+					emu->state_buttons0 |= (temp);
+				}
+				if ((emu->state_buttons0 & 0x10) && (temp & 0x20)) {
+					emu->state_buttons0 &= ~(0x10);
+					emu->state_buttons0 |= (temp);
+				} else if ((emu->state_buttons0 & 0x20) && (temp & 0x10)) {
+					emu->state_buttons0 &= ~(0x20);
+					emu->state_buttons0 |= (temp);
+				}
+				emu->state = emu->state_buttons0;
+				is_written = 1;
+				emu->is_new_state = 0;
+			} else {
+				state_hat_buttons_get (&emu->state, event.jhat.value);
+			}
+			break;
+		case SDL_EVENT_JOYSTICK_BALL_MOTION:
+			break;
+		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+			break;
+		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+			if (emu->is_new_state) {
+				state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
+				emu->state_buttons0 |= emu->state;
+				is_written = 1;
+				emu->is_new_state = 0;
+			} else {
+				state_button_get (&emu->state, event.jbutton.button, event.jbutton.down);
+			}
+			break;
+		case SDL_EVENT_JOYSTICK_BUTTON_UP:
+			if (emu->is_new_state) {
+				state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
+				emu->state_buttons0 |= emu->state;
+				is_written = 1;
+				emu->is_new_state = 0;
+			} else {
+				state_button_get (&emu->state, event.jbutton.button, event.jbutton.down);
+			}
+			break;
+		case SDL_EVENT_JOYSTICK_ADDED:
+			connect_joystick (emu);
+			break;
+		case SDL_EVENT_QUIT:
+			close_all_joystick (emu);
+			exit (0);
+			break;
+	}
+
+	if (is_written) {
+		nes_write_state (emu);
+	}
+}
+
 static void flip_hor (struct render_opengl_data *r, uint32_t is_h)
 {
 	float w = 8.f;
@@ -406,6 +576,56 @@ static void flip_hor (struct render_opengl_data *r, uint32_t is_h)
 
     glBindBuffer (GL_ARRAY_BUFFER, r->vbo);
     glBufferSubData (GL_ARRAY_BUFFER, 0, sizeof (vertices), vertices);
+}
+
+void nes_init_surface (struct NESEmu *emu)
+{
+	framebuffer_init (emu);
+
+	struct render_opengl_data *r = emu->_render_data;
+
+	float w = emu->width;
+	float h = emu->height;
+
+#if 0
+	float vertices[] = {
+             0.f,    0.f,  0.f, 0.f, 0.f,
+             0.0f,     h,  0.f, 0.f, 1.f,
+                w,   0.f,  0.f, 1.f, 0.f,
+                w,   0.f,  0.f, 1.f, 0.f,
+                w,     h,  0.f, 1.f, 1.f,
+              0.f,     h,  0.f, 0.f, 1.f
+	};
+#else
+	float vertices[] = {
+              0.f,    0.f,  0.f, 0.f, 1.f,
+              0.f,      h,  0.f, 0.f, 0.f,
+                w,    0.f,  0.f, 1.f, 1.f,
+                w,    0.f,  0.f, 1.f, 1.f,
+                w,      h,  0.f, 1.f, 0.f,
+              0.f,      h,  0.f, 0.f, 0.f
+	};
+#endif
+
+	float *v = vertices;
+
+	uint32_t vao, vbo;
+
+	glGenVertexArrays (1, &vao);
+	glGenBuffers (1, &vbo);
+	glBindVertexArray (vao);
+	glBindBuffer (GL_ARRAY_BUFFER, vbo);
+	glBufferData (GL_ARRAY_BUFFER, sizeof (vertices), vertices, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer (0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof (float), (void *) 0);
+	glVertexAttribPointer (1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof (float), (void *) (3 * sizeof (float)));
+
+	glEnableVertexAttribArray (0);
+	glEnableVertexAttribArray (1);
+
+	glBindVertexArray (0);
+
+	r->framebuffer_vao = vao;
+	r->framebuffer_vbo = vbo;
 }
 
 static void init_vao (struct NESEmu *emu, struct render_opengl_data *r)
@@ -498,7 +718,6 @@ void nes_platform_init (struct NESEmu *emu, void *_other_data)
 	init_textures (r, 8, 8);
 	init_vao (emu, r);
 	init_id (emu, r);
-	framebuffer_init (emu);
 }
 
 
@@ -909,12 +1128,41 @@ static void render_to_framebuffer (struct NESEmu *emu)
 	glBindFramebuffer (GL_FRAMEBUFFER, 0);
 }
 
+static void render_to_surface (struct NESEmu *emu)
+{
+	struct render_opengl_data *r = emu->_render_data;
+
+	glUseProgram (r->program);
+
+	glBindVertexArray (r->framebuffer_vao);
+
+	math_translate (r->transform, 0.f, 0.f, 0.f);
+
+	glActiveTexture (GL_TEXTURE0);
+	glBindTexture (GL_TEXTURE_2D, r->tex_fbo);
+	glUniform1i (r->id_sampler, 0);
+
+	glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
+	glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
+	glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
+	glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
+
+	glEnableVertexAttribArray (0);
+	glEnableVertexAttribArray (1);
+
+	glDrawArrays (GL_TRIANGLES, 0, 6);
+}
+
 void nes_render (struct NESEmu *emu, void *_other_data)
 {
 	static int in = 0;
 	SDL_Window *win = _other_data;
 
+	glViewport (0, 0, emu->width, emu->height);
 	render_to_framebuffer (emu);
+
+	glViewport (0, 0, emu->width * emu->scale, emu->height * emu->scale);
+	render_to_surface (emu);
 
 	SDL_GL_SwapWindow (win);
 
@@ -922,167 +1170,3 @@ void nes_render (struct NESEmu *emu, void *_other_data)
 }
 
 
-static void connect_joystick (struct NESEmu *emu)
-{
-	struct sdl_data *s = emu->_window_data;
-
-	SDL_JoystickID *joystick_ids = SDL_GetJoysticks (&s->joystick_count);
-
-	if (s->joystick_count == 0)
-		return;
-
-	for (int i = 0; i < s->joystick_count; i++) {
-		SDL_JoystickID id = joystick_ids[i];
-
-		s->joy[i] = SDL_OpenJoystick (id);
-	}
-
-}
-
-static void close_all_joystick (struct NESEmu *emu)
-{
-	struct sdl_data *s = emu->_window_data;
-
-	for (int i = 0; i < s->joystick_count; i++) {
-		SDL_CloseJoystick (s->joy[i]);
-	}
-}
-
-static void state_hat_buttons_get (uint8_t *state, uint8_t value)
-{
-	switch (value) {
-		case SDL_HAT_CENTERED:
-			(*state) &= 0x0f;
-			break;
-		case SDL_HAT_UP:
-			(*state) |= (1 << JOY_UP);
-			break;
-		case SDL_HAT_RIGHT:
-			(*state) |= (1 << JOY_RIGHT);
-			break;
-		case SDL_HAT_DOWN:
-			(*state) |= (1 << JOY_DOWN);
-			break;
-		case SDL_HAT_LEFT:
-			(*state) |= (1 << JOY_LEFT);
-			break;
-		case SDL_HAT_RIGHTUP:
-			break;
-		case SDL_HAT_RIGHTDOWN:
-			break;
-		case SDL_HAT_LEFTUP:
-			break;
-		case SDL_HAT_LEFTDOWN:
-			break;
-	}
-}
-
-enum {
-	BUTTON_A = 0,
-	BUTTON_B = 1,
-	BUTTON_SELECT = 6,
-	BUTTON_START = 7
-};
-
-static void state_button_get (uint8_t *state, uint8_t value, uint8_t is_down)
-{
-	switch (value) {
-		case BUTTON_A:
-			if (is_down)
-				(*state) |= (1 << JOY_A);
-			else
-				(*state) &= 0xfe;
-			break;
-		case BUTTON_B:
-			if (is_down)
-				(*state) |= (1 << JOY_B);
-			else
-				(*state) &= 0xfd;
-			break;
-		case BUTTON_SELECT:
-			if (is_down)
-				(*state) |= (1 << JOY_SELECT);
-			else
-				(*state) &= 0xfb;
-			break;
-		case BUTTON_START:
-			if (is_down)
-				(*state) |= (1 << JOY_START);
-			else
-				(*state) &= 0xf7;
-			break;
-	}
-}
-
-uint32_t nes_event (struct NESEmu *emu, void *_data)
-{
-	SDL_Event event = *((SDL_Event *) _data);
-
-	uint8_t state;
-
-	uint32_t is_written = 0;
-
-	switch (event.type) {
-		case SDL_EVENT_JOYSTICK_HAT_MOTION:
-			if (emu->is_new_state) {
-				uint8_t temp = emu->state_buttons0 & 0x0f;
-				emu->state_buttons0 &= (state & 0xf0);
-				if ((state & 0xf0) == 0)
-					emu->state_buttons0 &= 0x0f;
-				state_hat_buttons_get (&emu->state_buttons0, event.jhat.value);
-				if ((emu->state_buttons0 & 0x80) && (temp & 0x40)) {
-					emu->state_buttons0 &= ~(0x80);
-					emu->state_buttons0 |= (temp);
-				} else if ((emu->state_buttons0 & 0x40) && (temp & 0x80)) {
-					emu->state_buttons0 &= ~(0x40);
-					emu->state_buttons0 |= (temp);
-				}
-				if ((emu->state_buttons0 & 0x10) && (temp & 0x20)) {
-					emu->state_buttons0 &= ~(0x10);
-					emu->state_buttons0 |= (temp);
-				} else if ((emu->state_buttons0 & 0x20) && (temp & 0x10)) {
-					emu->state_buttons0 &= ~(0x20);
-					emu->state_buttons0 |= (temp);
-				}
-				state = emu->state_buttons0;
-				is_written = 1;
-				emu->is_new_state = 0;
-			} else {
-				state_hat_buttons_get (&state, event.jhat.value);
-			}
-			break;
-		case SDL_EVENT_JOYSTICK_BALL_MOTION:
-			break;
-		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
-			break;
-		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-			if (emu->is_new_state) {
-				state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
-				emu->state_buttons0 |= state;
-				is_written = 1;
-				emu->is_new_state = 0;
-			} else {
-				state_button_get (&state, event.jbutton.button, event.jbutton.down);
-			}
-			break;
-		case SDL_EVENT_JOYSTICK_BUTTON_UP:
-			if (emu->is_new_state) {
-				state_button_get (&emu->state_buttons0, event.jbutton.button, event.jbutton.down);
-				emu->state_buttons0 |= state;
-				is_written = 1;
-				emu->is_new_state = 0;
-			} else {
-				state_button_get (&state, event.jbutton.button, event.jbutton.down);
-			}
-			break;
-		case SDL_EVENT_JOYSTICK_ADDED:
-			connect_joystick (emu);
-			break;
-		case SDL_EVENT_QUIT:
-			close_all_joystick (emu);
-			exit (0);
-			break;
-	}
-
-	return is_written;
-}
