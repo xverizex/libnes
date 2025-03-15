@@ -6,8 +6,8 @@
 #include <GLES3/gl3.h>
 #include <controller.h>
 
-SDL_GLContext ctx;
-SDL_Window *win;
+static SDL_GLContext ctx;
+static SDL_Window *win;
 
 int main (int argc, char **argv)
 {
@@ -69,12 +69,6 @@ int main (int argc, char **argv)
 		while (SDL_PollEvent (&event)) {
 			nes_event (emu, &event);
 		}
-
-#if 0
-		if (is_written) {
-			nes_write_state (emu);
-		}
-#endif
 
 		nes_emu_execute (emu, 300, win);
 	}
