@@ -12,7 +12,7 @@ void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 	//emu->last_cycles_int64 = 16L;
 	emu->last_cycles_int64 = cycles * 559L;
 	emu->cur_cycles += cycles;
-	emu->cur_scanline_cycles += cycles;
+	emu->work_cycles = cycles;
 }
 
 void check_flags_ld (struct CPUNes *cpu, uint8_t flags, uint8_t reg)

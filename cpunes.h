@@ -175,6 +175,7 @@ struct NESEmu {
     uint32_t counter_for_nmi;
     uint32_t cur_cycles;
     uint32_t cur_scanline_cycles;
+    uint32_t work_cycles;
     uint32_t is_new_palette_background;
     uint8_t joy0;
     uint32_t new_state;

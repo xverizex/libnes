@@ -433,6 +433,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (emu->is_nmi_works) {
 			while (platform_delay (emu, NULL));
+			emu->cur_scanline_cycles += emu->work_cycles;
 			if (scanline_delay (emu)) {
 				check_collision (emu);
 			}
@@ -515,6 +516,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			emu->last_cycles_int64 = 0;
 			emu->start_time_nmi = 0;
 			emu->indx_scroll_linex = 0;
+			emu->cur_scanline_cycles = 0;
 		}
 	}
 }
