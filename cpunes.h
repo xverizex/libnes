@@ -174,6 +174,7 @@ struct NESEmu {
     uint32_t is_returned_from_nmi;
     uint32_t counter_for_nmi;
     uint32_t cur_cycles;
+    uint32_t cur_scanline_cycles;
     uint32_t is_new_palette_background;
     uint8_t joy0;
     uint32_t new_state;
@@ -184,7 +185,12 @@ struct NESEmu {
     uint8_t cnt_read_scrollxy;
     uint8_t offx;
     uint8_t offy;
+    uint8_t scroll_linex[40];
+    uint16_t indx_scroll_linex;
 };
+
+#define DELAY_CYCLES             0x1
+#define DELAY_SCANLINE           0x2
 
 void nes_get_colors_background_clear (struct NESEmu *emu, float *r, float *g, float *b);
 

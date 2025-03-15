@@ -8,6 +8,7 @@ extern "C" {
 #include "cpunes.h"
 
 int scanline_delay (struct NESEmu *emu);
+uint32_t platform_and_scanline_delay (struct NESEmu *emu);
 
 #ifdef __cplusplus
 }

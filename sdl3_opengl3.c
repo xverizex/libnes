@@ -114,30 +114,18 @@ void platform_clear_mask (struct NESEmu *emu, uint8_t indx, void *_other_data)
 
 int scanline_delay (struct NESEmu *emu)
 {
-    struct timeval tv;
-    //gettimeofday (&tv, NULL);
-
-    uint64_t ms = SDL_GetTicksNS ();
-
-    if (emu->timestamp_scanline == 0L) {
-	    emu->timestamp_scanline = ms;
-	    return 0;
-    }
-
-    uint64_t ret = ms - emu->timestamp_scanline;
-
-    if (ret >= 52000) {
-	    uint64_t last = ret - emu->last_scanline_int64;
-	    emu->last_scanline_int64 = last;
-	    emu->timestamp_scanline = ms;
-	    emu->scanline++;
-	    if (emu->scanline >= 262) {
-		    emu->scanline = 0;
-	    }
-	    return 1;
-    } else {
-	    return 0;
-    }
+	if (emu->cur_scanline_cycles >= 95) {
+		emu->cur_scanline_cycles = 0;
+		emu->scanline++;
+		emu->indx_scroll_linex++;
+		if (emu->scanline >= 262) {
+			emu->scanline = 0;
+			emu->indx_scroll_linex = 0;
+		}
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 int platform_delay (struct NESEmu *emu, void *_other_data)
@@ -163,9 +151,50 @@ int platform_delay (struct NESEmu *emu, void *_other_data)
     }
 }
 
+
+uint32_t platform_and_scanline_delay (struct NESEmu *emu)
+{
+	uint32_t rets = 0;
+
+	uint64_t ns = SDL_GetTicksNS ();
+
+	if (emu->timestamp_cycles == 0L) {
+		emu->timestamp_cycles = ns;
+	}
+
+	uint64_t ret = ns - emu->timestamp_cycles;
+
+	if (ret >= emu->last_cycles_int64) {
+		uint64_t last = ret - emu->last_cycles_int64;
+		emu->last_cycles_int64 = last;
+		emu->timestamp_cycles = ns;
+		rets |= DELAY_CYCLES;
+	}
+
+	if (emu->timestamp_scanline == 0L) {
+		emu->timestamp_scanline = ns;
+	}
+
+	ret = ns - emu->timestamp_scanline;
+
+	if (ret >= 52000) {
+		uint64_t last = ret - emu->last_scanline_int64;
+		emu->last_scanline_int64 = last;
+		emu->timestamp_scanline = ns;
+		emu->scanline++;
+		emu->indx_scroll_linex++;
+		rets |= DELAY_SCANLINE;
+		if (emu->scanline >= 262) {
+			emu->scanline = 0;
+			emu->indx_scroll_linex = 0;
+		}
+	}
+	return rets;
+}
+
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 {
-#if 1
+#if 0
     struct timeval tv;
     gettimeofday (&tv, NULL);
 
@@ -185,6 +214,12 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 
     return 0;
 #endif
+    if (emu->cur_cycles >= 29815) {
+	    emu->cur_cycles = 0;
+	    return 1;
+    }
+
+    return 0;
 }
 
 static const char *vert_shader_str = 
@@ -960,12 +995,13 @@ static void draw_ppu (struct NESEmu *emu)
 	uint16_t line = 32;
 	ppx = 0;
 
-	uint8_t off = emu->offx % 8;
+	uint32_t scanline = 0;
 
 	for (uint16_t i = 0; i < off_screen; i++) {
 
+		printf ("scanline: %d; scroll: %d\n", scanline, emu->scroll_linex[scanline]);
 
-		if ((off == 0) && (i >= 960)) {
+		if ((emu->scroll_linex[scanline] == 0) && (i >= 960)) {
 			break;
 		}
 
@@ -980,6 +1016,7 @@ static void draw_ppu (struct NESEmu *emu)
 			last = last_off;
 			cur_indx_screen = indx_screen0;
 			is_next_screen = 0;
+			scanline++;
 		}
 
 
@@ -1004,10 +1041,10 @@ static void draw_ppu (struct NESEmu *emu)
 		uint8_t id_texture = emu->ppu[naddr];
 
 
-		if ((emu->offx > 0) && ((emu->offx % 8) == 0))
+		if ((emu->scroll_linex[scanline] > 0) && ((emu->scroll_linex[scanline] % 8) == 0))
 			math_translate (r->transform, ppx, ppy, 0.f);
 		else {
-			math_translate (r->transform, ppx - off, ppy, 0.f);
+			math_translate (r->transform, ppx - emu->scroll_linex[scanline], ppy, 0.f);
 		}
 
 		if (((emu->ppu_copy[i] != emu->ppu[naddr]) || emu->is_new_palette_background)) {
@@ -1032,7 +1069,7 @@ static void draw_ppu (struct NESEmu *emu)
 		ppx += 8;
 		x++;
 
-		if ((((i + 1) % 32) == 0) && (off > 0)) {
+		if ((((i + 1) % 32) == 0) && (emu->scroll_linex[scanline] > 0)) {
 			naddr++;
 
 			if (addr == addr0) {
@@ -1041,7 +1078,7 @@ static void draw_ppu (struct NESEmu *emu)
 				naddr = 32 * y + addr;
 			}
 
-			math_translate (r->transform, ppx - off, ppy, 0.f);
+			math_translate (r->transform, ppx - emu->scroll_linex[scanline], ppy, 0.f);
 
 			uint8_t id_texture = emu->ppu[naddr];
 
@@ -1067,7 +1104,6 @@ static void draw_ppu (struct NESEmu *emu)
 			ppx += 8;
 			x++;
 		}
-
 
 		is_next_screen--;
 	}

@@ -424,6 +424,7 @@ static void debug (struct NESEmu *emu, uint32_t cnt)
 }
 
 uint32_t scanline_delay (struct NESEmu *emu);
+uint32_t platform_and_scanline_delay (struct NESEmu *emu);
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data)
 {
@@ -432,6 +433,9 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (emu->is_nmi_works) {
 			while (platform_delay (emu, NULL));
+			if (scanline_delay (emu)) {
+				check_collision (emu);
+			}
 		} else {
 			while (platform_delay (emu, NULL));
 		}
@@ -449,9 +453,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		static int bc = 0;
 
 		if (emu->is_nmi_works) {
-			if (scanline_delay (emu)) {
-				check_collision (emu);
-			}
 		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (platform_delay_nmi (emu, NULL)) {
 				bc = 0;
@@ -513,6 +514,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			emu->is_nmi_works = 0;
 			emu->last_cycles_int64 = 0;
 			emu->start_time_nmi = 0;
+			emu->indx_scroll_linex = 0;
 		}
 	}
 }
