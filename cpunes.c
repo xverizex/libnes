@@ -423,8 +423,9 @@ static void debug (struct NESEmu *emu, uint32_t cnt)
 	printf ("\n");
 }
 
-uint32_t scanline_delay (struct NESEmu *emu);
+int scanline_delay (struct NESEmu *emu);
 uint32_t platform_and_scanline_delay (struct NESEmu *emu);
+int scanline_vblank (struct NESEmu *emu);
 
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data)
 {
@@ -432,11 +433,20 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 	for (int i = 0; i < count_instructions; i++) {
 
 		if (emu->is_nmi_works) {
-			while (platform_delay (emu, NULL));
-			emu->cur_scanline_cycles += emu->work_cycles;
-			if (scanline_delay (emu)) {
-				check_collision (emu);
-			}
+			do {
+				// FIX THIS. If we wait just platform_delay, then it will work.
+				// But if we separate this to two various cycles, then not work.
+				int ret = platform_delay (emu, NULL);
+				if (ret & DELAY_SCANLINE) {
+					emu->cur_scanline_cycles += emu->work_cycles;
+					if (scanline_delay (emu)) {
+						check_collision (emu);
+						break;
+					}
+				}
+				if (ret & DELAY_CYCLES)
+					break;
+			} while (1);
 		} else {
 			while (platform_delay (emu, NULL));
 		}
@@ -474,6 +484,8 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			}
 		} else {
 			if (platform_delay_nmi (emu, NULL)) {
+				emu->is_ready_to_vertical_blank = 1;
+				emu->vblank_scanline_cycles = 0;
 				emu->ppu_status |= 0x80;
 			}
 		}

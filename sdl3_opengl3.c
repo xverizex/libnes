@@ -114,7 +114,7 @@ void platform_clear_mask (struct NESEmu *emu, uint8_t indx, void *_other_data)
 
 int scanline_delay (struct NESEmu *emu)
 {
-	if (emu->cur_scanline_cycles >= 95) {
+	if (emu->cur_scanline_cycles >= 113) {
 		emu->cur_scanline_cycles = 0;
 		emu->scanline++;
 		emu->indx_scroll_linex++;
@@ -126,6 +126,16 @@ int scanline_delay (struct NESEmu *emu)
 	} else {
 		return 0;
 	}
+}
+
+int scanline_vblank (struct NESEmu *emu)
+{
+	if (emu->vblank_scanline_cycles >= 20) {
+		emu->is_ready_to_vertical_blank = 0;
+		emu->vblank_scanline_cycles = 0;
+		return 1;
+	}
+	return 0;
 }
 
 int platform_delay (struct NESEmu *emu, void *_other_data)
@@ -177,11 +187,12 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 
 	ret = ns - emu->timestamp_scanline;
 
-	if (ret >= 52000) {
+	if (ret >= 46) {
 		uint64_t last = ret - emu->last_scanline_int64;
 		emu->last_scanline_int64 = last;
 		emu->timestamp_scanline = ns;
 		emu->scanline++;
+		emu->vblank_scanline_cycles++;
 		emu->indx_scroll_linex++;
 		rets |= DELAY_SCANLINE;
 		if (emu->scanline >= 262) {

@@ -170,9 +170,6 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			}
 #endif
 			emu->ram[addr] = *r;
-			if ((addr == 0x12) && (*r > 0)) {
-				//printf ("%02x\n", *r);
-			}
 		}
 		return;
 	}
@@ -181,7 +178,8 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		if (emu->cnt_write_scrollxy == 0) {
 			emu->offx = *r;
 			emu->cnt_write_scrollxy++;
-			uint32_t indx = emu->indx_scroll_linex / 8;
+			//uint32_t indx = emu->indx_scroll_linex / 8;
+			uint32_t indx = emu->indx_scroll_linex;
 			emu->scroll_linex[indx] = *r;
 			printf ("scroll x: %02x from %04x; indx: %d\n", *r, emu->cpu.PC, indx);
 		} else {

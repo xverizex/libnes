@@ -186,8 +186,10 @@ struct NESEmu {
     uint8_t cnt_read_scrollxy;
     uint8_t offx;
     uint8_t offy;
-    uint8_t scroll_linex[40];
+    uint8_t scroll_linex[280];
     uint16_t indx_scroll_linex;
+    uint8_t is_ready_to_vertical_blank;
+    uint32_t vblank_scanline_cycles;
 };
 
 #define DELAY_CYCLES             0x1
