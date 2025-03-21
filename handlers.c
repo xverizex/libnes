@@ -10,7 +10,8 @@ void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 {
 	//emu->last_cycles_float = (float) cycles * 0.000558730074f;
 	//emu->last_cycles_int64 = 16L;
-	emu->last_cycles_int64 = cycles * 559L;
+	//TODO: check that this correct +=
+	emu->last_cycles_int64 += cycles * NS_CYCLE;
 	emu->cur_cycles += cycles;
 	emu->work_cycles = cycles;
 }
@@ -180,7 +181,9 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->cnt_write_scrollxy++;
 			//uint32_t indx = emu->indx_scroll_linex / 8;
 			uint32_t indx = emu->scanline / 8;
-			emu->scroll_linex[indx] = *r;
+			emu->scroll_x[emu->max_scroll_indx] = *r;
+			emu->scroll_tile_x[emu->max_scroll_indx] = indx / 8;
+			emu->max_scroll_indx++;
 			printf ("scroll x: %02x from %04x; indx: %d; linetile: %d\n", *r, emu->cpu.PC, indx, indx / 8);
 		} else {
 			emu->offy = *r;

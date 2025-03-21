@@ -175,35 +175,25 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 	uint64_t ret = ns - emu->timestamp_cycles;
 
 	if (ret >= emu->last_cycles_int64) {
-		uint64_t last = ret - emu->last_cycles_int64;
+		uint64_t last = 0; 
 		emu->last_cycles_int64 = last;
 		emu->timestamp_cycles = ns;
 		rets |= DELAY_CYCLES;
+		emu->cycles_to_scanline += emu->work_cycles;
 	}
 
-	if (emu->timestamp_scanline == 0L) {
-		emu->timestamp_scanline = ns;
-	}
-
-	ret = ns - emu->timestamp_scanline;
-
-	uint32_t is_scanline = 0;
-	while (ret >= PPU_CYCLE) {
+	//TODO: fix this
+	if (emu->cycles_to_scanline >= CYCLES_TO_SCANLINE) {
+		emu->cycles_to_scanline = 0;
+		uint64_t last = 0;
 		emu->scanline++;
 		emu->vblank_scanline_cycles++;
 		emu->indx_scroll_linex++;
-		if ((ret - PPU_CYCLE) > ret)
-			break;
-		ret -= PPU_CYCLE;
-		is_scanline = 1;
-	}
-	if (is_scanline) {
-		uint64_t last = ret - emu->last_scanline_int64;
 		emu->last_scanline_int64 = last;
 		emu->timestamp_scanline = ns;
 		rets |= DELAY_SCANLINE;
 		if (emu->scanline >= SCANLINE_SCREEN_HEIGHT) {
-			emu->scanline = 0;//261 - emu->scanline;
+			emu->scanline = 0;
 			emu->indx_scroll_linex = 0;
 			emu->ppu_status |= PPUCTRL_VBLANK_NMI;
 		}
@@ -999,11 +989,6 @@ static void draw_ppu (struct NESEmu *emu)
 
 	uint16_t off_screen = 960 + 28;
 
-	uint16_t last_off = emu->offx / 8;
-	uint16_t last = last_off;
-
-	uint16_t next_screen = 32 - last_off;
-
 	uint16_t addr = addr0;
 	uint16_t off_addr = 0;
 
@@ -1016,10 +1001,25 @@ static void draw_ppu (struct NESEmu *emu)
 
 	uint32_t scanline = 0;
 
+	uint32_t indx_scr_x = 0;
+
+	uint8_t offx = 0;
 	for (uint16_t i = 0; i < off_screen; i++) {
 
+		if (((indx_scr_x + 1) < emu->max_scroll_indx) && (scanline > emu->scroll_tile_x[indx_scr_x]) &&
+				(scanline >= emu->scroll_tile_x[indx_scr_x + 1])) {
+				
+			offx = emu->scroll_x[indx_scr_x + 1];
+			indx_scr_x++;
+		} else {
+			offx = emu->scroll_x[indx_scr_x];
+		}
+
+		uint16_t last_off = offx / 8;
+		uint16_t next_screen = 32 - last_off;
+		uint16_t last = last_off;
 		
-		if ((emu->offx == 0) && (i >= 960)) {
+		if ((offx == 0) && (i >= 960)) {
 			break;
 		}
 
@@ -1059,10 +1059,10 @@ static void draw_ppu (struct NESEmu *emu)
 		uint8_t id_texture = emu->ppu[naddr];
 
 
-		if ((emu->offx > 0) && ((emu->offx % 8) == 0))
+		if (((offx % 8) == 0)) {
 			math_translate (r->transform, ppx, ppy, 0.f);
-		else {
-			math_translate (r->transform, ppx - emu->offx, ppy, 0.f);
+		} else {
+			math_translate (r->transform, ppx - offx, ppy, 0.f);
 		}
 
 		if (((emu->ppu_copy[i] != emu->ppu[naddr]) || emu->is_new_palette_background)) {
@@ -1087,7 +1087,7 @@ static void draw_ppu (struct NESEmu *emu)
 		ppx += 8;
 		x++;
 
-		if ((((i + 1) % 32) == 0) && (emu->offx > 0)) {
+		if ((((i + 1) % 32) == 0) && (offx > 0)) {
 			naddr++;
 
 			if (addr == addr0) {
@@ -1096,7 +1096,7 @@ static void draw_ppu (struct NESEmu *emu)
 				naddr = 32 * y + addr;
 			}
 
-			math_translate (r->transform, ppx - emu->offx, ppy, 0.f);
+			math_translate (r->transform, ppx - offx, ppy, 0.f);
 
 			uint8_t id_texture = emu->ppu[naddr];
 
@@ -1125,6 +1125,8 @@ static void draw_ppu (struct NESEmu *emu)
 
 		is_next_screen--;
 	}
+
+	emu->max_scroll_indx = 0;
 }
 
 static void bind_vertex_group (struct render_opengl_data *r)

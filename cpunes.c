@@ -482,9 +482,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		static int bc = 0;
 
 		if (emu->is_nmi_works) {
-		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
+		} else if ((ret_delay & DELAY_CYCLES) && (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI)) {
 			if (platform_delay_nmi (emu, NULL)) {
 				emu->scanline = SCANLINE_VBLANK_START;
+				emu->is_debug_exit = 1;
 				printf ("nmi\n");
 				bc = 0;
 				static uint32_t called = 0;
@@ -502,7 +503,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 				emu->cpu.PC = emu->nmi_handler;
 				emu->is_nmi_works = 1;
 			}
-		} else {
+		} else if (ret_delay & DELAY_CYCLES) {
 			if (platform_delay_nmi (emu, NULL)) {
 				emu->is_ready_to_vertical_blank = 1;
 				emu->vblank_scanline_cycles = 0;
@@ -519,28 +520,25 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		if (emu->is_nmi_works) {
 		}
 
-		if (ret_delay & DELAY_CYCLES)
+		if (ret_delay & DELAY_CYCLES) {
 			pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
-
-		if (emu->is_debug_exit) {
-			printf ("###### debug exit error #######\n");
-			printf ("A: %02x X: %02x Y: %02x P: %02x S: %02x PC: %04x;\n",
+			emu->is_debug_exit = 0;
+			if (emu->is_debug_exit) {
+				printf ("###### debug exit error #######\n");
+				printf ("A: %02x X: %02x Y: %02x P: %02x S: %02x PC: %04x; SCANLINE: %d\n",
 					emu->cpu.A,
 					emu->cpu.X,
 					emu->cpu.Y,
 					emu->cpu.P,
 					emu->cpu.S,
-					pc
+					pc,
+					emu->scanline
 					);
 
-			printf ("stack: ");
-			while (emu->cpu.S <= 0xff) {
-				if (emu->cpu.S == 0x0)
-					break;
-				printf ("%02x ", emu->ram[0x0100 | emu->cpu.S++]);
+				//getchar ();
 			}
-			exit (0);
 		}
+
 
 		if (emu->is_returned_from_nmi) {
 			nes_render (emu, _data);

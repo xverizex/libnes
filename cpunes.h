@@ -109,6 +109,7 @@ struct NESCallbacks {
 #define SCANLINE_CYCLES_TOTAL             113
 #define SCANLINE_VBLANK_START             241
 #define PPU_CYCLE                          46
+#define NS_CYCLE                         559L
 
 struct NESEmu {
     struct CPUNes cpu;
@@ -191,12 +192,17 @@ struct NESEmu {
     uint8_t cnt_read_scrollxy;
     uint8_t offx;
     uint8_t offy;
-    uint8_t scroll_linex[280];
     uint16_t indx_scroll_linex;
     uint8_t is_ready_to_vertical_blank;
     uint32_t vblank_scanline_cycles;
+
+    uint32_t cycles_to_scanline;
+    uint8_t scroll_x[280];
+    uint8_t scroll_tile_x[280];
+    uint32_t max_scroll_indx;
 };
 
+#define CYCLES_TO_SCANLINE        12
 #define DELAY_CYCLES             0x1
 #define DELAY_SCANLINE           0x2
 
