@@ -1069,7 +1069,9 @@ static void draw_ppu (struct NESEmu *emu)
 		uint8_t id_texture = emu->ppu[naddr];
 
 
-		if ((off == 0)) {
+		if ((offx == 0)) {
+			math_translate (r->transform, ppx, ppy, 0.f);
+		} else if ((off == 0)) {
 			math_translate (r->transform, ppx, ppy, 0.f);
 		} else {
 			math_translate (r->transform, ppx - off, ppy, 0.f);
