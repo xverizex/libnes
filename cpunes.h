@@ -105,6 +105,10 @@ struct NESCallbacks {
 #define TV_SYSTEM_NTSC             0
 #define TV_SYSTEM_PAL              1
 
+#define SCANLINE_SCREEN_HEIGHT            262
+#define SCANLINE_CYCLES_TOTAL             113
+#define PPU_CYCLE                          46
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
