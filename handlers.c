@@ -181,7 +181,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			//uint32_t indx = emu->indx_scroll_linex / 8;
 			uint32_t indx = emu->indx_scroll_linex;
 			emu->scroll_linex[indx] = *r;
-			printf ("scroll x: %02x from %04x; indx: %d\n", *r, emu->cpu.PC, indx);
+			printf ("scroll x: %02x from %04x; indx: %d; linetile: %d\n", *r, emu->cpu.PC, indx, indx / 8);
 		} else {
 			emu->offy = *r;
 			//printf ("scroll y: %02x from %04x\n", *r, emu->cpu.PC);
@@ -190,6 +190,9 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		return;
 	} else if (addr == PPUCTRL) {
 		emu->ctrl[REAL_PPUCTRL] = *r;
+		if (*r & PPUCTRL_VBLANK_NMI) {
+			emu->scanline = SCANLINE_VBLANK_START;
+		}
 	} else if (addr == PPUMASK) {
 		emu->ctrl[REAL_PPUMASK] = *r;
 		if ((*r) & MASK_IS_BACKGROUND_RENDER) {

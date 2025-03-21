@@ -203,8 +203,9 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 		emu->timestamp_scanline = ns;
 		rets |= DELAY_SCANLINE;
 		if (emu->scanline >= SCANLINE_SCREEN_HEIGHT) {
-			emu->scanline = 0;
+			emu->scanline = 261 - emu->scanline;
 			emu->indx_scroll_linex = 0;
+			emu->ppu_status |= PPUCTRL_VBLANK_NMI;
 		}
 	}
 	return rets;

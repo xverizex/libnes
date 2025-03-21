@@ -484,6 +484,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		if (emu->is_nmi_works) {
 		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (platform_delay_nmi (emu, NULL)) {
+				printf ("nmi\n");
 				bc = 0;
 				static uint32_t called = 0;
 				uint16_t addr;
@@ -504,7 +505,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			if (platform_delay_nmi (emu, NULL)) {
 				emu->is_ready_to_vertical_blank = 1;
 				emu->vblank_scanline_cycles = 0;
-				emu->ppu_status |= 0x80;
+				//emu->ppu_status |= 0x80;
 			}
 		}
 
@@ -542,13 +543,14 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (emu->is_returned_from_nmi) {
 			nes_render (emu, _data);
+			printf ("just cpu\n");
 			emu->is_returned_from_nmi = 0;
 			emu->is_nmi_works = 0;
 			emu->last_cycles_int64 = 0;
 			emu->start_time_nmi = 0;
 			emu->indx_scroll_linex = 0;
 			emu->cur_scanline_cycles = 0;
-			emu->ppu_status |= 0x80;
+			//emu->ppu_status |= 0x80;
 		}
 	}
 }

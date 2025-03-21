@@ -107,6 +107,7 @@ struct NESCallbacks {
 
 #define SCANLINE_SCREEN_HEIGHT            262
 #define SCANLINE_CYCLES_TOTAL             113
+#define SCANLINE_VBLANK_START             241
 #define PPU_CYCLE                          46
 
 struct NESEmu {
