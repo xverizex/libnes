@@ -484,6 +484,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		if (emu->is_nmi_works) {
 		} else if (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI) {
 			if (platform_delay_nmi (emu, NULL)) {
+				emu->scanline = SCANLINE_VBLANK_START;
 				printf ("nmi\n");
 				bc = 0;
 				static uint32_t called = 0;

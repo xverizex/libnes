@@ -1018,6 +1018,7 @@ static void draw_ppu (struct NESEmu *emu)
 
 	for (uint16_t i = 0; i < off_screen; i++) {
 
+		
 		if ((emu->offx == 0) && (i >= 960)) {
 			break;
 		}

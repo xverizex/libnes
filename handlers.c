@@ -179,7 +179,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->offx = *r;
 			emu->cnt_write_scrollxy++;
 			//uint32_t indx = emu->indx_scroll_linex / 8;
-			uint32_t indx = emu->indx_scroll_linex;
+			uint32_t indx = emu->scanline / 8;
 			emu->scroll_linex[indx] = *r;
 			printf ("scroll x: %02x from %04x; indx: %d; linetile: %d\n", *r, emu->cpu.PC, indx, indx / 8);
 		} else {
