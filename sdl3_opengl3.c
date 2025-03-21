@@ -184,7 +184,7 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 
 	//TODO: fix this
 	if (emu->cycles_to_scanline >= CYCLES_TO_SCANLINE) {
-		emu->cycles_to_scanline = 0;
+		emu->cycles_to_scanline = emu->cycles_to_scanline - CYCLES_TO_SCANLINE;
 		uint64_t last = 0;
 		emu->scanline++;
 		emu->vblank_scanline_cycles++;
@@ -1004,6 +1004,7 @@ static void draw_ppu (struct NESEmu *emu)
 	uint32_t indx_scr_x = 0;
 
 	uint8_t offx = 0;
+	uint16_t last = 0;
 	for (uint16_t i = 0; i < off_screen; i++) {
 
 		if (((indx_scr_x + 1) < emu->max_scroll_indx) && (scanline > emu->scroll_tile_x[indx_scr_x]) &&
@@ -1017,8 +1018,7 @@ static void draw_ppu (struct NESEmu *emu)
 
 		uint16_t last_off = offx / 8;
 		uint16_t next_screen = 32 - last_off;
-		uint16_t last = last_off;
-		
+
 		if ((offx == 0) && (i >= 960)) {
 			break;
 		}
