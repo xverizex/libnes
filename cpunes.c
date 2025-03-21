@@ -549,7 +549,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			emu->last_cycles_int64 = 0;
 			emu->start_time_nmi = 0;
 			emu->indx_scroll_linex = 0;
-			emu->cur_scanline_cycles = 0;
+			//emu->cur_scanline_cycles = 0;
 			//emu->ppu_status |= 0x80;
 		}
 	}

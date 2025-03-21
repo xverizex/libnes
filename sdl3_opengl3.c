@@ -203,7 +203,7 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 		emu->timestamp_scanline = ns;
 		rets |= DELAY_SCANLINE;
 		if (emu->scanline >= SCANLINE_SCREEN_HEIGHT) {
-			emu->scanline = 261 - emu->scanline;
+			emu->scanline = 0;//261 - emu->scanline;
 			emu->indx_scroll_linex = 0;
 			emu->ppu_status |= PPUCTRL_VBLANK_NMI;
 		}
@@ -1218,8 +1218,6 @@ void nes_render (struct NESEmu *emu, void *_other_data)
 	render_to_surface (emu);
 
 	SDL_GL_SwapWindow (win);
-
-	emu->ppu_status |= 0x80;
 }
 
 
