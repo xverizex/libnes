@@ -1005,16 +1005,19 @@ static void draw_ppu (struct NESEmu *emu)
 
 	uint8_t offx = 0;
 	uint16_t last = 0;
+	offx = emu->offx;
 	for (uint16_t i = 0; i < off_screen; i++) {
+#if 0
 
-		if (((indx_scr_x + 1) < emu->max_scroll_indx) && (scanline > emu->scroll_tile_x[indx_scr_x]) &&
+		if (((indx_scr_x + 1) < emu->max_scroll_indx) && 
+				(scanline > emu->scroll_tile_x[indx_scr_x]) &&
 				(scanline >= emu->scroll_tile_x[indx_scr_x + 1])) {
-				
 			offx = emu->scroll_x[indx_scr_x + 1];
 			indx_scr_x++;
 		} else {
 			offx = emu->scroll_x[indx_scr_x];
 		}
+#endif
 
 		uint16_t last_off = offx / 8;
 		uint16_t next_screen = 32 - last_off;
@@ -1046,10 +1049,10 @@ static void draw_ppu (struct NESEmu *emu)
 				cur_indx_screen = indx_screen0;
 				naddr = i + last_off + addr;
 			}
-			if ((i > 0) && (i % (line - last_off)) == 0) {
+			if ((i > 0) && ((i % (line - last_off)) == 0)) {
 				addr = addr1;
 				cur_indx_screen = indx_screen1;
-				naddr = 32 * y + addr;
+				naddr = line * y + addr;
 				is_next_screen = last_off;
 			}
 		} else {
@@ -1059,7 +1062,7 @@ static void draw_ppu (struct NESEmu *emu)
 		uint8_t id_texture = emu->ppu[naddr];
 
 
-		if (((offx % 8) == 0)) {
+		if ((offx > 0) && ((offx % 8) == 0)) {
 			math_translate (r->transform, ppx, ppy, 0.f);
 		} else {
 			math_translate (r->transform, ppx - offx, ppy, 0.f);
@@ -1087,6 +1090,7 @@ static void draw_ppu (struct NESEmu *emu)
 		ppx += 8;
 		x++;
 
+#if 1
 		if ((((i + 1) % 32) == 0) && (offx > 0)) {
 			naddr++;
 
@@ -1122,6 +1126,7 @@ static void draw_ppu (struct NESEmu *emu)
 			ppx += 8;
 			x++;
 		}
+#endif
 
 		is_next_screen--;
 	}
