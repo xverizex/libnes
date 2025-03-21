@@ -185,7 +185,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			uint32_t res_indx = indx / 8;
 			emu->scroll_tile_x[emu->max_scroll_indx] = res_indx;
 			emu->max_scroll_indx++;
-			//printf ("scroll x: %02x from %04x; indx: %d; linetile: %d\n", *r, emu->cpu.PC, indx, indx / 8);
+			printf ("scroll x: %02x from %04x; indx: %d; linetile: %d; scanline: %d\n", *r, emu->cpu.PC, indx, indx / 8, emu->scanline);
 		} else {
 			emu->offy = *r;
 			//printf ("scroll y: %02x from %04x\n", *r, emu->cpu.PC);
@@ -834,16 +834,30 @@ void bpl_relative (struct NESEmu *emu)
 void ora_indirect_y (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	/* TODO: cross */
 	uint16_t addr = indirect_y (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint16_t cross_cycles = 0;
+
+	if (emu->cpu.PC >= addr) {
+		cross_cycles = (emu->cpu.PC - addr) >> 8;
+		if (((emu->cpu.PC - addr) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	} else {
+		cross_cycles = (addr - emu->cpu.PC) >> 8;
+		if (((addr - emu->cpu.PC) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
-			(5 << 8) | 2);
+			((5 + cross_cycles) << 8) | 2);
 }
 
 void ora_zeropage_x (struct NESEmu *emu) 
@@ -885,16 +899,30 @@ void clc_implied (struct NESEmu *emu)
 void ora_absolute_y (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	/* TODO: cross */
 	uint16_t addr = absolute_y (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint16_t cross_cycles = 0;
+
+	if (emu->cpu.PC >= addr) {
+		cross_cycles = (emu->cpu.PC - addr) >> 8;
+		if (((emu->cpu.PC - addr) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	} else {
+		cross_cycles = (addr - emu->cpu.PC) >> 8;
+		if (((addr - emu->cpu.PC) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
-			(4 << 8) | 3);
+			((4 + cross_cycles) << 8) | 3);
 }
 
 void ora_absolute_x (struct NESEmu *emu) 
@@ -902,13 +930,27 @@ void ora_absolute_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint8_t cross_cycles = 0;
+	if (emu->cpu.PC >= addr) {
+		cross_cycles = (emu->cpu.PC - addr) >> 8;
+		if (((emu->cpu.PC - addr) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	} else {
+		cross_cycles = (addr - emu->cpu.PC) >> 8;
+		if (((addr - emu->cpu.PC) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A | val,
 			eq,
-			(4 << 8) | 3);
+			((4 + cross_cycles) << 8) | 3);
 }
 
 void asl_absolute_x (struct NESEmu *emu) 
@@ -1700,18 +1742,29 @@ void adc_indirect_y (struct NESEmu *emu)
 		off = 0x8000;
 	}
 
+	uint8_t cross_cycles = 0;
+	if (emu->cpu.PC >= addr) {
+		cross_cycles = (emu->cpu.PC - addr) >> 8;
+		if (((emu->cpu.PC - addr) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	} else {
+		cross_cycles = (addr - emu->cpu.PC) >> 8;
+		if (((addr - emu->cpu.PC) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	}
+
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
 		m[addr - off],
 		eq,
-		(5 << 8) | (2)
+		((5 + cross_cycles) << 8) | (2)
 		);
-
-	/*
-	 * TODO: cross
-	 */
 }
 
 void adc_zeropage_x (struct NESEmu *emu) 
@@ -1763,17 +1816,29 @@ void adc_absolute_y (struct NESEmu *emu)
 		off = 0x8000;
 	}
 
+	uint8_t cross_cycles = 0;
+	if (emu->cpu.PC >= addr) {
+		cross_cycles = (emu->cpu.PC - addr) >> 8;
+		if (((emu->cpu.PC - addr) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	} else {
+		cross_cycles = (addr - emu->cpu.PC) >> 8;
+		if (((addr - emu->cpu.PC) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	}
+
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
 		m[addr - off],
 		eq,
-		(4 << 8) | (3)
+		((4 + cross_cycles) << 8) | (3)
 		);
-	/*
-	 * TODO: cross page
-	 */
 }
 
 void adc_absolute_x (struct NESEmu *emu) 
@@ -1791,17 +1856,29 @@ void adc_absolute_x (struct NESEmu *emu)
 		off = 0x8000;
 	}
 
+	uint8_t cross_cycles = 0;
+	if (emu->cpu.PC >= addr) {
+		cross_cycles = (emu->cpu.PC - addr) >> 8;
+		if (((emu->cpu.PC - addr) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	} else {
+		cross_cycles = (addr - emu->cpu.PC) >> 8;
+		if (((addr - emu->cpu.PC) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	}
+
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
 		&cpu->A, 
 		cpu->A + m[addr - off], 
 		m[addr - off],
 		eq,
-		(4 << 8) | (3)
+		((4 + cross_cycles) << 8) | (3)
 		);
-	/*
-	 * TODO: cross page
-	 */
 }
 
 void ror_absolute_x (struct NESEmu *emu) 

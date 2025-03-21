@@ -453,20 +453,20 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 #else
 		uint32_t ret_delay = 0;
-			do {
-				// FIX THIS. If we wait just platform_delay, then it will work.
-				// But if we separate this to two various cycles, then not work.
-				ret_delay = platform_and_scanline_delay (emu);
-				if (ret_delay & DELAY_SCANLINE) {
-					emu->cur_scanline_cycles += emu->work_cycles;
-					if (scanline_delay (emu)) {
-						check_collision (emu);
-					}
-					break;
+		do {
+			// FIX THIS. If we wait just platform_delay, then it will work.
+			// But if we separate this to two various cycles, then not work.
+			ret_delay = platform_and_scanline_delay (emu);
+			if (ret_delay & DELAY_SCANLINE) {
+				emu->cur_scanline_cycles += emu->work_cycles;
+				if (scanline_delay (emu)) {
+					check_collision (emu);
 				}
-				if (ret_delay & DELAY_CYCLES)
-					break;
-			} while (1);
+				break;
+			}
+			if (ret_delay & DELAY_CYCLES)
+				break;
+		} while (1);
 #endif
 
 		uint16_t pc = emu->cpu.PC;
@@ -485,6 +485,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		} else if ((ret_delay & DELAY_CYCLES) && (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI)) {
 			if (platform_delay_nmi (emu, NULL)) {
 				emu->scanline = SCANLINE_VBLANK_START;
+				emu->cur_scanline_cycles = 0;
 				emu->is_debug_exit = 1;
 				//printf ("nmi\n");
 				bc = 0;
