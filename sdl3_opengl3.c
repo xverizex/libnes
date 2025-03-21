@@ -1014,9 +1014,11 @@ static void draw_ppu (struct NESEmu *emu)
 	next_screen = 32 - last_off;
 	off = emu->offx % 8;
 
+	uint8_t start_y = 0;
 	for (uint16_t i = 0; i < off_screen; i++) {
 
-		if (((indx_scr_x + 1) < emu->max_scroll_indx) && 
+		if (
+				((indx_scr_x + 1) < emu->max_scroll_indx) && 
 				(scanline > emu->scroll_tile_x[indx_scr_x]) &&
 				(scanline >= emu->scroll_tile_x[indx_scr_x + 1])) {
 			offx = emu->scroll_x[indx_scr_x + 1];
@@ -1045,6 +1047,7 @@ static void draw_ppu (struct NESEmu *emu)
 			cur_indx_screen = indx_screen0;
 			is_next_screen = 0;
 			scanline++;
+			start_y = y;
 		}
 
 
@@ -1057,9 +1060,11 @@ static void draw_ppu (struct NESEmu *emu)
 				naddr = i + last_off + addr;
 			}
 			if ((i > 0) && ((i % (line - last_off)) == 0)) {
+				if (offx == 0)
+					continue;
 				addr = addr1;
 				cur_indx_screen = indx_screen1;
-				naddr = line * y + addr;
+				naddr = 32 * y + addr;
 				is_next_screen = last_off;
 			}
 		} else {
