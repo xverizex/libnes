@@ -1188,6 +1188,7 @@ static void recreate_palette (struct NESEmu *emu, struct render_opengl_data *r)
 
 static void render_to_framebuffer (struct NESEmu *emu)
 {
+	glDisable (GL_DEPTH_TEST);
 	struct render_opengl_data *r = emu->_render_data;
 
 	glBindFramebuffer (GL_FRAMEBUFFER, r->fbo);
@@ -1209,6 +1210,7 @@ static void render_to_framebuffer (struct NESEmu *emu)
 	}
 
 	glBindFramebuffer (GL_FRAMEBUFFER, 0);
+	glEnable (GL_DEPTH_TEST);
 }
 
 static void render_to_surface (struct NESEmu *emu)

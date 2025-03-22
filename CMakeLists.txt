@@ -7,7 +7,6 @@ add_library(nes
     handlers.c palette.c 
     sdl3_opengl4.c sdl3_opengl4.h
     controller.h
-    glad/src/gl.c
     linux/platform.c)
 
 target_include_directories(nes PRIVATE
