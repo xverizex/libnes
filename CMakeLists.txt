@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(libnes LANGUAGES C)
+project(nes LANGUAGES C)
 
-add_library(libnes
+add_library(nes
     cpunes.h cpunes.c
     handlers.c palette.c 
     sdl3_opengl4.c sdl3_opengl4.h
@@ -10,12 +10,13 @@ add_library(libnes
     glad/src/gl.c
     linux/platform.c)
 
-target_include_directories(libnes PRIVATE
+target_include_directories(nes PRIVATE
     "."
+    "glad/include"
 )
 
 include(GNUInstallDirs)
-install(TARGETS libnes
+install(TARGETS nes
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

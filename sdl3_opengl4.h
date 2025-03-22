@@ -10,6 +10,7 @@ extern "C" {
 
 int scanline_delay (struct NESEmu *emu);
 uint32_t platform_and_scanline_delay (struct NESEmu *emu);
+void nes_copy_texture_surface (struct NESEmu *emu, uint32_t *tex);
 
 #ifdef __cplusplus
 }

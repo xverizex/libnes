@@ -430,7 +430,7 @@ int scanline_vblank (struct NESEmu *emu);
 void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_data)
 {
 
-	for (int i = 0; i < count_instructions; i++) {
+	for (int i = 0; i < count_instructions;) {
 
 #if 0
 		if (emu->is_nmi_works) {
@@ -464,8 +464,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 				}
 				break;
 			}
-			if (ret_delay & DELAY_CYCLES)
+			if (ret_delay & DELAY_CYCLES) {
+				i++;
 				break;
+			}
 		} while (1);
 #endif
 

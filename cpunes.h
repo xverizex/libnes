@@ -58,7 +58,7 @@ enum {
 	FORMAT_UNKNOWN,
 	FORMAT_INES,
 	FORMAT_NES20,
-	N_FORMAT
+	N_FORMAT_NES
 };
 
 enum {

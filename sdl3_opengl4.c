@@ -65,6 +65,14 @@ void linux_wait_cycles (struct NESEmu *emu)
 #endif
 }
 
+void nes_copy_texture_surface (struct NESEmu *emu,
+		uint32_t *tex)
+{
+	struct render_opengl_data *r = emu->_render_data;
+
+	*tex = r->tex_fbo;
+}
+
 static void framebuffer_init (struct NESEmu *emu)
 {
 	struct render_opengl_data *r = emu->_render_data;
@@ -232,7 +240,7 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 }
 
 static const char *vert_shader_str = 
-"#version 300 es\n"
+"#version 450 core\n"
 "layout (location = 0) in vec3 pos;\n"
 "layout (location = 1) in vec2 tex_coord;\n"
 "\n"
@@ -251,7 +259,7 @@ static const char *vert_shader_str =
 ;
 
 static const char *frag_shader_str =
-"#version 300 es\n"
+"#version 450 core\n"
 "\n"
 "precision mediump float;\n"
 "\n"
@@ -1236,10 +1244,8 @@ void nes_render (struct NESEmu *emu, void *_other_data)
 	glViewport (0, 0, emu->width, emu->height);
 	render_to_framebuffer (emu);
 
-	glViewport (0, 0, emu->width * emu->scale, emu->height * emu->scale);
-	render_to_surface (emu);
-
-	SDL_GL_SwapWindow (win);
+	//glViewport (0, 0, emu->width * emu->scale, emu->height * emu->scale);
+	//render_to_surface (emu);
 }
 
 
