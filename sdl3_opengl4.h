@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "cpunes.h"
-#include <GLES3/gl3.h>
+#include <glad/gl.h>
 
 int scanline_delay (struct NESEmu *emu);
 uint32_t platform_and_scanline_delay (struct NESEmu *emu);

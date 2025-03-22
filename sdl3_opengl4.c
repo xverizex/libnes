@@ -8,6 +8,7 @@
 #include <SDL3/SDL.h>
 #include <assert.h>
 #include <controller.h>
+#include "sdl3_opengl4.h"
 
 struct render_opengl_data {
 	uint32_t program;
