@@ -950,7 +950,7 @@ static void draw_sprite_if (struct NESEmu *emu, uint32_t condition)
 		uint8_t id_texture = emu->oam[idx + 1];
 		uint8_t px = emu->oam[idx + 3];
 
-		math_translate (r->transform, px, py, 0.f);
+		math_translate (r->transform, px, py - 8, 0.f);
 
 		build_texture (emu, r, id_texture, flags, i);
 
@@ -1083,11 +1083,11 @@ static void draw_ppu (struct NESEmu *emu)
 
 
 		if ((offx == 0)) {
-			math_translate (r->transform, ppx, ppy, 0.f);
+			math_translate (r->transform, ppx, ppy - 8, 0.f);
 		} else if ((off == 0)) {
-			math_translate (r->transform, ppx, ppy, 0.f);
+			math_translate (r->transform, ppx, ppy - 8, 0.f);
 		} else {
-			math_translate (r->transform, ppx - off, ppy, 0.f);
+			math_translate (r->transform, ppx - off, ppy - 8, 0.f);
 		}
 
 		if (((emu->ppu_copy[i] != emu->ppu[naddr]) || emu->is_new_palette_background)) {
@@ -1122,7 +1122,7 @@ static void draw_ppu (struct NESEmu *emu)
 				naddr = 32 * y + addr;
 			}
 
-			math_translate (r->transform, ppx - off, ppy, 0.f);
+			math_translate (r->transform, ppx - off, ppy - 8, 0.f);
 
 			uint8_t id_texture = emu->ppu[naddr];
 
