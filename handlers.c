@@ -16,6 +16,28 @@ void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 	emu->work_cycles = cycles;
 }
 
+#include <stdlib.h>
+static void debug (struct NESEmu *emu, uint16_t from, uint16_t to)
+{
+	uint16_t addr = from;
+	printf ("xxxx:00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
+	printf ("%04x:", addr);
+	for (int i = from; i < to; i++) {
+		if (i > 0 && i % 16 == 0) {
+			printf ("\n");
+			addr += 16;
+			printf ("%04x:", addr);
+		}
+		printf ("%02x ", emu->ram[i]);
+	}
+	printf ("\n-----------------------------------------------\n");
+	printf ("\n");
+	emu->cnt_debug++;
+	if (emu->cnt_debug == 0) {
+		exit (0);
+	}
+}
+
 void check_flags_ld (struct CPUNes *cpu, uint8_t flags, uint8_t reg)
 {
 	if (flags & STATUS_FLAG_NF) {
@@ -103,6 +125,11 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		}
 	}
 	if (addr < RAM_MAX) {
+#if 0
+		if ((emu->cpu.PC == 0xd912) && (addr >= 0x17) && (addr <= (0x17 + 8))) {
+			debug (emu, 0x0, 0x40);
+		}
+#endif
 		*r = emu->ram[addr];
 	} else if (addr == 0x2007) {
 		// TODO: what is return ppu data?
@@ -170,6 +197,16 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 				exit (0);
 			}
 #endif
+#if 1
+			if ((addr == 0x1a) && (*r == 0x0c)) {
+				emu->is_debug_exit = 1;
+				printf ("addr: 0x1a from pc: %04x; X: %02x Y: %02x; A: %02x\n",
+						emu->cpu.PC,
+						emu->cpu.X,
+						emu->cpu.Y,
+						emu->cpu.A);
+			}
+#endif
 			emu->ram[addr] = *r;
 		}
 		return;
@@ -223,7 +260,12 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			printf ("write to ppu %04x = %02x\n", emu->ppu_addr, *r);
 			emu->is_debug_exit = 1;
 		}
-		emu->ppu_scroll[emu->ppu_addr] = emu->offx;
+		if (*r >= 0x6c && *r <= 0x6f) {
+			printf ("bombed texture from pc: %04x; X: %02x Y: %02x\n", emu->cpu.PC,
+					emu->cpu.X,
+					emu->cpu.Y
+					);
+		}
 		emu->ppu[emu->ppu_addr] = *r;
 		emu->ppu_addr++;
 					  
@@ -2118,6 +2160,9 @@ void ldx_immediate (struct NESEmu *emu)
 			&cpu->X,
 			addr,
 			(2 << 8) | 2);
+	if (cpu->X == 0x0c) {
+		printf ("X is 0x0c from ldx immediate: %04x from addr: %04x\n", emu->cpu.PC, addr);
+	}
 }
 
 void ldy_zeropage (struct NESEmu *emu) 
@@ -2148,6 +2193,9 @@ void ldx_zeropage (struct NESEmu *emu)
 			&cpu->X,
 			addr,
 			(3 << 8) | 2);
+	if (cpu->X == 0x0c) {
+		printf ("X is 0x0c from ldx zeropage: %04x from addr: %04x\n", emu->cpu.PC, addr);
+	}
 }
 
 void tay_implied (struct NESEmu *emu) 
@@ -2195,6 +2243,10 @@ void tax_implied (struct NESEmu *emu)
 		cpu->P |= STATUS_FLAG_NF;
 	}
 
+	if (cpu->X == 0x0c) {
+		printf ("X is 0x0c from tax: %04x\n", emu->cpu.PC);
+	}
+
 	emu->cpu.PC += 1;
 
 	wait_cycles (emu, 2);
@@ -2228,6 +2280,9 @@ void ldx_absolute (struct NESEmu *emu)
 			&cpu->X,
 			addr,
 			(4 << 8) | 3);
+	if (cpu->X == 0x0c) {
+		printf ("X is 0x0c from ldx absoulute: %04x from addr: %04x\n", emu->cpu.PC, addr);
+	}
 }
 
 void bcs_relative (struct NESEmu *emu) 
@@ -2295,6 +2350,9 @@ void ldx_zeropage_y (struct NESEmu *emu)
 			&cpu->X,
 			addr,
 			(4 << 8) | 2);
+	if (cpu->X == 0x0c) {
+		printf ("X is 0x0c from ldx zeropage_y: %04x from addr: %04x\n", emu->cpu.PC, addr);
+	}
 }
 
 void clv_implied (struct NESEmu *emu) 
@@ -2365,6 +2423,9 @@ void ldx_absolute_y (struct NESEmu *emu)
 			&cpu->X,
 			addr,
 			(4 << 8) | 3);
+	if (cpu->X == 0x0c) {
+		printf ("X is 0x0c from ldx absoulute_y: %04x from addr: %04x\n", emu->cpu.PC, addr);
+	}
 }
 
 void cpy_immediate (struct NESEmu *emu) 

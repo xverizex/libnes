@@ -1015,6 +1015,12 @@ static void draw_ppu (struct NESEmu *emu)
 	off = emu->offx % 8;
 
 	uint8_t start_y = 0;
+
+	static uint32_t id = 0;
+	if (emu->counter == 3) {
+		emu->counter++;
+		id = 1;
+	}
 	for (uint16_t i = 0; i < off_screen; i++) {
 
 		if (
@@ -1168,6 +1174,7 @@ static void recreate_palette (struct NESEmu *emu, struct render_opengl_data *r)
 		}
 
 		printf ("recreate palette\n");
+		emu->counter++;
 		for (int i = 0; i < 16; i += 4) {
 			r->palette_image[i + 0] = emu->ppu[addr_palette + 0 + i];
 			r->palette_image[i + 1] = emu->ppu[addr_palette + 1 + i];

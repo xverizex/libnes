@@ -200,6 +200,9 @@ struct NESEmu {
     uint8_t scroll_x[280];
     uint8_t scroll_tile_x[280];
     uint32_t max_scroll_indx;
+
+    uint32_t counter;
+    uint32_t cnt_debug;
 };
 
 #define CYCLES_TO_SCANLINE        12
