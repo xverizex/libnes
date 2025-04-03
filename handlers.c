@@ -22,8 +22,8 @@ static void debug (struct NESEmu *emu, uint16_t from, uint16_t to)
 	uint16_t addr = from;
 	printf ("xxxx:00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
 	printf ("%04x:", addr);
-	for (int i = from; i < to; i++) {
-		if (i > 0 && i % 16 == 0) {
+	for (int i = from; i <= to; i++) {
+		if ((i > from) && ((i % 16) == 0)) {
 			printf ("\n");
 			addr += 16;
 			printf ("%04x:", addr);
@@ -206,6 +206,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 						emu->cpu.Y,
 						emu->cpu.A);
 			}
+
 #endif
 			emu->ram[addr] = *r;
 		}
@@ -217,7 +218,7 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			emu->offx = *r;
 			emu->cnt_write_scrollxy++;
 			//uint32_t indx = emu->indx_scroll_linex / 8;
-			uint32_t indx = emu->scanline / 8;
+			uint32_t indx = emu->scanline / 8 + 1; // crutch (+ 1)
 			emu->scroll_x[emu->max_scroll_indx] = *r;
 			uint32_t res_indx = indx / 8;
 			emu->scroll_tile_x[emu->max_scroll_indx] = res_indx;
