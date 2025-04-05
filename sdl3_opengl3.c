@@ -1021,6 +1021,8 @@ static void draw_ppu (struct NESEmu *emu)
 		emu->counter++;
 		id = 1;
 	}
+
+	uint32_t is_rec = 0;
 	for (uint16_t i = 0; i < off_screen; i++) {
 
 		if (
@@ -1091,6 +1093,7 @@ static void draw_ppu (struct NESEmu *emu)
 		if (((emu->ppu_copy[i] != emu->ppu[naddr]) || emu->is_new_palette_background)) {
 			build_background (emu, r, id_texture, x, y, i, cur_indx_screen);
 			emu->ppu_copy[i] = emu->ppu[naddr];
+			is_rec = 1;
 		}
 
 		glActiveTexture (GL_TEXTURE0);
@@ -1152,6 +1155,17 @@ static void draw_ppu (struct NESEmu *emu)
 	}
 
 	emu->max_scroll_indx = 0;
+
+	is_rec = 0;
+	if (is_rec) {
+		printf ("\n---------------------------------\n");
+		for (int i = 0; i < 960; i++) {
+			if ((i > 0) && ((i % 32) == 0)) {
+				printf ("\n");
+			}
+			printf ("%02x ", emu->ppu_copy[i]);
+		}
+	}
 }
 
 static void bind_vertex_group (struct render_opengl_data *r)
