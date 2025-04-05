@@ -79,6 +79,20 @@ void check_collision (struct NESEmu *emu)
 	uint8_t sprite_0_flags = emu->oam[2];
 	uint8_t sprite_0_x = emu->oam[3];
 
+	uint32_t sprite_overflow = 0;
+	uint32_t idx = 0;
+	for (int i = 0; i < 64; i++) {
+		uint8_t py = emu->oam[idx + 0];
+		if ((py <= emu->scanline) && ((py + 8) >= emu->scanline)) {
+			sprite_overflow++;
+		}
+
+		idx += 4;
+	}
+	if (sprite_overflow >= 8) {
+		emu->ppu_status |= 0x60;
+	}
+
 	if ((sprite_0_y <= emu->scanline) && ((sprite_0_y + 8) >= emu->scanline)) {
 		uint32_t idx = 4;
 		for (int i = 0; i < 63; i++) {
@@ -2370,6 +2384,7 @@ void lda_absolute_y (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_y (emu);
+	printf ("lda absolute y from addr: %04x; pc: %04x\n", addr, emu->cpu.PC);
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
