@@ -1647,6 +1647,112 @@ static void test_ror ()
 	END_TEST;
 }
 
+static void test_asl_acc_0x00 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->cpu.A = 0x01;
+	emu->cpu.PC = 0x8000;
+
+	asl_accumulator (emu);
+
+	if ((emu->cpu.A == 0x02) && !(emu->cpu.P & (STATUS_FLAG_ZF|STATUS_FLAG_NF|STATUS_FLAG_CF))) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x02 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_asl_acc_0x01 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->cpu.A = 0x80;
+	emu->cpu.PC = 0x8000;
+
+	asl_accumulator (emu);
+
+	if ((emu->cpu.A == 0x00) && !(emu->cpu.P & STATUS_FLAG_NF) && (emu->cpu.P & (STATUS_FLAG_CF|STATUS_FLAG_ZF))) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_asl_acc_0x02 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->cpu.A = 0x40;
+	emu->cpu.PC = 0x8000;
+
+	asl_accumulator (emu);
+
+	if ((emu->cpu.A == 0x80) && (emu->cpu.P & STATUS_FLAG_NF) && !(emu->cpu.P & (STATUS_FLAG_CF|STATUS_FLAG_ZF))) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_asl_acc_0x03 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->cpu.A = 0xc0;
+	emu->cpu.PC = 0x8000;
+
+	asl_accumulator (emu);
+
+	if ((emu->cpu.A == 0x80) && (emu->cpu.P & (STATUS_FLAG_NF|STATUS_FLAG_CF)) && !(emu->cpu.P & STATUS_FLAG_ZF)) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+static void test_asl ()
+{
+	BEGIN_TEST;
+
+	test_asl_acc_0x00 (emu, "ASL accumulator 0x00:");
+	test_asl_acc_0x01 (emu, "ASL accumulator 0x01:");
+	test_asl_acc_0x02 (emu, "ASL accumulator 0x02:");
+	test_asl_acc_0x03 (emu, "ASL accumulator 0x03:");
+
+	END_TEST;
+}
+
+static void test_eor_acc_0x00 (struct NESEmu *emu, const char *str)
+{
+	BEGIN_SUBTEST;
+
+	emu->cpu.A = 0xc0;
+	emu->cpu.PC = 0x8000;
+	emu->mem[1] = 0xa0;
+
+	eor_immediate (emu);
+
+	if ((emu->cpu.A == 0x60) && !(emu->cpu.P & (STATUS_FLAG_NF|STATUS_FLAG_CF|STATUS_FLAG_ZF))) {
+		printf ("OK\n");
+	} else {
+		printf ("FAIL; should be 0x00 nf flag, but %02x and flag: %02x\n", emu->cpu.A, emu->cpu.P);
+		exit (0);
+	}
+}
+
+static void test_eor ()
+{
+	BEGIN_TEST;
+
+	test_eor_acc_0x00 (emu, "EOR accumulator 0x00:");
+
+	END_TEST;
+}
+
 int main (int argc, char **argv)
 {
 	test_adc ();
@@ -1656,4 +1762,6 @@ int main (int argc, char **argv)
 	test_sbc ();
 	test_rol ();
 	test_ror ();
+	test_asl ();
+	test_eor ();
 }
