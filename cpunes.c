@@ -456,7 +456,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		if (emu->is_nmi_works) {
 		} else if ((ret_delay & DELAY_CYCLES) && (emu->ctrl[REAL_PPUCTRL] & PPUCTRL_VBLANK_NMI)) {
 			if (platform_delay_nmi (emu, NULL)) {
-				printf ("start nmi from: %04x with Y: %02x\n", emu->cpu.PC, emu->cpu.Y);
+				//printf ("start nmi from: %04x with Y: %02x\n", emu->cpu.PC, emu->cpu.Y);
 				emu->scanline = SCANLINE_VBLANK_START;
 				emu->cur_scanline_cycles = 0;
 				//printf ("nmi\n");
@@ -496,6 +496,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (ret_delay & DELAY_CYCLES) {
 			pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
+#if 0
 			if (emu->is_nmi_works && pc >= 0xc01a && pc <= 0xc065) {
 				printf ("###### debug exit error #######\n");
 				printf ("A: %02x X: %02x Y: %02x P: %02x S: %02x PC: %04x; SCANLINE: %d\n",
@@ -508,6 +509,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 					emu->scanline
 					);
 				emu->is_debug_exit = 0;
+#endif
 
 #if 0
 				int r = getchar ();
@@ -515,7 +517,9 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 					emu->is_debug_exit = 0;
 				}
 #endif
+#if 0
 			}
+#endif
 		}
 
 

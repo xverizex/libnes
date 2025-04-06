@@ -222,6 +222,13 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			//printf ("writing to %04x value %02x from pc %04x\n", addr, *r, emu->cpu.PC);
 			emu->oam[addr - emu->oam_addr] = *r;
 		} else {
+			if (addr == 0x14 || addr == 0x15) {
+				printf ("%04x from %04x: %02x; A: %02x X: %02x Y: %02x P: %02x\n", addr, emu->cpu.PC, *r,
+						emu->cpu.A,
+						emu->cpu.X,
+						emu->cpu.Y,
+						emu->cpu.P);
+			}
 			emu->ram[addr] = *r;
 		}
 		return;
@@ -509,6 +516,16 @@ void ld_acts (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint16_t addr, ui
 	emu->cpu.PC += cycles_and_bytes & 0xff;
 }
 
+void ld_acts_imm (struct NESEmu *emu, uint8_t flags, uint8_t *reg, uint8_t val, uint16_t cycles_and_bytes)
+{
+	struct CPUNes *cpu = &emu->cpu;
+	*reg = val;
+	cpu->P &= ~(flags);
+	check_flags_ld (cpu, flags, *reg);
+	wait_cycles (emu, cycles_and_bytes >> 8);
+	emu->cpu.PC += cycles_and_bytes & 0xff;
+}
+
 void st_acts (struct NESEmu *emu, uint8_t *reg, uint16_t addr, uint16_t cycles_and_bytes)
 {
 	struct CPUNes *cpu = &emu->cpu;
@@ -537,7 +554,6 @@ void bit_acts (struct NESEmu *emu, uint8_t flags, uint16_t mem, uint16_t cycles_
 	cpu->PC += cycles_and_bytes & 0xff;
 }
 
-uint16_t immediate (struct NESEmu *emu);
 uint8_t immediate_val (struct NESEmu *emu);
 uint16_t absolute (struct NESEmu *emu);
 uint8_t zeropage (struct NESEmu *emu);
@@ -550,11 +566,6 @@ uint16_t indirect_x (struct NESEmu *emu);
 uint16_t indirect_y (struct NESEmu *emu);
 
 #include <stdlib.h>
-
-uint16_t immediate (struct NESEmu *emu)
-{
-    return (emu->cpu.PC + 1);
-}
 
 uint8_t immediate_val (struct NESEmu *emu)
 {
@@ -1286,16 +1297,30 @@ void and_absolute_y (struct NESEmu *emu)
 void and_absolute_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	/* TODO: Cross */
 	uint16_t addr = absolute_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint16_t cross_cycles = 0;
+
+	if (emu->cpu.PC >= addr) {
+		cross_cycles = (emu->cpu.PC - addr) >> 8;
+		if (((emu->cpu.PC - addr) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	} else {
+		cross_cycles = (addr - emu->cpu.PC) >> 8;
+		if (((addr - emu->cpu.PC) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A & val,
 			eq,
-			(4 << 8) | 3);
+			((4 + cross_cycles) << 8) | 3);
 }
 
 void rol_absolute_x (struct NESEmu *emu) 
@@ -1555,16 +1580,30 @@ void eor_absolute_y (struct NESEmu *emu)
 void eor_absolute_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	/* TODO: Cross */
 	uint16_t addr = absolute_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	uint16_t cross_cycles = 0;
+
+	if (emu->cpu.PC >= addr) {
+		cross_cycles = (emu->cpu.PC - addr) >> 8;
+		if (((emu->cpu.PC - addr) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	} else {
+		cross_cycles = (addr - emu->cpu.PC) >> 8;
+		if (((addr - emu->cpu.PC) >> 8) > 255) {
+			printf ("exit with %d line\n", __LINE__);
+			exit (0);
+		}
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
 			cpu->A ^ val,
 			eq,
-			(4 << 8) | 3);
+			((4 + cross_cycles) << 8) | 3);
 }
 
 void lsr_absolute_x (struct NESEmu *emu) 
@@ -2154,10 +2193,10 @@ void sta_absolute_x (struct NESEmu *emu)
 void ldy_immediate (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = immediate (emu);
-	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
+	uint8_t val = immediate_val (emu);
+	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
-			addr,
+			val,
 			(2 << 8) | 2);
 }
 
@@ -2174,10 +2213,10 @@ void lda_indirect_x (struct NESEmu *emu)
 void ldx_immediate (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = immediate (emu);
-	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
+	uint8_t val = immediate_val (emu);
+	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
-			addr,
+			val,
 			(2 << 8) | 2);
 }
 
@@ -2234,10 +2273,10 @@ void tay_implied (struct NESEmu *emu)
 void lda_immediate (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
-	uint16_t addr = immediate (emu);
-	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
+	uint8_t val = immediate_val (emu);
+	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
-			addr,
+			val,
 			(2 << 8) | 2);
 }
 
@@ -2422,12 +2461,10 @@ void ldx_absolute_y (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_y (emu);
-	printf ("addr is: %04x\n", addr);
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
 			addr,
 			(4 << 8) | 3);
-	printf ("X is: %02x\n", cpu->X);
 }
 
 void cpy_immediate (struct NESEmu *emu) 
