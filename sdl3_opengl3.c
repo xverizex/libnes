@@ -203,27 +203,7 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 {
-#if 0
-    struct timeval tv;
-    gettimeofday (&tv, NULL);
-
-    uint64_t ms = SDL_GetTicksNS ();
-
-    if (emu->start_time_nmi == 0L) {
-            emu->start_time_nmi = ms;
-            return 0;
-    }
-
-    uint64_t diff_time = ms - emu->start_time_nmi;
-
-    if (diff_time >= 16666670) {
-        emu->start_time_nmi = ms;
-	return 1;
-    }
-
-    return 0;
-#endif
-    if (emu->cur_cycles >= 29815) {
+    if (emu->cur_cycles >= 29800) {
 	    emu->cur_cycles = 0;
 	    return 1;
     }
