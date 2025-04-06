@@ -618,9 +618,9 @@ uint16_t indirect (struct NESEmu *emu)
 
 	uint16_t new_addr = 0;
 	if (addr < RAM_MAX) {
-    		new_addr = *(uint16_t *) &emu->ram[addr + 0];
+    		new_addr = *(uint16_t *) &emu->ram[addr];
 	} else {
-    		new_addr = *(uint16_t *) &emu->mem[(addr + 0) - 0x8000];
+    		new_addr = *(uint16_t *) &emu->mem[addr - 0x8000];
 	}
 
 	return new_addr;
@@ -631,7 +631,9 @@ uint16_t indirect_x (struct NESEmu *emu)
 	uint8_t addr = emu->mem[(emu->cpu.PC + 1) - 0x8000];
 	uint16_t indirect = 0;
 
-	indirect = *((uint16_t *) &emu->ram[addr + emu->cpu.X]);
+	uint8_t res = addr + emu->cpu.X;
+
+	indirect = *((uint16_t *) &emu->ram[res]);
 
 	return indirect;
 }
@@ -643,7 +645,7 @@ uint16_t indirect_y (struct NESEmu *emu)
 
 	addr = *((uint16_t *) &emu->ram[zeroaddr]);
 
-	return addr + emu->cpu.Y;
+	return addr + (uint16_t) emu->cpu.Y;
 }
 
 #include <stdlib.h>
@@ -2174,8 +2176,6 @@ void txs_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	// TODO: check this code
-//	cpu->S &= 0xff;
 	cpu->S = cpu->X;
 
 	emu->cpu.PC += 1;
