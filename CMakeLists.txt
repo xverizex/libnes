@@ -4,7 +4,7 @@ project(nes LANGUAGES C)
 
 add_library(nes
     cpunes.h cpunes.c
-    handlers.c palette.c 
+    instr.c palette.c 
     sdl3_opengl4.c sdl3_opengl4.h
     controller.h
     linux/platform.c)
