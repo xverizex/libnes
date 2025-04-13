@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <handlers.h>
+#include <instr.h>
 
 static uint32_t is_init_global_func;
 
@@ -496,9 +496,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 
 		if (ret_delay & DELAY_CYCLES) {
 			pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
+
 #if 0
-			if (emu->is_nmi_works && pc >= 0xc01a && pc <= 0xc065) {
-				printf ("###### debug exit error #######\n");
+			if (pc == 0xd924) {
+				printf ("###### debug #######\n");
 				printf ("A: %02x X: %02x Y: %02x P: %02x S: %02x PC: %04x; SCANLINE: %d\n",
 					emu->cpu.A,
 					emu->cpu.X,
@@ -509,15 +510,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 					emu->scanline
 					);
 				emu->is_debug_exit = 0;
-#endif
-
-#if 0
-				int r = getchar ();
-				if (r == 'f') {
-					emu->is_debug_exit = 0;
-				}
-#endif
-#if 0
 			}
 #endif
 		}

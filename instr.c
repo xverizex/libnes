@@ -150,8 +150,8 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 	}
 	if (addr < RAM_MAX) {
 #if 0
-		if ((emu->cpu.PC == 0xd912) && (addr >= 0x17) && (addr <= (0x17 + 8))) {
-			debug (emu, 0x0, 0x40);
+		if ((emu->cpu.PC == 0xc059)) {
+			debug (emu, 0x600, 0x6f0);
 		}
 #endif
 		*r = emu->ram[addr];
@@ -166,6 +166,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		*r = emu->ppu[emu->ppu_addr];
 		return;
 	} 
+
 	if (addr >= 0x4016 && addr <= 0x4017) {
 		if (addr == 0x4016) {
 			if (emu->new_state <= 7) {
@@ -222,13 +223,6 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			//printf ("writing to %04x value %02x from pc %04x\n", addr, *r, emu->cpu.PC);
 			emu->oam[addr - emu->oam_addr] = *r;
 		} else {
-			if (addr == 0x14 || addr == 0x15) {
-				printf ("%04x from %04x: %02x; A: %02x X: %02x Y: %02x P: %02x\n", addr, emu->cpu.PC, *r,
-						emu->cpu.A,
-						emu->cpu.X,
-						emu->cpu.Y,
-						emu->cpu.P);
-			}
 			emu->ram[addr] = *r;
 		}
 		return;
