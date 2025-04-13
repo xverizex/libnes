@@ -16,36 +16,6 @@ void wait_cycles (struct NESEmu *emu, uint32_t cycles)
 	emu->work_cycles = cycles;
 }
 
-#include <stdlib.h>
-static void debug (struct NESEmu *emu, uint16_t from, uint16_t to)
-{
-	uint16_t addr = from;
-	printf ("xxxx:00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
-	printf ("%04x:", addr);
-	uint8_t *mem = NULL;
-	uint16_t off = 0;
-	if (from < RAM_MAX) {
-		mem = &emu->ram[from];
-	} else {
-		mem = &emu->mem[from - 0x8000];
-	}
-	int i = 0;
-	int end = to - from;
-	for (; i <= end; i++) {
-		if ((i > 0) && ((i % 16) == 0)) {
-			printf ("\n");
-			addr += 16;
-			printf ("%04x:", addr);
-		}
-		printf ("%02x ", (mem[i]));
-	}
-	printf ("\n-----------------------------------------------\n");
-	printf ("\n");
-	emu->cnt_debug++;
-	if (emu->cnt_debug == 0) {
-		exit (0);
-	}
-}
 
 void check_flags_ld (struct CPUNes *cpu, uint8_t flags, uint8_t reg)
 {
@@ -202,7 +172,7 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	//printf ("\twrite to addr: %04x = %02x\n", addr, *r);
-
+	
 	if (addr == OAMADDR) {
 		emu->oam_addr = 0;
 		emu->oam_addr |= *r;
@@ -223,6 +193,22 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			//printf ("writing to %04x value %02x from pc %04x\n", addr, *r, emu->cpu.PC);
 			emu->oam[addr - emu->oam_addr] = *r;
 		} else {
+#if 0
+			if (addr >= 0x17 && addr <= (0x17 + 8)) {
+				printf (">>> from PC: %04x\n", emu->cpu.PC);
+				debug (emu, 0x0, 0x30);
+			}
+#endif
+#if 0
+			if (addr == 0x15) {
+				printf ("from PC: %04x; A: %02x X: %02X Y: %02X P: %02X\n",
+						emu->cpu.PC,
+						emu->cpu.A,
+						emu->cpu.X,
+						emu->cpu.Y,
+						emu->cpu.P);
+			}
+#endif
 			emu->ram[addr] = *r;
 		}
 		return;

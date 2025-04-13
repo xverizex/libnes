@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <instr.h>
+#include <debugger.h>
 
 static uint32_t is_init_global_func;
 
@@ -408,21 +409,6 @@ int platform_delay (struct NESEmu *emu, void *_other_data);
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_data);
 void nes_render (struct NESEmu *emu, void *data);
 
-static void debug (struct NESEmu *emu, uint32_t cnt)
-{
-	uint16_t addr = 0;
-
-	printf ("\n%04x:", addr);
-	for (int i = 0; i < cnt; i++) {
-		if (i > 0 && i % 16 == 0) {
-			addr += 16;
-			printf ("\n%04x:", addr);
-		}
-		printf ("%02x ", emu->ram[i]);
-	}
-	printf ("\n");
-}
-
 int scanline_delay (struct NESEmu *emu);
 uint32_t platform_and_scanline_delay (struct NESEmu *emu);
 int scanline_vblank (struct NESEmu *emu);
@@ -495,6 +481,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 		if (ret_delay & DELAY_CYCLES) {
+			debug (emu);
 			pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
 
 #if 0

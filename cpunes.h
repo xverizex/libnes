@@ -111,6 +111,17 @@ struct NESCallbacks {
 #define PPU_CYCLE                          46
 #define NS_CYCLE                         559L
 
+struct breakpoint {
+	uint16_t addr;
+	uint8_t A;
+	uint8_t X;
+	uint8_t Y;
+	uint8_t P;
+	uint8_t regs[4];
+	uint32_t condition;
+	uint32_t is_enabled;
+};
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
@@ -142,7 +153,6 @@ struct NESEmu {
     uint8_t is_debug_list;
     uint8_t is_show_address;
     uint8_t is_show_bytes;
-    uint8_t is_debug;
 
     char line[32];
 
@@ -203,6 +213,12 @@ struct NESEmu {
 
     uint32_t counter;
     uint32_t cnt_debug;
+
+    struct breakpoint brk[0x100];
+    uint32_t debug_brk_cnt;
+
+    uint32_t is_started;
+    uint32_t is_debug;
 };
 
 #define CYCLES_TO_SCANLINE        12

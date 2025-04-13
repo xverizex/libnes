@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-I. -Iglad/include
-LDFLAGS=-lGL -lSDL3
-SOURCES=cpunes.c instr.c sdl3_opengl3.c palette.c app.c linux/platform.c
+LDFLAGS=-lGL -lSDL3 
+SOURCES=cpunes.c instr.c sdl3_opengl3.c palette.c app.c linux/platform.c debugger.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=app
 LIB_DIR=/usr/local/lib64
