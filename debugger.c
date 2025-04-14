@@ -9,7 +9,7 @@ static void memory_map (struct NESEmu *emu, uint16_t from, uint16_t to)
 	uint16_t addr = from;
 	printf ("xxxx: 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
 	printf ("-----------------------------------------------------\n");
-	printf ("%04x:", addr);
+	printf ("%04x: ", addr);
 	uint8_t *mem = NULL;
 	uint16_t off = 0;
 	if (from < RAM_MAX) {
@@ -325,9 +325,11 @@ void debug (struct NESEmu *emu)
 	}
 	if (emu->is_started == 0) {
 		emu->is_debug = 1;
-		printf ("# Debugger mode\n");
+		if (!emu->only_show)
+			printf ("# Debugger mode\n");
 	} else if (emu->is_debug) {
-		printf ("# Debugger mode\n");
+		if (!emu->only_show && !emu->debug_step)
+			printf ("# Debugger mode\n");
 	}
 
 	emu->only_show = 0;
