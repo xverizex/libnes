@@ -225,6 +225,7 @@ struct NESEmu {
     char buf_regs[256];
 
     uint32_t latest_step;
+    uint32_t only_show;
 };
 
 enum {

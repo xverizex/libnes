@@ -222,6 +222,14 @@ static uint32_t debug_is_condition_true (struct NESEmu *emu, int i)
 	if (c0 == 0xff || c1 == 0xff || c2 == 0xff || c3 == 0xff) {
 		return 0;
 	}
+
+	printf ("#%d interrupted on %04x: ", i, emu->cpu.PC);
+	if (c0 == 1) print_check_condition (emu, condition & 0xff, brk, 0);
+	if (c1 == 1) print_check_condition (emu, condition & 0xff00, brk, 0);
+	if (c2 == 1) print_check_condition (emu, condition & 0xff0000, brk, 0);
+	if (c3 == 1) print_check_condition (emu, condition & 0xff000000, brk, 0);
+	printf ("\n");
+
 	return 1;
 }
 
@@ -322,6 +330,8 @@ void debug (struct NESEmu *emu)
 		printf ("# Debugger mode\n");
 	}
 
+	emu->only_show = 0;
+
 	emu->is_started = 1;
 	char buf[255];
 	while (emu->is_debug) {
@@ -375,6 +385,12 @@ void debug (struct NESEmu *emu)
 		if (!strncmp (buf, "stack", 5)) {
 			emu->latest_step = LATEST_NO;
 			trace_stack (emu);
+		}
+		if (!strncmp (buf, "cur", 3)) {
+			emu->latest_step = LATEST_NO;
+			emu->debug_step = 1;
+			emu->only_show = 1;
+			return;
 		}
 
 		uint32_t len = strlen (buf);
