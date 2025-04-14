@@ -68,6 +68,7 @@ static void print_help ()
 	printf ("step - step trace\n");
 	printf ("pc - current pc\n");
 	printf ("stack - show stack\n");
+	printf ("trace - trace each step\n");
 }
 
 static void debug_breakpoint (struct NESEmu *emu, uint8_t *b)
@@ -394,12 +395,19 @@ void debug (struct NESEmu *emu)
 			emu->only_show = 1;
 			return;
 		}
+		if (!strncmp (buf, "trace", 5)) {
+			emu->latest_step = LATEST_TRACE;
+			emu->debug_step = 1;
+			emu->is_debug = 0;
+			return;
+		}
 
 		uint32_t len = strlen (buf);
 		if (len == 1 && buf[0] == 0xa) {
 			switch (emu->latest_step) {
 				case LATEST_CNT: emu->is_debug = 0; return;
 				case LATEST_STEP: emu->debug_step = 1; return;
+				case LATEST_TRACE: emu->debug_step = 1; emu->is_debug = 0; return;
 				default: emu->debug_step = 0; break;
 			}
 		}
