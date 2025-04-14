@@ -3,6 +3,7 @@
 #include <cpunes.h>
 #include <stdio.h>
 #include <time.h>
+#include <debugger.h>
 
 void platform_ppu_mask (struct NESEmu *emu, void *_other_data);
 
@@ -648,6 +649,9 @@ void invalid_opcode (struct NESEmu *emu)
 void brk_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: BRK [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 #if 0
 	emu->stack[--cpu->S] = (uint8_t) (cpu->PC & 0xff);
@@ -669,6 +673,9 @@ void ora_indirect_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint16_t addr = indirect_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: ORA ($%02x, X) [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
 
@@ -686,6 +693,10 @@ void ora_zeropage (struct NESEmu *emu)
 
 	uint8_t addr = zeropage (emu);
 
+	if (emu->debug_step) {
+		printf ("%04x: ORA $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
+
 	uint8_t val = emu->ram[addr];
 
 	repetitive_acts (emu, 
@@ -701,6 +712,10 @@ void asl_zeropage (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
 
+	if (emu->debug_step) {
+		printf ("%04x: ASL $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
+
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&emu->ram[addr],
@@ -710,6 +725,10 @@ void asl_zeropage (struct NESEmu *emu)
 void php_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+
+	if (emu->debug_step) {
+		printf ("%04x: PHP [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	--cpu->S;
 	uint16_t addr = 0x100 + cpu->S;
@@ -725,6 +744,10 @@ void ora_immediate (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
 
+	if (emu->debug_step) {
+		printf ("%04x: ORA #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
+
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
@@ -735,6 +758,9 @@ void ora_immediate (struct NESEmu *emu)
 void asl_accumulator (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: ASL A [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
@@ -746,6 +772,9 @@ void ora_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: ORA $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -768,93 +797,14 @@ void asl_absolute (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ASL $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&m[addr - off],
 			(6 << 8) | 3);
 }
-
-static uint8_t hex_number_str (uint8_t n)
-{
-	if (n >= 0 && n <= 9) {
-		return n + '0';
-	}
-
-	if (n >= 10 && n <= 15) {
-		return (n - 10) + 'A';
-	}
-}
-
-static uint8_t hex_up_half (uint8_t n)
-{
-	n = n >> 4;
-
-	return hex_number_str (n);
-}
-
-static uint8_t hex_down_half (uint8_t n)
-{
-	n = n & 0xf;
-
-	return hex_number_str (n);
-}
-
-static uint8_t *show_debug_info (struct NESEmu *emu, uint32_t count, char *op)
-{
-	uint32_t tcount = 0;
-	struct CPUNes *cpu = &emu->cpu;
-
-	uint8_t *pl = emu->line;
-	if (emu->is_show_address) {
-		*pl++ = hex_up_half (cpu->PC >> 8);
-		*pl++ = hex_down_half (cpu->PC >> 8);
-		*pl++ = hex_up_half (cpu->PC & 0xff);
-		*pl++ = hex_down_half (cpu->PC & 0xff);
-		*pl++ = ':';
-		*pl++ = ' ';
-	}
-	if (emu->is_show_bytes) {
-		for (uint16_t i = 0; i < count; i++) {
-			tcount++;
-			*pl++ = hex_up_half (emu->mem[emu->cpu.PC + i]);
-			*pl++ = hex_down_half (emu->mem[emu->cpu.PC + i]);
-			*pl++ = ' ';
-		}
-
-	}
-
-	while (tcount < 3) {
-		*pl++ = ' ';
-		*pl++ = ' ';
-		*pl++ = ' ';
-		tcount++;
-	}
-	while (*op != 0) {
-		*pl++ = *op++;
-	}
-
-	*pl++ = ' ' ;
-
-	return pl;
-}
-#if 0
-	/* lst */
-	if (emu->is_debug_list) {
-		struct CPUNes *cpu = &emu->cpu;
-		int8_t offset = emu->mem[cpu->PC + 1];
-		uint16_t new_offset = cpu->PC + offset;
-
-		uint8_t *pl = show_debug_info (emu, 2, "BPL");
-		uint8_t up = (new_offset >> 8) & 0xff;
-		uint8_t down = (new_offset & 0xf);
-		*pl++ = hex_up_half (up);
-		*pl++ = hex_down_half (up);
-		*pl++ = hex_up_half (down);
-		*pl++ = hex_down_half (down);
-		*pl = 0;
-		return;
-	}
-#endif
 
 #include <stdlib.h>
 void bpl_relative (struct NESEmu *emu) 
@@ -870,6 +820,9 @@ void bpl_relative (struct NESEmu *emu)
 		new_offset = cpu->PC - off;
 	} else {
 		new_offset = cpu->PC + offset + 2;
+	}
+	if (emu->debug_step) {
+		printf ("%04x: BPL $%04x [%s]\n", emu->cpu.PC, new_offset, debugger_print_regs (emu));
 	}
 
 	uint32_t ext_cycles = 0;
@@ -905,6 +858,9 @@ void ora_indirect_y (struct NESEmu *emu)
 			exit (0);
 		}
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ORA ($%02x), Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -921,6 +877,9 @@ void ora_zeropage_x (struct NESEmu *emu)
 
 	uint8_t val = emu->ram[addr];
 
+	if (emu->debug_step) {
+		printf ("%04x: ORA $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
 			&cpu->A,
@@ -934,6 +893,9 @@ void asl_zeropage_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage_x (emu);
 
+	if (emu->debug_step) {
+		printf ("%04x: ASL $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&emu->ram[addr],
@@ -942,6 +904,9 @@ void asl_zeropage_x (struct NESEmu *emu)
 void clc_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: CLC [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	cpu->P &= ~(STATUS_FLAG_CF);
 
@@ -969,6 +934,9 @@ void ora_absolute_y (struct NESEmu *emu)
 			printf ("exit with %d line\n", __LINE__);
 			exit (0);
 		}
+	}
+	if (emu->debug_step) {
+		printf ("%04x: ORA $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
 	}
 
 	repetitive_acts (emu, 
@@ -998,6 +966,9 @@ void ora_absolute_x (struct NESEmu *emu)
 			exit (0);
 		}
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ORA $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1020,6 +991,9 @@ void asl_absolute_x (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ASL $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1032,6 +1006,9 @@ void jsr_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint16_t pc = cpu->PC + 3;
+	if (emu->debug_step) {
+		printf ("%04x: JSR $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	pc--;
 
@@ -1060,6 +1037,9 @@ void and_indirect_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: AND ($%02x, X) [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1073,6 +1053,9 @@ void bit_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: BIT $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	bit_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
 			addr,
@@ -1085,6 +1068,9 @@ void and_zeropage (struct NESEmu *emu)
 	uint16_t addr = zeropage (emu);
 
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: AND $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1098,6 +1084,9 @@ void rol_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: ROL $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1108,6 +1097,9 @@ void rol_zeropage (struct NESEmu *emu)
 void plp_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: PLP [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	uint16_t addr = 0x100 + cpu->S;
 	cpu->S++;
@@ -1124,6 +1116,9 @@ void and_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: AND #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1135,6 +1130,9 @@ void and_immediate (struct NESEmu *emu)
 void rol_accumulator (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: ROL A [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
@@ -1146,6 +1144,9 @@ void bit_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint16_t addr = absolute (emu);
+	if (emu->debug_step) {
+		printf ("%04x: BIT $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	bit_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
 			addr,
@@ -1157,6 +1158,9 @@ void and_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: AND $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1179,6 +1183,9 @@ void rol_absolute (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ROL $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&m[addr - off],
@@ -1198,6 +1205,9 @@ void bmi_relative (struct NESEmu *emu)
 		new_offset = cpu->PC - off;
 	} else {
 		new_offset = cpu->PC + offset + 2;
+	}
+	if (emu->debug_step) {
+		printf ("%04x: BMI $%04x [%s]\n", emu->cpu.PC, new_offset, debugger_print_regs (emu));
 	}
 
 	uint32_t ext_cycles = 0;
@@ -1219,6 +1229,9 @@ void and_indirect_y (struct NESEmu *emu)
 	uint16_t addr = indirect_y (emu);
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: AND ($%02x), Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1234,6 +1247,9 @@ void and_zeropage_x (struct NESEmu *emu)
 	uint8_t addr = zeropage_x (emu);
 
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: AND $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1247,6 +1263,9 @@ void rol_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: ROL $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1256,6 +1275,9 @@ void rol_zeropage_x (struct NESEmu *emu)
 
 void sec_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: SEC [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	emu->cpu.P |= (STATUS_FLAG_CF);
 	emu->cpu.PC++;
 
@@ -1267,6 +1289,9 @@ void and_absolute_y (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_y (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: AND $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1296,6 +1321,9 @@ void and_absolute_x (struct NESEmu *emu)
 			exit (0);
 		}
 	}
+	if (emu->debug_step) {
+		printf ("%04x: AND $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1318,6 +1346,9 @@ void rol_absolute_x (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ROL $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&m[addr - off],
@@ -1327,6 +1358,9 @@ void rol_absolute_x (struct NESEmu *emu)
 void rti_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: RTI [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	uint16_t addr = 0x100 + cpu->S;
 
@@ -1355,6 +1389,9 @@ void eor_indirect_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: EOR ($%02x, X) [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1369,6 +1406,9 @@ void eor_zeropage (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage (emu);
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: EOR $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1382,6 +1422,9 @@ void lsr_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LSR $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	lsr_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1392,6 +1435,9 @@ void lsr_zeropage (struct NESEmu *emu)
 void pha_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: PHA [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	--cpu->S;
 	uint16_t addr = 0x100 + cpu->S;
@@ -1407,6 +1453,9 @@ void eor_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: EOR #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1418,6 +1467,10 @@ void eor_immediate (struct NESEmu *emu)
 void lsr_accumulator (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: LSR A [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
+
 	lsr_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
@@ -1429,6 +1482,9 @@ void jmp_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint16_t new_offset = *(uint16_t *) &emu->mem[(cpu->PC + 1) - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: JMP $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cpu->PC = new_offset;
 
@@ -1440,6 +1496,9 @@ void eor_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: EOR $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1461,6 +1520,9 @@ void lsr_absolute (struct NESEmu *emu)
 	} else {
 		m = emu->mem;
 		off = 0x8000;
+	}
+	if (emu->debug_step) {
+		printf ("%04x: LSR $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
 	}
 
 	lsr_acts (emu,
@@ -1485,6 +1547,9 @@ void bvc_relative (struct NESEmu *emu)
 	}
 
 	uint32_t ext_cycles = 0;
+	if (emu->debug_step) {
+		printf ("%04x: BVC $%04x [%s]\n", emu->cpu.PC, new_offset, debugger_print_regs (emu));
+	}
 
 	if (emu->cpu.P & STATUS_FLAG_VF) {
 		cpu->PC += 2;
@@ -1502,6 +1567,9 @@ void eor_indirect_y (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_y (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: EOR ($%02x), Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1517,6 +1585,9 @@ void eor_zeropage_x (struct NESEmu *emu)
 	uint8_t addr = zeropage_x (emu);
 
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: EOR $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1530,6 +1601,9 @@ void lsr_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LSR $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	lsr_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1539,6 +1613,9 @@ void lsr_zeropage_x (struct NESEmu *emu)
 
 void cli_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: CLI [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	emu->cpu.P &= ~(STATUS_FLAG_IF);
 	emu->cpu.PC++;
 
@@ -1550,6 +1627,9 @@ void eor_absolute_y (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_y (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: EOR $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1579,6 +1659,9 @@ void eor_absolute_x (struct NESEmu *emu)
 			exit (0);
 		}
 	}
+	if (emu->debug_step) {
+		printf ("%04x: EOR $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -1601,6 +1684,9 @@ void lsr_absolute_x (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: LSR $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	lsr_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&m[addr - off],
@@ -1610,6 +1696,9 @@ void lsr_absolute_x (struct NESEmu *emu)
 void rts_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: RTS [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	uint16_t addr = 0x100 + cpu->S;
 
@@ -1642,6 +1731,9 @@ void adc_indirect_x (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ADC ($%02x, X) [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -1658,6 +1750,9 @@ void adc_zeropage (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint8_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: ADC $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -1673,6 +1768,9 @@ void ror_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: ROR $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1683,6 +1781,9 @@ void ror_zeropage (struct NESEmu *emu)
 void pla_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: PLA [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	uint16_t addr = 0x100 + cpu->S;
 	cpu->S++;
@@ -1710,6 +1811,9 @@ void adc_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t value = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: ADC #$%02x [%s]\n", emu->cpu.PC, value, debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -1724,6 +1828,9 @@ void adc_immediate (struct NESEmu *emu)
 void ror_accumulator (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: ROR A [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&cpu->A,
@@ -1732,6 +1839,9 @@ void ror_accumulator (struct NESEmu *emu)
 
 void jmp_indirect (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: JMP ($%04x) [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	emu->cpu.PC = indirect (emu);
 
 	wait_cycles (emu, 5);
@@ -1750,6 +1860,9 @@ void adc_absolute (struct NESEmu *emu)
 	} else {
 		m = emu->mem;
 		off = 0x8000;
+	}
+	if (emu->debug_step) {
+		printf ("%04x: ADC $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
 	}
 
 	adc_acts (emu, 
@@ -1775,6 +1888,9 @@ void ror_absolute (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ROR $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&m[addr - off],
@@ -1794,6 +1910,9 @@ void bvs_relative (struct NESEmu *emu)
 		new_offset = cpu->PC - off;
 	} else {
 		new_offset = cpu->PC + offset + 2;
+	}
+	if (emu->debug_step) {
+		printf ("%04x: BVS $%04x [%s]\n", emu->cpu.PC, new_offset, debugger_print_regs (emu));
 	}
 
 	uint32_t ext_cycles = 0;
@@ -1838,6 +1957,9 @@ void adc_indirect_y (struct NESEmu *emu)
 			exit (0);
 		}
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ADC ($%02x), Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -1853,6 +1975,9 @@ void adc_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: ADC $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -1868,6 +1993,9 @@ void ror_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: ROR $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1877,6 +2005,9 @@ void ror_zeropage_x (struct NESEmu *emu)
 
 void sei_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: SEI [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	emu->cpu.P &= (STATUS_FLAG_IF);
 	emu->cpu.PC++;
 
@@ -1911,6 +2042,9 @@ void adc_absolute_y (struct NESEmu *emu)
 			printf ("exit with %d line\n", __LINE__);
 			exit (0);
 		}
+	}
+	if (emu->debug_step) {
+		printf ("%04x: ADC $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
 	}
 
 	adc_acts (emu, 
@@ -1952,6 +2086,9 @@ void adc_absolute_x (struct NESEmu *emu)
 			exit (0);
 		}
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ADC $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -1976,6 +2113,9 @@ void ror_absolute_x (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: ROR $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
 			&m[addr - off],
@@ -1984,6 +2124,9 @@ void ror_absolute_x (struct NESEmu *emu)
 
 void sta_indirect_x (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STA ($%02x, X) [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_x (emu);
 	st_acts (emu, &cpu->A, addr, (6 << 8) | 2);
@@ -1991,6 +2134,9 @@ void sta_indirect_x (struct NESEmu *emu)
 
 void sty_zeropage (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STY $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
 	st_acts (emu, &cpu->Y, addr, (3 << 8) | 2);
@@ -1998,12 +2144,18 @@ void sty_zeropage (struct NESEmu *emu)
 
 void sta_zeropage (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STA $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
 	st_acts (emu, &cpu->A, addr, (3 << 8) | 2);
 }
 void stx_zeropage (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STX $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
 	st_acts (emu, &cpu->X, addr, (3 << 8) | 2);
@@ -2011,6 +2163,9 @@ void stx_zeropage (struct NESEmu *emu)
 
 void dey_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: DEY [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
@@ -2029,6 +2184,9 @@ void dey_implied (struct NESEmu *emu)
 
 void txa_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: TXA [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->P &= ~(STATUS_FLAG_ZF|STATUS_FLAG_NF);
@@ -2049,6 +2207,9 @@ void txa_implied (struct NESEmu *emu)
 
 void sty_absolute (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STY $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	st_acts (emu, &cpu->Y, addr, (4 << 8) | 3);
@@ -2056,6 +2217,9 @@ void sty_absolute (struct NESEmu *emu)
 
 void sta_absolute (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STA $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	st_acts (emu, &cpu->A, addr, (4 << 8) | 3);
@@ -2065,6 +2229,9 @@ void sta_absolute (struct NESEmu *emu)
 
 void stx_absolute (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STX $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	st_acts (emu, &cpu->X, addr, (4 << 8) | 3);
@@ -2087,6 +2254,9 @@ void bcc_relative (struct NESEmu *emu)
 
 	uint32_t ext_cycles = 0;
 
+	if (emu->debug_step) {
+		printf ("%04x: BCC $%04x [%s]\n", emu->cpu.PC, new_offset, debugger_print_regs (emu));
+	}
 	if (emu->cpu.P & STATUS_FLAG_CF) {
 		cpu->PC += 2;
 	} else {
@@ -2100,6 +2270,9 @@ void bcc_relative (struct NESEmu *emu)
 
 void sta_indirect_y (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STA ($%02x), Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_y (emu);
 	st_acts (emu, &cpu->A, addr, (6 << 8) | 2);
@@ -2107,6 +2280,9 @@ void sta_indirect_y (struct NESEmu *emu)
 
 void sty_zeropage_x (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STY $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
 	st_acts (emu, &cpu->Y, addr, (4 << 8) | 2);
@@ -2114,12 +2290,18 @@ void sty_zeropage_x (struct NESEmu *emu)
 
 void sta_zeropage_x (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STA $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
 	st_acts (emu, &cpu->A, addr, (4 << 8) | 2);
 }
 void stx_zeropage_y (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STX $%02x, Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_y (emu);
 	st_acts (emu, &cpu->X, addr, (4 << 8) | 2);
@@ -2127,6 +2309,9 @@ void stx_zeropage_y (struct NESEmu *emu)
 
 void tya_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: TYA [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->P &= ~(STATUS_FLAG_ZF|STATUS_FLAG_NF);
@@ -2147,6 +2332,9 @@ void tya_implied (struct NESEmu *emu)
 
 void sta_absolute_y (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STA $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_y (emu);
 	st_acts (emu, &cpu->A, addr, (5 << 8) | 3);
@@ -2154,6 +2342,9 @@ void sta_absolute_y (struct NESEmu *emu)
 
 void txs_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: TXS [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 
 	cpu->S = cpu->X;
@@ -2165,6 +2356,9 @@ void txs_implied (struct NESEmu *emu)
 
 void sta_absolute_x (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: STA $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_x (emu);
 	st_acts (emu, &cpu->A, addr, (5 << 8) | 3);
@@ -2174,6 +2368,9 @@ void ldy_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDY #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
 			val,
@@ -2184,6 +2381,9 @@ void lda_indirect_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDA ($%02x, X) [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
@@ -2194,6 +2394,9 @@ void ldx_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDX #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
 			val,
@@ -2204,6 +2407,9 @@ void ldy_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDY $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
 			addr,
@@ -2214,6 +2420,9 @@ void lda_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDA $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
@@ -2224,6 +2433,9 @@ void ldx_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDX $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
 			addr,
@@ -2233,6 +2445,9 @@ void ldx_zeropage (struct NESEmu *emu)
 void tay_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: TAY [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	cpu->P &= ~(STATUS_FLAG_ZF|STATUS_FLAG_NF);
 
@@ -2254,6 +2469,9 @@ void lda_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDA #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			val,
@@ -2263,6 +2481,9 @@ void lda_immediate (struct NESEmu *emu)
 void tax_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: TAX [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	cpu->P &= ~(STATUS_FLAG_ZF|STATUS_FLAG_NF);
 
@@ -2284,6 +2505,9 @@ void ldy_absolute (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDY $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
 			addr,
@@ -2294,6 +2518,9 @@ void lda_absolute (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDA $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
@@ -2304,6 +2531,9 @@ void ldx_absolute (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDX $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
 			addr,
@@ -2326,6 +2556,9 @@ void bcs_relative (struct NESEmu *emu)
 	}
 
 	uint32_t ext_cycles = 0;
+	if (emu->debug_step) {
+		printf ("%04x: BCS $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	if (emu->cpu.P & STATUS_FLAG_CF) {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
@@ -2342,6 +2575,9 @@ void lda_indirect_y (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_y (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDA ($%02x), Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
@@ -2351,6 +2587,9 @@ void ldy_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDY $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
 			addr,
@@ -2361,6 +2600,9 @@ void lda_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDA $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
@@ -2371,6 +2613,9 @@ void ldx_zeropage_y (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_y (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDX $%02x, Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
 			addr,
@@ -2380,6 +2625,9 @@ void ldx_zeropage_y (struct NESEmu *emu)
 void clv_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: CLV [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	emu->cpu.P &= ~(STATUS_FLAG_VF);
 
 	wait_cycles (emu, 2);
@@ -2391,6 +2639,9 @@ void lda_absolute_y (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_y (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDA $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
@@ -2400,6 +2651,9 @@ void lda_absolute_y (struct NESEmu *emu)
 void tsx_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: TSX [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	cpu->P &= ~(STATUS_FLAG_ZF|STATUS_FLAG_NF);
 
@@ -2421,6 +2675,9 @@ void ldy_absolute_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDY $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
 			addr,
@@ -2431,6 +2688,9 @@ void lda_absolute_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDA $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
 			addr,
@@ -2441,6 +2701,9 @@ void ldx_absolute_y (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_y (emu);
+	if (emu->debug_step) {
+		printf ("%04x: LDX $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
 			addr,
@@ -2451,6 +2714,9 @@ void cpy_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: CPY #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2465,6 +2731,9 @@ void cmp_indirect_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: CMP ($%02x, X) [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2480,6 +2749,9 @@ void cpy_zeropage (struct NESEmu *emu)
 	uint8_t addr = zeropage (emu);
 
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: CPY $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2495,6 +2767,9 @@ void cmp_zeropage (struct NESEmu *emu)
 	uint8_t addr = zeropage (emu);
 
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: CMP $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2508,6 +2783,9 @@ void dec_zeropage (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: DEC $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -2520,6 +2798,9 @@ void dec_zeropage (struct NESEmu *emu)
 void iny_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: INY [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
 
@@ -2539,6 +2820,9 @@ void cmp_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: CMP #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2551,6 +2835,9 @@ void cmp_immediate (struct NESEmu *emu)
 void dex_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: DEX [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
 
@@ -2572,6 +2859,9 @@ void cpy_absolute (struct NESEmu *emu)
 	uint16_t addr = absolute (emu);
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: CPY $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2586,6 +2876,9 @@ void cmp_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: CMP $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2607,6 +2900,9 @@ void dec_absolute (struct NESEmu *emu)
 	} else {
 		off = 0x8000;
 		m = emu->mem;
+	}
+	if (emu->debug_step) {
+		printf ("%04x: DEC $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
 	}
 
 	repetitive_acts (emu, 
@@ -2631,6 +2927,9 @@ void bne_relative (struct NESEmu *emu)
 	} else {
 		new_offset = cpu->PC + offset + 2;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: BNE $%04x [%s]\n", emu->cpu.PC, new_offset, debugger_print_regs (emu));
+	}
 
 	uint32_t ext_cycles = 0;
 
@@ -2652,6 +2951,9 @@ void cmp_indirect_y (struct NESEmu *emu)
 	uint16_t addr = indirect_y (emu);
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: CMP ($%02x), Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2665,6 +2967,9 @@ void cmp_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: CMP $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2678,6 +2983,9 @@ void dec_zeropage_x (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: DEC $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -2690,6 +2998,9 @@ void dec_zeropage_x (struct NESEmu *emu)
 void cld_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: CLD [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	emu->cpu.P &= ~(STATUS_FLAG_DF);
 
@@ -2704,6 +3015,9 @@ void cmp_absolute_y (struct NESEmu *emu)
 	uint16_t addr = absolute_y (emu);
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: CMP $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2719,6 +3033,9 @@ void cmp_absolute_x (struct NESEmu *emu)
 	uint16_t addr = absolute_x (emu);
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: CMP $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2741,6 +3058,9 @@ void dec_absolute_x (struct NESEmu *emu)
 		m = emu->mem;
 		off = 0x8000;
 	}
+	if (emu->debug_step) {
+		printf ("%04x: DEC $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -2755,6 +3075,9 @@ void cpx_immediate (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: CPX #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2769,6 +3092,9 @@ void sbc_indirect_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: SBC ($%02x, X) [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -2778,16 +3104,6 @@ void sbc_indirect_x (struct NESEmu *emu)
 		eq,
 		(6 << 8) | (2)
 		);
-
-#if 0
-	/* TODO: need or CF flag */
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
-			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
-			eq,
-			(6 << 8) | 2);
-#endif
 }
 
 void cpx_zeropage (struct NESEmu *emu) 
@@ -2797,6 +3113,9 @@ void cpx_zeropage (struct NESEmu *emu)
 	uint8_t addr = zeropage (emu);
 
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: CPX $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2812,6 +3131,9 @@ void sbc_zeropage (struct NESEmu *emu)
 	uint8_t addr = zeropage (emu);
 
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: SBC $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -2821,20 +3143,15 @@ void sbc_zeropage (struct NESEmu *emu)
 		eq,
 		(3 << 8) | (2)
 		);
-#if 0
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
-			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
-			eq,
-			(3 << 8) | 2);
-#endif
 }
 
 void inc_zeropage (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage (emu);
+	if (emu->debug_step) {
+		printf ("%04x: INC $%02x [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -2848,6 +3165,9 @@ void inc_zeropage (struct NESEmu *emu)
 void inx_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
+	if (emu->debug_step) {
+		printf ("%04x: INX [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 
 	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
 
@@ -2868,6 +3188,9 @@ void sbc_immediate (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t val = immediate_val (emu);
+	if (emu->debug_step) {
+		printf ("%04x: SBC #$%02x [%s]\n", emu->cpu.PC, val, debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -2877,19 +3200,13 @@ void sbc_immediate (struct NESEmu *emu)
 		eq,
 		(2 << 8) | (2)
 		);
-
-#if 0
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
-			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
-			eq,
-			(2 << 8) | 2);
-#endif
 }
 
 void nop_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: NOP [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	emu->cpu.PC++;
 
@@ -2901,6 +3218,9 @@ void cpx_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: CPX $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	cmp_act (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2914,6 +3234,9 @@ void sbc_absolute (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: SBC $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -2923,15 +3246,6 @@ void sbc_absolute (struct NESEmu *emu)
 		eq,
 		(4 << 8) | (3)
 		);
-
-#if 0
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
-			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
-			eq,
-			(4 << 8) | 3);
-#endif
 }
 
 void inc_absolute (struct NESEmu *emu) 
@@ -2946,6 +3260,9 @@ void inc_absolute (struct NESEmu *emu)
 	} else {
 		m = emu->mem;
 		off = 0x8000;
+	}
+	if (emu->debug_step) {
+		printf ("%04x: INC $%04x [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
 	}
 
 	repetitive_acts (emu, 
@@ -2973,6 +3290,9 @@ void beq_relative (struct NESEmu *emu)
 	}
 
 	uint32_t ext_cycles = 0;
+	if (emu->debug_step) {
+		printf ("%04x: BEQ $%04x [%s]\n", emu->cpu.PC, new_offset, debugger_print_regs (emu));
+	}
 
 	if (emu->cpu.P & STATUS_FLAG_ZF) {
 		set_ext_cycles (cpu, offset, new_offset, &ext_cycles);
@@ -2990,6 +3310,9 @@ void sbc_indirect_y (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = indirect_y (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: SBC ($%02x), Y [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -2999,15 +3322,6 @@ void sbc_indirect_y (struct NESEmu *emu)
 		eq,
 		(5 << 8) | (2)
 		);
-
-#if 0
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
-			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
-			eq,
-			(5 << 8) | 2);
-#endif
 }
 
 void sbc_zeropage_x (struct NESEmu *emu) 
@@ -3015,6 +3329,9 @@ void sbc_zeropage_x (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
 	uint8_t val = emu->ram[addr];
+	if (emu->debug_step) {
+		printf ("%04x: SBC $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -3024,19 +3341,14 @@ void sbc_zeropage_x (struct NESEmu *emu)
 		eq,
 		(4 << 8) | (2)
 		);
-#if 0
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
-			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
-			eq,
-			(4 << 8) | 2);
-#endif
 }
 
 void inc_zeropage_x (struct NESEmu *emu) {
 	struct CPUNes *cpu = &emu->cpu;
 	uint8_t addr = zeropage_x (emu);
+	if (emu->debug_step) {
+		printf ("%04x: INC $%02x, X [%s]\n", emu->cpu.PC, *(uint8_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -3048,6 +3360,9 @@ void inc_zeropage_x (struct NESEmu *emu) {
 
 void sed_implied (struct NESEmu *emu) 
 {
+	if (emu->debug_step) {
+		printf ("%04x: SED [%s]\n", emu->cpu.PC, debugger_print_regs (emu));
+	}
 	struct CPUNes *cpu = &emu->cpu;
 	emu->cpu.P |= (STATUS_FLAG_DF);
 
@@ -3061,6 +3376,9 @@ void sbc_absolute_y (struct NESEmu *emu)
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_y (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: SBC $%04x, Y [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -3070,21 +3388,15 @@ void sbc_absolute_y (struct NESEmu *emu)
 		eq,
 		(4 << 8) | (3)
 		);
-
-#if 0
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
-			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
-			eq,
-			(4 << 8) | 3);
-#endif
 }
 void sbc_absolute_x (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
 	uint16_t addr = absolute_x (emu);
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
+	if (emu->debug_step) {
+		printf ("%04x: SBC $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
+	}
 
 	adc_acts (emu, 
 		STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF, 
@@ -3094,14 +3406,6 @@ void sbc_absolute_x (struct NESEmu *emu)
 		eq,
 		(4 << 8) | (3)
 		);
-#if 0
-	repetitive_acts (emu, 
-			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF|STATUS_FLAG_VF,
-			&cpu->A,
-			cpu->A - val - ((emu->cpu.P & STATUS_FLAG_CF)? 0: 1),
-			eq,
-			(4 << 8) | 3);
-#endif
 }
 
 void inc_absolute_x (struct NESEmu *emu) 
@@ -3116,6 +3420,9 @@ void inc_absolute_x (struct NESEmu *emu)
 	} else {
 		m = emu->mem;
 		off = 0x8000;
+	}
+	if (emu->debug_step) {
+		printf ("%04x: INC $%04x, X [%s]\n", emu->cpu.PC, *(uint16_t *) &emu->mem[(emu->cpu.PC + 1) - 0x8000], debugger_print_regs (emu));
 	}
 
 	repetitive_acts (emu, 

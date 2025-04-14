@@ -65,6 +65,9 @@ static void print_help ()
 	printf ("list - list breakpoints\n");
 	printf ("enable [indx] - enable breakpoint\n");
 	printf ("disable [indx] - disable breakpoint\n");
+	printf ("step - step trace\n");
+	printf ("pc - current pc\n");
+	printf ("stack - show stack\n");
 }
 
 static void debug_breakpoint (struct NESEmu *emu, uint8_t *b)
@@ -272,6 +275,31 @@ static void turn_break_point (struct NESEmu *emu, char *buf, uint32_t turn)
 	emu->brk[num].is_enabled = turn;
 }
 
+char *debugger_print_regs (struct NESEmu *emu)
+{
+	uint16_t stack = 0x100 + emu->cpu.S;
+
+	snprintf (emu->buf_regs, 256, "A: %02X X: %02X Y: %02X P: %02X S: %04x",
+			emu->cpu.A,
+			emu->cpu.X,
+			emu->cpu.Y,
+			emu->cpu.P,
+			stack);
+	return emu->buf_regs;
+}
+
+static void trace_stack (struct NESEmu *emu)
+{
+	uint8_t top = 0xff;
+
+	while (top >= emu->cpu.S) {
+		uint16_t off = 0x100 + top;
+		printf ("%04x: #$%02x\n", off, emu->ram[off]);
+		top--;
+		if (top == emu->cpu.S) break;
+	}
+}
+
 void debug (struct NESEmu *emu)
 {
 	if (emu->is_started == 1) {
@@ -299,31 +327,63 @@ void debug (struct NESEmu *emu)
 	while (emu->is_debug) {
 		fgets (buf, 255, stdin); 
 		if (!strncmp (buf, "help", 4)) {
+			emu->latest_step = LATEST_NO;
 			print_help ();
 		}
 		if (!strncmp (buf, "cnt", 3)) {
+			emu->latest_step = LATEST_CNT;
 			emu->is_debug = 0;
+			return;
 		}
 		if (!strncmp (buf, "brk", 3)) {
+			emu->latest_step = LATEST_NO;
 			debug_breakpoint (emu, buf);
 		}
 		if (!strncmp (buf, "dr", 2)) {
+			emu->latest_step = LATEST_NO;
 			debug_registers (emu);
 		}
 		if (!strncmp (buf, "map", 3)) {
+			emu->latest_step = LATEST_NO;
 			debug_map (emu, buf);
 		}
 		if (!strncmp (buf, "list", 4)) {
+			emu->latest_step = LATEST_NO;
 			debug_list_brk (emu);
 		}
 		if (!strncmp (buf, "exit", 4)) {
+			emu->latest_step = LATEST_NO;
 			exit (EXIT_SUCCESS);
 		}
 		if (!strncmp (buf, "enable", 6)) {
+			emu->latest_step = LATEST_NO;
 			turn_break_point (emu, buf, 1);
 		}
 		if (!strncmp (buf, "disable", 7)) {
+			emu->latest_step = LATEST_NO;
 			turn_break_point (emu, buf, 0);
+		}
+		if (!strncmp (buf, "step", 4)) {
+			emu->latest_step = LATEST_STEP;
+			emu->debug_step = 1;
+			return;
+		}
+		if (!strncmp (buf, "pc", 2)) {
+			emu->latest_step = LATEST_NO;
+			printf ("PC: %04x\n", emu->cpu.PC);
+		}
+		if (!strncmp (buf, "stack", 5)) {
+			emu->latest_step = LATEST_NO;
+			trace_stack (emu);
+		}
+
+		uint32_t len = strlen (buf);
+		if (len == 1 && buf[0] == 0xa) {
+			switch (emu->latest_step) {
+				case LATEST_CNT: emu->is_debug = 0; return;
+				case LATEST_STEP: emu->debug_step = 1; return;
+				default: emu->debug_step = 0; break;
+			}
 		}
 
 		memset (buf, 0, 255);

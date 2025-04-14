@@ -4,5 +4,6 @@
 #include <cpunes.h>
 
 void debug (struct NESEmu *emu);
+char *debugger_print_regs (struct NESEmu *emu);
 
 #endif

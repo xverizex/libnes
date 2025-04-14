@@ -219,6 +219,19 @@ struct NESEmu {
 
     uint32_t is_started;
     uint32_t is_debug;
+
+    uint32_t debug_step;
+
+    char buf_regs[256];
+
+    uint32_t latest_step;
+};
+
+enum {
+	LATEST_NO,
+	LATEST_CNT,
+	LATEST_STEP,
+	N_LATEST
 };
 
 #define CYCLES_TO_SCANLINE        12
