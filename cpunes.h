@@ -122,6 +122,20 @@ struct breakpoint {
 	uint32_t is_enabled;
 };
 
+enum write_cond {
+	WRITE_COND_NO,
+	WRITE_COND_EQ,
+	WRITE_COND_NOT_EQ,
+	N_WRITE_COND
+};
+
+struct breakwrite {
+	uint16_t addr;
+	uint8_t val;
+	enum write_cond cond;
+	uint32_t is_enabled;
+};
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
@@ -217,6 +231,10 @@ struct NESEmu {
     struct breakpoint brk[0x100];
     uint32_t debug_brk_cnt;
 
+    struct breakwrite bwr[0x100];
+    uint32_t debug_bwr_cnt;
+    uint32_t is_debug_bwr;
+
     uint32_t is_started;
     uint32_t is_debug;
 
@@ -226,6 +244,9 @@ struct NESEmu {
 
     uint32_t latest_step;
     uint32_t only_show;
+
+    uint32_t skeep_cnt;
+    uint32_t skeep_trace;
 };
 
 enum {

@@ -56,10 +56,53 @@ static void debug_map (struct NESEmu *emu, char *buf)
 	memory_map (emu, from, to);
 }
 
+static void debug_bwr (struct NESEmu *emu, char *buf)
+{
+	uint32_t cnt = emu->debug_bwr_cnt;
+
+	char *s = strchr (buf, ' ');
+	s++;
+	char *e = strchr (s, '\n');
+	*e = 0;
+	
+	e = s;
+	while (*s != 0x0 && *s != '\n' && *s != ',' && *s != ' ') s++;
+	uint8_t temp = *s;
+	*s = 0;
+	uint16_t addr = strtol (e, NULL, 16);
+	*s = temp;
+	emu->bwr[cnt].is_enabled = 1;
+	emu->bwr[cnt].addr = addr;
+	while (*s == ' ') s++;
+	if (*s == '!' || *s == '=') {
+		if (*s == '!' && *(s + 1) == '=') {
+			s += 2; while (*s == ' ') s++;
+			emu->bwr[cnt].cond = WRITE_COND_NOT_EQ;
+			char *e = strchr (s, '\r');
+			if (e) *e = 0;
+			e = strchr (s, '\n');
+			if (e) *e = 0;
+			uint8_t val = strtol (s, NULL, 16);
+			emu->bwr[cnt].val = val;
+		} else if (*s == '=' && *(s + 1) == '=') {
+			s += 2; while (*s == ' ') s++;
+			emu->bwr[cnt].cond = WRITE_COND_EQ;
+			char *e = strchr (s, '\r');
+			if (e) *e = 0;
+			e = strchr (s, '\n');
+			if (e) *e = 0;
+			uint8_t val = strtol (s, NULL, 16);
+			emu->bwr[cnt].val = val;
+		}
+	}
+
+	emu->debug_bwr_cnt++;
+}
+
 static void print_help ()
 {
 	printf ("brk 0xXXXX, A == 0xXX, X == 0xXX - breakpoint\n");
-	printf ("cnt - continue\n");
+	printf ("cnt [skeep count] - continue\n");
 	printf ("map 0xXXXX 0xXXXX - show memory map\n");
 	printf ("dr - show registers\n");
 	printf ("list - list breakpoints\n");
@@ -68,7 +111,8 @@ static void print_help ()
 	printf ("step - step trace\n");
 	printf ("pc - current pc\n");
 	printf ("stack - show stack\n");
-	printf ("trace - trace each step\n");
+	printf ("trace [skeep count] - trace each step\n");
+	printf ("bwr 0xXXXX [== 0xXX] - breakpoint on writing to address\n");
 }
 
 static void debug_breakpoint (struct NESEmu *emu, uint8_t *b)
@@ -234,6 +278,15 @@ static uint32_t debug_is_condition_true (struct NESEmu *emu, int i)
 	return 1;
 }
 
+static void print_condition_bwr (struct NESEmu *emu, struct breakwrite *bwr)
+{
+	switch (bwr->cond) {
+		default: return;
+		case WRITE_COND_EQ: printf (" == %02x", bwr->val); break;
+		case WRITE_COND_NOT_EQ: printf (" != %02x", bwr->val); break;
+	}
+}
+
 static void print_condition (struct NESEmu *emu, struct breakpoint *brk)
 {
 	uint32_t condition = brk->condition;
@@ -263,13 +316,24 @@ static void print_condition (struct NESEmu *emu, struct breakpoint *brk)
 
 static void debug_list_brk (struct NESEmu *emu)
 {
-	printf ("# breakpoint list\n");
+	printf ("# Breakpoint list\n");
 	uint32_t cnt = emu->debug_brk_cnt;
 	for (int i = 0; i < cnt; i++) {
 		printf ("#%d: %04x ", i, emu->brk[i].addr);
 		struct breakpoint *brk = &emu->brk[i];
 		print_condition (emu, brk);
 		printf (" [%s]\n", brk->is_enabled? "enabled": "disabled");
+	}
+}
+
+static void debug_list_bwr (struct NESEmu *emu)
+{
+	uint32_t cnt = emu->debug_bwr_cnt;
+	for (int i = 0; i < cnt; i++) {
+		printf ("#%d: %04x ", i, emu->bwr[i].addr);
+		struct breakwrite *bwr = &emu->bwr[i];
+		print_condition_bwr (emu, bwr);
+		printf (" [%s]\n", bwr->is_enabled? "enabled": "disabled");
 	}
 }
 
@@ -309,6 +373,18 @@ static void trace_stack (struct NESEmu *emu)
 	}
 }
 
+static void get_arg_skeep (uint32_t *skeep, char *buf)
+{
+	char *s = strchr (buf, ' ');
+	if (s) {
+		s++;
+		char *e = s;
+		while (*e >= '0' && *e <= '~') e++;
+		*e = 0;
+		*skeep = atoi (s);
+	}
+}
+
 void debug (struct NESEmu *emu)
 {
 	if (emu->is_started == 1) {
@@ -317,6 +393,14 @@ void debug (struct NESEmu *emu)
 			if (emu->brk[i].is_enabled && (emu->cpu.PC == emu->brk[i].addr)) {
 				if (debug_is_condition_true (emu, i)) {
 					emu->is_debug = 1;
+					if (emu->skeep_cnt > 0) {
+						emu->skeep_cnt--;
+						return;
+					}
+					if (emu->skeep_trace > 0) {
+						emu->skeep_trace--;
+						return;
+					}
 					break;
 				}
 			}
@@ -346,6 +430,7 @@ void debug (struct NESEmu *emu)
 		if (!strncmp (buf, "cnt", 3)) {
 			emu->latest_step = LATEST_CNT;
 			emu->is_debug = 0;
+			get_arg_skeep (&emu->skeep_cnt, buf);
 			return;
 		}
 		if (!strncmp (buf, "brk", 3)) {
@@ -363,6 +448,7 @@ void debug (struct NESEmu *emu)
 		if (!strncmp (buf, "list", 4)) {
 			emu->latest_step = LATEST_NO;
 			debug_list_brk (emu);
+			debug_list_bwr (emu);
 		}
 		if (!strncmp (buf, "exit", 4)) {
 			emu->latest_step = LATEST_NO;
@@ -399,7 +485,13 @@ void debug (struct NESEmu *emu)
 			emu->latest_step = LATEST_TRACE;
 			emu->debug_step = 1;
 			emu->is_debug = 0;
+			get_arg_skeep (&emu->skeep_cnt, buf);
 			return;
+		}
+		if (!strncmp (buf, "bwr", 3)) {
+			emu->latest_step = LATEST_NO;
+			emu->is_debug_bwr = 1;
+			debug_bwr (emu, buf);
 		}
 
 		uint32_t len = strlen (buf);

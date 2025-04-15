@@ -183,6 +183,18 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
 	//printf ("\twrite to addr: %04x = %02x\n", addr, *r);
+	if (emu->is_debug_bwr == 1) {
+		uint32_t cnt = emu->debug_bwr_cnt;
+		for (int i = 0; i < cnt; i++) {
+			if (emu->bwr[i].is_enabled && (addr == emu->bwr[i].addr)) {
+				if (*r == emu->bwr[i].val) {
+					emu->is_debug = 1;
+					printf ("# Breakpoint at $%04x with %02x\n", addr, *r);
+					break;
+				}
+			}
+		}
+	}
 	
 	if (addr == OAMADDR) {
 		emu->oam_addr = 0;
