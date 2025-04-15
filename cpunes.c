@@ -449,7 +449,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 				bc = 0;
 				static uint32_t called = 0;
 				uint16_t addr;
-				--emu->cpu.S;
 				addr = 0x100 + emu->cpu.S;
 				emu->ram[addr] = ( emu->cpu.PC >> 8 ) & 0xff;
 				--emu->cpu.S;
@@ -458,6 +457,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 				--emu->cpu.S;
 				addr = 0x100 + emu->cpu.S;
 				emu->ram[addr] = emu->cpu.P;
+				//--emu->cpu.S;
 
 				emu->cpu.PC = emu->nmi_handler;
 				emu->is_nmi_works = 1;

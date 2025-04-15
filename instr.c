@@ -678,19 +678,10 @@ void brk_implied (struct NESEmu *emu)
 		if (emu->only_show) return;
 	}
 
-#if 0
-	emu->stack[--cpu->S] = (uint8_t) (cpu->PC & 0xff);
-	emu->stack[--cpu->S] = (uint8_t) ((cpu->PC >> 8) & 0xff);
-	emu->stack[--cpu->S] = cpu->P;
-
-	cpu->P |= (STATUS_FLAG_IF);
-
-	cpu->PC = emu->irq_handler;
-#endif
-
 	wait_cycles (emu, 7);
 	printf ("brk\n");
 	emu->is_debug_exit = 1;
+	emu->is_debug = 1;
 }
 
 void ora_indirect_x (struct NESEmu *emu) 
@@ -767,8 +758,8 @@ void php_implied (struct NESEmu *emu)
 		if (emu->only_show) return;
 	}
 
-	--cpu->S;
 	uint16_t addr = 0x100 + cpu->S;
+	--cpu->S;
 	emu->ram[addr] = cpu->P;
 
 	wait_cycles (emu, 3);
@@ -1084,14 +1075,14 @@ void jsr_absolute (struct NESEmu *emu)
 
 	uint16_t addr;
 
-	--cpu->S;
 
        	addr = 0x100 + cpu->S;
-
-	emu->ram[addr] = (uint8_t) ((pc >> 8) & 0xff);
 	--cpu->S;
 
+	emu->ram[addr] = (uint8_t) ((pc >> 8) & 0xff);
+
 	addr = 0x100 + cpu->S;
+	--cpu->S;
 	emu->ram[addr] = (uint8_t) (pc & 0xff);
 
 	uint16_t new_pc = 0;
@@ -1187,6 +1178,7 @@ void rol_zeropage (struct NESEmu *emu)
 void plp_implied (struct NESEmu *emu) 
 {
 	struct CPUNes *cpu = &emu->cpu;
+	cpu->S++;
 	uint16_t addr = 0x100 + cpu->S;
 
 	if (emu->debug_step) {
@@ -1196,7 +1188,6 @@ void plp_implied (struct NESEmu *emu)
 		if (emu->only_show) return;
 	}
 
-	cpu->S++;
 	cpu->P = emu->ram[addr];
 
 	wait_cycles (emu, 4);
@@ -1511,7 +1502,7 @@ void rti_implied (struct NESEmu *emu)
 
 	addr = 0x100 + cpu->S;
 
-	cpu->S++;
+	//cpu->S++;
 
 	cpu->PC |= ((emu->ram[addr] << 8) & 0xff00);
 
@@ -1581,7 +1572,6 @@ void pha_implied (struct NESEmu *emu)
 {
 	struct CPUNes *cpu = &emu->cpu;
 
-	--cpu->S;
 	uint16_t addr = 0x100 + cpu->S;
 	if (emu->debug_step) {
 		char buf[256];
@@ -1589,6 +1579,7 @@ void pha_implied (struct NESEmu *emu)
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
 	}
+	--cpu->S;
 
 	emu->ram[addr] = cpu->A;
 
@@ -1890,15 +1881,14 @@ void rts_implied (struct NESEmu *emu)
 		if (emu->only_show) return;
 	}
 
+	cpu->S++;
 	uint16_t addr = 0x100 + cpu->S;
 
 	cpu->PC = 0;
 	cpu->PC |= (emu->ram[addr] & 0xff);
-	cpu->S++;
 
+	cpu->S++;
 	addr = 0x100 + cpu->S;
-
-	cpu->S++;
 
 	cpu->PC |= ((emu->ram[addr] << 8) & 0xff00);
 
@@ -1906,6 +1896,7 @@ void rts_implied (struct NESEmu *emu)
 	//printf ("rts %04x\n", cpu->PC);
 
 	wait_cycles (emu, 6);
+	//emu->is_debug = 1;
 }
 
 void adc_indirect_x (struct NESEmu *emu) 
@@ -1987,8 +1978,8 @@ void pla_implied (struct NESEmu *emu)
 		if (emu->only_show) return;
 	}
 
-	uint16_t addr = 0x100 + cpu->S;
 	cpu->S++;
+	uint16_t addr = 0x100 + cpu->S;
 
 	cpu->A = emu->ram[addr];
 

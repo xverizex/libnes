@@ -369,7 +369,11 @@ static void trace_stack (struct NESEmu *emu)
 		uint16_t off = 0x100 + top;
 		printf ("%04x: #$%02x\n", off, emu->ram[off]);
 		top--;
-		if (top == emu->cpu.S) break;
+		if (top == emu->cpu.S) {
+			uint16_t off = 0x100 + top;
+			printf ("%04x: #$%02x\n", off, emu->ram[off]);
+			break;
+		}
 	}
 }
 
