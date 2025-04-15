@@ -245,8 +245,8 @@ struct NESEmu {
     uint32_t latest_step;
     uint32_t only_show;
 
-    uint32_t skeep_cnt;
-    uint32_t skeep_trace;
+    uint32_t skip_cnt;
+    uint32_t skip_trace;
 };
 
 enum {

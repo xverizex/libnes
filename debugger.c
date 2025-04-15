@@ -102,7 +102,7 @@ static void debug_bwr (struct NESEmu *emu, char *buf)
 static void print_help ()
 {
 	printf ("brk 0xXXXX, A == 0xXX, X == 0xXX - breakpoint\n");
-	printf ("cnt [skeep count] - continue\n");
+	printf ("cnt [skip count] - continue\n");
 	printf ("map 0xXXXX 0xXXXX - show memory map\n");
 	printf ("dr - show registers\n");
 	printf ("list - list breakpoints\n");
@@ -111,7 +111,7 @@ static void print_help ()
 	printf ("step - step trace\n");
 	printf ("pc - current pc\n");
 	printf ("stack - show stack\n");
-	printf ("trace [skeep count] - trace each step\n");
+	printf ("trace [skip count] - trace each step\n");
 	printf ("bwr 0xXXXX [== 0xXX] - breakpoint on writing to address\n");
 }
 
@@ -373,7 +373,7 @@ static void trace_stack (struct NESEmu *emu)
 	}
 }
 
-static void get_arg_skeep (uint32_t *skeep, char *buf)
+static void get_arg_skip (uint32_t *skip, char *buf)
 {
 	char *s = strchr (buf, ' ');
 	if (s) {
@@ -381,7 +381,7 @@ static void get_arg_skeep (uint32_t *skeep, char *buf)
 		char *e = s;
 		while (*e >= '0' && *e <= '~') e++;
 		*e = 0;
-		*skeep = atoi (s);
+		*skip = atoi (s);
 	}
 }
 
@@ -393,12 +393,14 @@ void debug (struct NESEmu *emu)
 			if (emu->brk[i].is_enabled && (emu->cpu.PC == emu->brk[i].addr)) {
 				if (debug_is_condition_true (emu, i)) {
 					emu->is_debug = 1;
-					if (emu->skeep_cnt > 0) {
-						emu->skeep_cnt--;
+					if (emu->skip_cnt > 0) {
+						emu->skip_cnt--;
+						emu->is_debug = 0;
 						return;
 					}
-					if (emu->skeep_trace > 0) {
-						emu->skeep_trace--;
+					if (emu->skip_trace > 0) {
+						emu->skip_trace--;
+						emu->is_debug = 0;
 						return;
 					}
 					break;
@@ -430,7 +432,7 @@ void debug (struct NESEmu *emu)
 		if (!strncmp (buf, "cnt", 3)) {
 			emu->latest_step = LATEST_CNT;
 			emu->is_debug = 0;
-			get_arg_skeep (&emu->skeep_cnt, buf);
+			get_arg_skip (&emu->skip_cnt, buf);
 			return;
 		}
 		if (!strncmp (buf, "brk", 3)) {
@@ -485,7 +487,7 @@ void debug (struct NESEmu *emu)
 			emu->latest_step = LATEST_TRACE;
 			emu->debug_step = 1;
 			emu->is_debug = 0;
-			get_arg_skeep (&emu->skeep_cnt, buf);
+			get_arg_skip (&emu->skip_cnt, buf);
 			return;
 		}
 		if (!strncmp (buf, "bwr", 3)) {
