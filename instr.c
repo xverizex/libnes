@@ -1986,7 +1986,7 @@ void pla_implied (struct NESEmu *emu)
 	uint8_t flags = (STATUS_FLAG_NF|STATUS_FLAG_ZF);
 	cpu->P &= ~(flags);
 
-	if (cpu->A == 0x80) {
+	if (cpu->A & 0x80) {
 		cpu->P |= STATUS_FLAG_NF;
 	} 
 	if (cpu->A == 0x0) {
