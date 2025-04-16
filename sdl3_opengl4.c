@@ -1199,11 +1199,13 @@ static void render_to_framebuffer (struct NESEmu *emu)
 
 	platform_clear_mask (emu, r->palette_image[0], NULL);
 
-	draw_sprite_if (emu, SPRITE_BEFORE_BACKGROUND);
+	if (emu->ctrl[REAL_PPUMASK] & MASK_IS_SPRITE_RENDER)
+		draw_sprite_if (emu, SPRITE_BEFORE_BACKGROUND);
 
 	draw_ppu (emu);
 
-	draw_sprite_if (emu, SPRITE_AFTER_BACKGROUND);
+	if (emu->ctrl[REAL_PPUMASK] & MASK_IS_SPRITE_RENDER)
+		draw_sprite_if (emu, SPRITE_AFTER_BACKGROUND);
 
 	if (emu->is_new_palette_background) {
 		emu->is_new_palette_background = 0;
