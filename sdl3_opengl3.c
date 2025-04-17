@@ -203,8 +203,8 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 {
-    if (emu->cur_cycles >= 29829) {
-	    emu->cur_cycles = 0;
+    if (emu->cur_cycles >= MAX_WORK_CYCLES) {
+	    emu->cur_cycles = emu->cur_cycles - MAX_WORK_CYCLES;
 	    return 1;
     }
 
