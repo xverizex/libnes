@@ -175,7 +175,7 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 	uint64_t ret = ns - emu->timestamp_cycles;
 
 	if (ret >= emu->last_cycles_int64) {
-		uint64_t last = 0; 
+		uint64_t last = ret - emu->last_cycles_int64; 
 		emu->last_cycles_int64 = last;
 		emu->timestamp_cycles = ns;
 		rets |= DELAY_CYCLES;
@@ -185,7 +185,7 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 	//TODO: fix this
 	if (emu->cycles_to_scanline >= CYCLES_TO_SCANLINE) {
 		emu->cycles_to_scanline = emu->cycles_to_scanline - CYCLES_TO_SCANLINE;
-		uint64_t last = 0;
+		uint64_t last = emu->cycles_to_scanline;
 		emu->scanline++;
 		emu->vblank_scanline_cycles++;
 		emu->indx_scroll_linex++;
@@ -203,7 +203,7 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 
 uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 {
-    if (emu->cur_cycles >= 29800) {
+    if (emu->cur_cycles >= 29829) {
 	    emu->cur_cycles = 0;
 	    return 1;
     }
@@ -1115,7 +1115,8 @@ static void render_to_framebuffer (struct NESEmu *emu)
 	if (emu->ctrl[REAL_PPUMASK] & MASK_IS_SPRITE_RENDER)
 		draw_sprite_if (emu, SPRITE_BEFORE_BACKGROUND);
 
-	draw_ppu (emu);
+	if (emu->ctrl[REAL_PPUMASK] & MASK_IS_BACKGROUND_RENDER)
+		draw_ppu (emu);
 
 	if (emu->ctrl[REAL_PPUMASK] & MASK_IS_SPRITE_RENDER)
 		draw_sprite_if (emu, SPRITE_AFTER_BACKGROUND);

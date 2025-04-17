@@ -231,7 +231,7 @@ uint32_t platform_delay_nmi (struct NESEmu *emu, void *_other_data)
 
     return 0;
 #endif
-    if (emu->cur_cycles >= 29815) {
+    if (emu->cur_cycles >= 29829) {
 	    emu->cur_cycles = 0;
 	    return 1;
     }
