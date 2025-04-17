@@ -427,7 +427,6 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 				if (scanline_delay (emu)) {
 					check_collision (emu);
 				}
-				break;
 			}
 			if (ret_delay & DELAY_CYCLES) {
 				i++;

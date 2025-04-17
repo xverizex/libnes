@@ -170,6 +170,7 @@ uint32_t platform_and_scanline_delay (struct NESEmu *emu)
 
 	if (emu->timestamp_cycles == 0L) {
 		emu->timestamp_cycles = ns;
+		return rets;
 	}
 
 	uint64_t ret = ns - emu->timestamp_cycles;
