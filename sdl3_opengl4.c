@@ -23,7 +23,7 @@ struct render_opengl_data {
 	uint32_t id_model;
 	uint32_t id_sampler;
 	uint32_t texture;
-	uint32_t background_texture[960 + 28];
+	uint32_t background_texture[960 + 960];
 	uint32_t sprite_texture[64];
 	uint32_t vao;
 	uint32_t vbo;
@@ -415,8 +415,8 @@ static void init_textures (struct render_opengl_data *r, uint32_t tex_width, uin
 	glBindTexture (GL_TEXTURE_2D, 0);
 
 	// build background textures;
-	glGenTextures (960 + 28, r->background_texture);
-	for (int i = 0; i < (960 + 28); i++) {
+	glGenTextures (960 + 960, r->background_texture);
+	for (int i = 0; i < (960 + 960); i++) {
 		glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
 		glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -775,21 +775,12 @@ void nes_platform_init (struct NESEmu *emu, void *_other_data)
 
 static void build_background (struct NESEmu *emu, struct render_opengl_data *r, uint8_t id_texture, uint8_t x, uint8_t y, uint16_t naddr, uint32_t indx_screen)
 {
-#if 0
 	static const uint16_t palette[4] = {
 		0x23c0,
 		0x27c0,
 		0x2bc0,
 		0x2fc0
 	};
-#else
-	static const uint16_t palette[4] = {
-		0x23c0,
-		0x23c0,
-		0x27c0,
-		0x27c0
-	};
-#endif
 
 	uint32_t indx = 0;
 
@@ -972,40 +963,30 @@ static void draw_sprite_if (struct NESEmu *emu, uint32_t condition)
 	}
 }
 
-static void draw_ppu (struct NESEmu *emu)
+#define WIDTH_LINE                           32
+
+static uint32_t draw_screen (struct NESEmu *emu, uint16_t addr, uint32_t indx_screen,
+		int32_t _offset)
 {
 	struct render_opengl_data *r = emu->_render_data;
 
-	int32_t ppx = 0;
+	int32_t ppx = _offset;
+	int32_t off_r = 0;
+	if (_offset > 0) {
+		off_r = 960;
+	}
 	int32_t ppy = 0;
 	uint8_t x, y;
 	x = y = 0;
-	x = y = ppx = ppy = 0;
-
-	uint16_t ppu_addr[4] = {
-		0x2000,
-		0x2400,
-		0x2800,
-		0x2c00
-
-	};
-
-	uint32_t indx_screen0 = emu->ctrl[REAL_PPUCTRL] & 0x3;
-	uint32_t indx_screen1 = indx_screen0 + 1;
-	uint16_t addr0 = ppu_addr[indx_screen0];
-	uint16_t addr1 = ppu_addr[indx_screen1];
-
-	uint16_t off_screen = 960 + 28;
-
-	uint16_t addr = addr0;
 	uint16_t off_addr = 0;
 
-	uint32_t cur_indx_screen = indx_screen0;
-	int32_t is_next_screen = 0;
-	uint16_t naddr = addr0;
+	uint8_t off_x = _offset / 8;
 
-	uint16_t line = 32;
-	ppx = 0;
+	uint32_t cur_indx_screen = indx_screen;
+	uint32_t is_next_screen = 0;
+	uint16_t naddr = addr;
+
+	uint16_t line = WIDTH_LINE;
 
 	uint32_t scanline = 0;
 
@@ -1019,84 +1000,44 @@ static void draw_ppu (struct NESEmu *emu)
 
 	offx = emu->scroll_x[0];
 	last_off = offx / 8;
-	next_screen = 32 - last_off;
+	next_screen = WIDTH_LINE - last_off;
 	off = emu->offx % 8;
 
 	uint8_t start_y = 0;
-	for (uint16_t i = 0; i < off_screen; i++) {
+
+	for (uint16_t i = 0; i < 960; ) {
 
 		if (
 				((indx_scr_x + 1) < emu->max_scroll_indx) && 
 				(scanline > emu->scroll_tile_x[indx_scr_x]) &&
 				(scanline >= emu->scroll_tile_x[indx_scr_x + 1])) {
-			offx = emu->scroll_x[indx_scr_x + 1];
-			last_off = offx / 8;
-			next_screen = 32 - last_off;
-			off = emu->offx % 8;
 			indx_scr_x++;
+			offx = emu->scroll_x[indx_scr_x];
+			last_off = offx / 8;
+			off = offx % 8;
+			if (offx > 0) {
+				is_next_screen = 1;
+			}
 		} else {
 			offx = emu->scroll_x[indx_scr_x];
 		}
 
 
-		if ((off == 0) && (i >= 960)) {
-			break;
-		}
-
-		if ((i > 0) && ((i % 32) == 0)) {
-			line += 32;
-			x = 0;
-			y++;
-			ppx = 0;
-			ppy += 8;
-			addr = addr0;
-			off_addr = 0;
-			last = last_off;
-			cur_indx_screen = indx_screen0;
-			is_next_screen = 0;
-			scanline++;
-			start_y = y;
-		}
 
 
-		if (last_off > 0) {
-			if (is_next_screen > 0) {
-				naddr++;
-			} else {
-				addr = addr0;
-				cur_indx_screen = indx_screen0;
-				naddr = i + last_off + addr;
-			}
-			if ((i > 0) && ((i % (line - last_off)) == 0)) {
-				if (offx == 0)
-					continue;
-				addr = addr1;
-				cur_indx_screen = indx_screen1;
-				naddr = 32 * y + addr;
-				is_next_screen = last_off;
-			}
-		} else {
-			naddr = i + addr;
-		}
+		naddr = i + addr;
 
 		uint8_t id_texture = emu->ppu[naddr];
 
+		math_translate (r->transform, ppx - offx, ppy - 8, 0.f);
 
-		if ((offx == 0)) {
-			math_translate (r->transform, ppx, ppy - 8, 0.f);
-		} else if ((off == 0)) {
-			math_translate (r->transform, ppx, ppy - 8, 0.f);
-		} else {
-			math_translate (r->transform, ppx - off, ppy - 8, 0.f);
-		}
-
-		if (((emu->ppu_copy[i] != emu->ppu[naddr]) || emu->is_new_palette_background)) {
-			build_background (emu, r, id_texture, x, y, i, cur_indx_screen);
-			emu->ppu_copy[i] = emu->ppu[naddr];
+		if ((emu->ppu_copy[naddr] != emu->ppu[naddr]) || emu->is_new_palette_background) {
+			build_background (emu, r, id_texture, x, y, i + off_r, cur_indx_screen);
+			emu->ppu_copy[naddr] = emu->ppu[naddr];
 		}
 
 		glActiveTexture (GL_TEXTURE0);
-		glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
+		glBindTexture (GL_TEXTURE_2D, r->background_texture[i + off_r]);
 		glUniform1i (r->id_sampler, 0);
 
 		glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
@@ -1112,49 +1053,50 @@ static void draw_ppu (struct NESEmu *emu)
 		ppx += 8;
 		x++;
 
-#if 1
-		if ((((i + 1) % 32) == 0) && (off > 0)) {
-			naddr++;
-
-			if (addr == addr0) {
-				addr = addr1;
-				cur_indx_screen = indx_screen1;
-				naddr = 32 * y + addr;
-			}
-
-			math_translate (r->transform, ppx - off, ppy - 8, 0.f);
-
-			uint8_t id_texture = emu->ppu[naddr];
-
-			if (((emu->ppu_copy[i] != emu->ppu[naddr]) || emu->is_new_palette_background)) {
-				build_background (emu, r, id_texture, x, y, i, cur_indx_screen);
-				emu->ppu_copy[i] = emu->ppu[naddr];
-			}
-
-			glActiveTexture (GL_TEXTURE0);
-			glBindTexture (GL_TEXTURE_2D, r->background_texture[i]);
-			glUniform1i (r->id_sampler, 0);
-
-			glUniformMatrix4fv (r->id_ortho, 1, GL_FALSE, r->ortho);
-			glUniformMatrix4fv (r->id_transform, 1, GL_FALSE, r->transform);
-			glUniformMatrix4fv (r->id_scale, 1, GL_FALSE, r->scale);
-			glUniformMatrix4fv (r->id_model, 1, GL_FALSE, r->model);
-
-			glEnableVertexAttribArray (0);
-			glEnableVertexAttribArray (1);
-
-			glDrawArrays (GL_TRIANGLES, 0, 6);
-
-			ppx += 8;
-			x++;
+		i++;
+		if ((i > 0) && ((i % WIDTH_LINE) == 0)) {
+			line += WIDTH_LINE;
+			x = 0;
+			y++;
+			ppx = _offset;
+			ppy += 8;
+			off_addr = 0;
+			last = last_off;
+			scanline++;
+			start_y = y;
 		}
-#endif
-
-		is_next_screen--;
 	}
 
+	return is_next_screen;
+}
+
+static void draw_ppu (struct NESEmu *emu)
+{
+	struct render_opengl_data *r = emu->_render_data;
+
+	uint32_t is_rec = 0;
+
+	uint16_t ppu_addr[4] = {
+		0x2000,
+		0x2400,
+		0x2800,
+		0x2c00
+
+	};
+
+	uint32_t indx_screen0 = emu->ctrl[REAL_PPUCTRL] & 0x3;
+	uint32_t indx_screen1 = indx_screen0 + 1;
+	uint16_t addr0 = ppu_addr[indx_screen0];
+	uint16_t addr1 = ppu_addr[indx_screen1];
+
+	uint32_t is_next_screen = draw_screen (emu, addr0, indx_screen0, 0);
+
+	if (is_next_screen) {
+		draw_screen (emu, addr1, indx_screen1, 256);
+	}
 	emu->max_scroll_indx = 0;
 }
+
 
 static void bind_vertex_group (struct render_opengl_data *r)
 {

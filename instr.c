@@ -285,16 +285,6 @@ void write_to_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 			printf ("write to ppu %04x = %02x\n", emu->ppu_addr, *r);
 			emu->is_debug_exit = 1;
 		}
-#if 0
-		if ((*r >= 0x68) && (*r <= 0x6f)) {
-			printf ("writing collapse from PC: %04x; value: %02x; A: %02x; X: %02x; Y: %02x; P: %02x;\n", emu->cpu.PC, *r,
-					emu->cpu.A,
-					emu->cpu.X,
-					emu->cpu.Y,
-					emu->cpu.P);
-			debug (emu, 0x600, 0x700);
-		}
-#endif
 		emu->ppu[emu->ppu_addr] = *r;
 		emu->ppu_addr++;
 					  
