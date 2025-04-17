@@ -108,6 +108,7 @@ void nes_emu_init (struct NESEmu *emu, uint8_t *data, uint32_t sz_file)
 
 	emu->new_state = 0;
 	emu->is_new_palette_background = 1;
+	//emu->ppu_status |= 0x40;
 
 	uint32_t is_mirrored_rom = 0;
 	if ((emu->sz_prg_rom - 0x8000) > emu->sz_prg_rom) {
@@ -509,6 +510,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			emu->last_cycles_int64 = 0;
 			emu->start_time_nmi = 0;
 			emu->indx_scroll_linex = 0;
+			emu->ppu_status = 0x90;
 			//emu->cur_scanline_cycles = 0;
 			//emu->ppu_status |= 0x80;
 		}

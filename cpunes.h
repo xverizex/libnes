@@ -23,7 +23,8 @@ extern "C" {
 
 #define FLIP_SPRITE_HORIZONTALLY		(1 << 6)
 
-#define MAX_WORK_CYCLES        29829
+/* I dont know. maybe need to 29829 */
+#define MAX_WORK_CYCLES        29780
 #define MAX_NMI_CYCLES		1136
 /*
  * or 2273 cycles for MAX_NMI_CYCLES
@@ -248,6 +249,8 @@ struct NESEmu {
 
     uint32_t skip_cnt;
     uint32_t skip_trace;
+    
+    uint32_t is_pal_changed_debug;
 };
 
 enum {

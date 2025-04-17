@@ -113,6 +113,7 @@ static void print_help ()
 	printf ("stack - show stack\n");
 	printf ("trace [skip count] - trace each step\n");
 	printf ("bwr 0xXXXX [== 0xXX] - breakpoint on writing to address\n");
+	printf ("brkpale - break when is palette changed\n");
 }
 
 static void debug_breakpoint (struct NESEmu *emu, uint8_t *b)
@@ -437,7 +438,7 @@ void debug (struct NESEmu *emu)
 			get_arg_skip (&emu->skip_cnt, buf);
 			return;
 		}
-		if (!strncmp (buf, "brk", 3)) {
+		if (!strncmp (buf, "brk ", 4)) {
 			emu->latest_step = LATEST_NO;
 			debug_breakpoint (emu, buf);
 		}
@@ -496,6 +497,10 @@ void debug (struct NESEmu *emu)
 			emu->latest_step = LATEST_NO;
 			emu->is_debug_bwr = 1;
 			debug_bwr (emu, buf);
+		}
+		if (!strncmp (buf, "brkpale", 6)) {
+			emu->latest_step = LATEST_NO;
+			emu->is_pal_changed_debug = 1;
 		}
 
 		uint32_t len = strlen (buf);

@@ -1083,6 +1083,10 @@ static void recreate_palette (struct NESEmu *emu, struct render_opengl_data *r)
 	for (int y = 0; y < 16; y++) {
 		if ((r->palette_image[ix] != emu->ppu[addr_palette + ix])) {
 			emu->is_new_palette_background = 1;
+			if (emu->is_pal_changed_debug) {
+				printf ("Debug palette changed\n");
+				emu->is_debug = 1;
+			}
 		} else {
 			ix++;
 			continue;

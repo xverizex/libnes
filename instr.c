@@ -80,7 +80,7 @@ void check_collision (struct NESEmu *emu)
 		idx += 4;
 	}
 	if (sprite_overflow >= 8) {
-		emu->ppu_status |= 0x60;
+		emu->ppu_status |= 0x20;
 	}
 
 	if ((sprite_0_y <= emu->scanline) && ((sprite_0_y + 8) >= emu->scanline)) {
@@ -102,7 +102,7 @@ void check_collision (struct NESEmu *emu)
 			idx += 4;
 		}
 	} else {
-		emu->ppu_status &= ~(0x40);
+		//emu->ppu_status &= ~(0x40);
 	}
 }
 
@@ -113,9 +113,9 @@ void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 		emu->addr_off = 0;
 		emu->ppu_addr = 0;
 		*r = emu->ppu_status;
-		if (emu->ppu_status & 0x80) {
-			emu->ppu_status &= 0x7f;
-		}
+		//if (emu->ppu_status & 0x80) {
+		emu->ppu_status = 0x10;
+		//}
 		//printf ("%04x <- pc\n", emu->cpu.PC);
 		return;
 	}
