@@ -125,10 +125,10 @@ struct breakpoint {
 };
 
 enum write_cond {
-	WRITE_COND_NO,
-	WRITE_COND_EQ,
-	WRITE_COND_NOT_EQ,
-	N_WRITE_COND
+	BXR_COND_NO,
+	BXR_COND_EQ,
+	BXR_COND_NOT_EQ,
+	N_BXR_COND
 };
 
 struct breakwrite {
@@ -236,6 +236,10 @@ struct NESEmu {
     struct breakwrite bwr[0x100];
     uint32_t debug_bwr_cnt;
     uint32_t is_debug_bwr;
+
+    struct breakwrite brr[0x100];
+    uint32_t debug_brr_cnt;
+    uint32_t is_debug_brr;
 
     uint32_t is_started;
     uint32_t is_debug;

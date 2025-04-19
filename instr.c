@@ -108,6 +108,18 @@ void check_collision (struct NESEmu *emu)
 
 void read_from_address (struct NESEmu *emu, uint16_t addr, uint8_t *r)
 {
+	if (emu->is_debug_brr == 1) {
+		uint32_t cnt = emu->debug_brr_cnt;
+		for (int i = 0; i < cnt; i++) {
+			if (emu->brr[i].is_enabled && (addr == emu->brr[i].addr)) {
+				if (*r == emu->brr[i].val) {
+					emu->is_debug = 1;
+					printf ("# Breakpoint at $%04x with %02x\n", addr, *r);
+					break;
+				}
+			}
+		}
+	}
 	//printf ("\tread from addr: %04x = %02x\n", addr, *r);
 	if (addr == PPUSTATUS) {
 		emu->addr_off = 0;

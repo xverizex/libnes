@@ -4,6 +4,11 @@
 #include <string.h>
 #include <stdio.h>
 
+enum {
+	BXR_IS_WRITE,
+	BXR_IS_READ
+};
+
 static void memory_map (struct NESEmu *emu, uint16_t from, uint16_t to)
 {
 	uint16_t addr = from;
@@ -56,9 +61,13 @@ static void debug_map (struct NESEmu *emu, char *buf)
 	memory_map (emu, from, to);
 }
 
-static void debug_bwr (struct NESEmu *emu, char *buf)
+static void debug_bxr (struct NESEmu *emu, char *buf, uint32_t is_bxr)
 {
-	uint32_t cnt = emu->debug_bwr_cnt;
+	uint32_t cnt = 0;
+	if (is_bxr == BXR_IS_WRITE)
+		cnt = emu->debug_bwr_cnt;
+	else
+		cnt = emu->debug_brr_cnt;
 
 	char *s = strchr (buf, ' ');
 	s++;
@@ -71,32 +80,50 @@ static void debug_bwr (struct NESEmu *emu, char *buf)
 	*s = 0;
 	uint16_t addr = strtol (e, NULL, 16);
 	*s = temp;
-	emu->bwr[cnt].is_enabled = 1;
-	emu->bwr[cnt].addr = addr;
+	if (is_bxr == BXR_IS_WRITE) {
+		emu->bwr[cnt].is_enabled = 1;
+		emu->bwr[cnt].addr = addr;
+	} else {
+		emu->brr[cnt].is_enabled = 1;
+		emu->brr[cnt].addr = addr;
+	}
 	while (*s == ' ') s++;
 	if (*s == '!' || *s == '=') {
 		if (*s == '!' && *(s + 1) == '=') {
 			s += 2; while (*s == ' ') s++;
-			emu->bwr[cnt].cond = WRITE_COND_NOT_EQ;
 			char *e = strchr (s, '\r');
 			if (e) *e = 0;
 			e = strchr (s, '\n');
 			if (e) *e = 0;
 			uint8_t val = strtol (s, NULL, 16);
-			emu->bwr[cnt].val = val;
+			if (is_bxr == BXR_IS_WRITE) {
+				emu->bwr[cnt].cond = BXR_COND_NOT_EQ;
+				emu->bwr[cnt].val = val;
+			} else {
+				emu->brr[cnt].cond = BXR_COND_NOT_EQ;
+				emu->brr[cnt].val = val;
+			}
 		} else if (*s == '=' && *(s + 1) == '=') {
 			s += 2; while (*s == ' ') s++;
-			emu->bwr[cnt].cond = WRITE_COND_EQ;
 			char *e = strchr (s, '\r');
 			if (e) *e = 0;
 			e = strchr (s, '\n');
 			if (e) *e = 0;
 			uint8_t val = strtol (s, NULL, 16);
-			emu->bwr[cnt].val = val;
+			if (is_bxr == BXR_IS_WRITE) {
+				emu->bwr[cnt].cond = BXR_COND_EQ;
+				emu->bwr[cnt].val = val;
+			} else {
+				emu->brr[cnt].cond = BXR_COND_EQ;
+				emu->brr[cnt].val = val;
+			}
 		}
 	}
 
-	emu->debug_bwr_cnt++;
+	if (is_bxr == BXR_IS_WRITE)
+		emu->debug_bwr_cnt++;
+	else
+		emu->debug_brr_cnt++;
 }
 
 static void print_help ()
@@ -279,12 +306,12 @@ static uint32_t debug_is_condition_true (struct NESEmu *emu, int i)
 	return 1;
 }
 
-static void print_condition_bwr (struct NESEmu *emu, struct breakwrite *bwr)
+static void print_condition_bxr (struct NESEmu *emu, struct breakwrite *bxr)
 {
-	switch (bwr->cond) {
+	switch (bxr->cond) {
 		default: return;
-		case WRITE_COND_EQ: printf (" == %02x", bwr->val); break;
-		case WRITE_COND_NOT_EQ: printf (" != %02x", bwr->val); break;
+		case BXR_COND_EQ: printf (" == %02x", bxr->val); break;
+		case BXR_COND_NOT_EQ: printf (" != %02x", bxr->val); break;
 	}
 }
 
@@ -331,10 +358,21 @@ static void debug_list_bwr (struct NESEmu *emu)
 {
 	uint32_t cnt = emu->debug_bwr_cnt;
 	for (int i = 0; i < cnt; i++) {
-		printf ("#%d: %04x ", i + emu->debug_brk_cnt, emu->bwr[i].addr);
+		printf ("#%d: %04x", i + emu->debug_brk_cnt, emu->bwr[i].addr);
 		struct breakwrite *bwr = &emu->bwr[i];
-		print_condition_bwr (emu, bwr);
-		printf (" [%s]\n", bwr->is_enabled? "enabled": "disabled");
+		print_condition_bxr (emu, bwr);
+		printf (" write [%s]\n", bwr->is_enabled? "enabled": "disabled");
+	}
+}
+
+static void debug_list_brr (struct NESEmu *emu)
+{
+	uint32_t cnt = emu->debug_brr_cnt;
+	for (int i = 0; i < cnt; i++) {
+		printf ("#%d: %04x", i + emu->debug_brk_cnt + emu->debug_bwr_cnt, emu->brr[i].addr);
+		struct breakwrite *brr = &emu->brr[i];
+		print_condition_bxr (emu, brr);
+		printf (" read [%s]\n", brr->is_enabled? "enabled": "disabled");
 	}
 }
 
@@ -346,7 +384,10 @@ static void turn_break_point (struct NESEmu *emu, char *buf, uint32_t turn)
 	while (*e >= '0' && *e <= '9') e++;
 	*e = 0;
 	int num = atoi (s);
-	if (num >= emu->debug_brk_cnt) {
+	if (num >= (emu->debug_brk_cnt + emu->debug_bwr_cnt)) {
+		num = num - emu->debug_brk_cnt - emu->debug_bwr_cnt;
+		emu->brr[num].is_enabled = turn;
+	} else if (num >= emu->debug_brk_cnt) {
 		num = num - emu->debug_brk_cnt;
 		emu->bwr[num].is_enabled = turn;
 	} else {
@@ -460,6 +501,7 @@ void debug (struct NESEmu *emu)
 			emu->latest_step = LATEST_NO;
 			debug_list_brk (emu);
 			debug_list_bwr (emu);
+			debug_list_brr (emu);
 		}
 		if (!strncmp (buf, "exit", 4)) {
 			emu->latest_step = LATEST_NO;
@@ -504,7 +546,12 @@ void debug (struct NESEmu *emu)
 		if (!strncmp (buf, "bwr", 3)) {
 			emu->latest_step = LATEST_NO;
 			emu->is_debug_bwr = 1;
-			debug_bwr (emu, buf);
+			debug_bxr (emu, buf, BXR_IS_WRITE);
+		}
+		if (!strncmp (buf, "brr", 3)) {
+			emu->latest_step = LATEST_NO;
+			emu->is_debug_brr = 1;
+			debug_bxr (emu, buf, BXR_IS_READ);
 		}
 		if (!strncmp (buf, "brkpale", 6)) {
 			emu->latest_step = LATEST_NO;
