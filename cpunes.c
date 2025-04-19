@@ -480,7 +480,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 		}
 
 		if (ret_delay & DELAY_CYCLES) {
-			//debug (emu);
+			debug (emu);
 			pnes_handler [emu->mem[emu->cpu.PC - 0x8000]] (emu);
 
 #if 0

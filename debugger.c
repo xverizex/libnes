@@ -436,6 +436,7 @@ void debug (struct NESEmu *emu)
 			emu->latest_step = LATEST_CNT;
 			emu->is_debug = 0;
 			get_arg_skip (&emu->skip_cnt, buf);
+			emu->timestamp_cycles = 0;
 			return;
 		}
 		if (!strncmp (buf, "brk ", 4)) {
@@ -470,6 +471,7 @@ void debug (struct NESEmu *emu)
 		if (!strncmp (buf, "step", 4)) {
 			emu->latest_step = LATEST_STEP;
 			emu->debug_step = 1;
+			emu->timestamp_cycles = 0;
 			return;
 		}
 		if (!strncmp (buf, "pc", 2)) {
@@ -491,6 +493,7 @@ void debug (struct NESEmu *emu)
 			emu->debug_step = 1;
 			emu->is_debug = 0;
 			get_arg_skip (&emu->skip_cnt, buf);
+			emu->timestamp_cycles = 0;
 			return;
 		}
 		if (!strncmp (buf, "bwr", 3)) {
