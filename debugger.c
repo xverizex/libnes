@@ -331,7 +331,7 @@ static void debug_list_bwr (struct NESEmu *emu)
 {
 	uint32_t cnt = emu->debug_bwr_cnt;
 	for (int i = 0; i < cnt; i++) {
-		printf ("#%d: %04x ", i, emu->bwr[i].addr);
+		printf ("#%d: %04x ", i + emu->debug_brk_cnt, emu->bwr[i].addr);
 		struct breakwrite *bwr = &emu->bwr[i];
 		print_condition_bwr (emu, bwr);
 		printf (" [%s]\n", bwr->is_enabled? "enabled": "disabled");
@@ -346,7 +346,12 @@ static void turn_break_point (struct NESEmu *emu, char *buf, uint32_t turn)
 	while (*e >= '0' && *e <= '9') e++;
 	*e = 0;
 	int num = atoi (s);
-	emu->brk[num].is_enabled = turn;
+	if (num >= emu->debug_brk_cnt) {
+		num = num - emu->debug_brk_cnt;
+		emu->bwr[num].is_enabled = turn;
+	} else {
+		emu->brk[num].is_enabled = turn;
+	}
 }
 
 char *debugger_print_regs (struct NESEmu *emu)
