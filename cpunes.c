@@ -466,7 +466,7 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			if (platform_delay_nmi (emu, NULL)) {
 				emu->is_ready_to_vertical_blank = 1;
 				emu->vblank_scanline_cycles = 0;
-				//emu->ppu_status |= 0x80;
+				emu->ppu_status |= 0x80;
 			}
 		}
 

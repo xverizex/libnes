@@ -142,6 +142,7 @@ static void print_help ()
 	printf ("bwr 0xXXXX [== 0xXX] - breakpoint on writing to address\n");
 	printf ("brkpale - break when is palette changed\n");
 	printf ("dispmem 0xFF - display 8-bit value by offset\n");
+	printf ("restart - restart the emulation.\n");
 }
 
 static void debug_breakpoint (struct NESEmu *emu, uint8_t *b)
@@ -458,6 +459,31 @@ static void debug_display_memory (struct NESEmu *emu, char *buf)
 	emu->dispbrk[indx].off = off;
 }
 
+static void debug_emu_restart (struct NESEmu *emu)
+{
+	emu->cpu.PC = emu->reset_handler;
+	emu->cpu.S = 0xff;
+	emu->cpu.P |= STATUS_FLAG_IF;
+	emu->counter_for_nmi = 0;
+	emu->cur_cycles = 0;
+	emu->ppu_status = 0x0;
+	emu->is_nmi_works = 0;
+	emu->cur_scanline_cycles = 0;
+	emu->is_ready_to_vertical_blank = 0;
+	emu->vblank_scanline_cycles = 0;
+	emu->is_returned_from_nmi = 0;
+	emu->start_time_nmi = 0;
+	emu->indx_scroll_linex = 0;
+	emu->work_cycles = 0x0;
+	emu->scanline = 0x0;
+	emu->cycles_to_scanline = 0;
+	emu->vblank_scanline_cycles = 0;
+	emu->indx_scroll_linex = 0;
+	emu->last_scanline_int64 = 0;
+	emu->timestamp_cycles = 0;
+}
+						
+
 void debug (struct NESEmu *emu)
 {
 	if (emu->is_started == 1) {
@@ -505,6 +531,7 @@ void debug (struct NESEmu *emu)
 		if (!strncmp (buf, "cnt", 3)) {
 			emu->latest_step = LATEST_CNT;
 			emu->is_debug = 0;
+			emu->debug_step = 0;
 			get_arg_skip (&emu->skip_cnt, buf);
 			emu->timestamp_cycles = 0;
 			return;
@@ -585,6 +612,11 @@ void debug (struct NESEmu *emu)
 			emu->latest_step = LATEST_NO;
 			emu->is_debug_dispbrk = 1;
 			debug_display_memory (emu, buf);
+		}
+		if (!strncmp (buf, "restart", 7)) {
+			emu->latest_step = LATEST_NO;
+			debug_emu_restart (emu);
+			return;
 		}
 
 		uint32_t len = strlen (buf);
