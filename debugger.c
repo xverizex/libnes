@@ -141,6 +141,7 @@ static void print_help ()
 	printf ("trace [skip count] - trace each step\n");
 	printf ("bwr 0xXXXX [== 0xXX] - breakpoint on writing to address\n");
 	printf ("brkpale - break when is palette changed\n");
+	printf ("dispmem 0xFF - display 8-bit value by offset\n");
 }
 
 static void debug_breakpoint (struct NESEmu *emu, uint8_t *b)
@@ -434,6 +435,29 @@ static void get_arg_skip (uint32_t *skip, char *buf)
 	}
 }
 
+static void debug_display_memory (struct NESEmu *emu, char *buf)
+{
+	char *s = strchr (buf, ' ');
+	if (!s) {
+		printf ("Error: Need to offset to memory. Example dispmem 0x14\n");
+		return;
+	}
+
+	while (*s == ' ') s++;
+	char *e = strchr (s, '\n');
+	if (e) *e = 0;
+	uint16_t off = strtol (s, NULL, 16);
+
+	printf ("off: %04x\n", off);
+	int indx = emu->debug_dispbrk_cnt++;
+	if (off < RAM_MAX)
+		emu->dispbrk[indx].val = &emu->ram[off];
+	else
+		emu->dispbrk[indx].val = &emu->mem[off];
+
+	emu->dispbrk[indx].off = off;
+}
+
 void debug (struct NESEmu *emu)
 {
 	if (emu->is_started == 1) {
@@ -557,13 +581,18 @@ void debug (struct NESEmu *emu)
 			emu->latest_step = LATEST_NO;
 			emu->is_pal_changed_debug = 1;
 		}
+		if (!strncmp (buf, "dispmem", 7)) {
+			emu->latest_step = LATEST_NO;
+			emu->is_debug_dispbrk = 1;
+			debug_display_memory (emu, buf);
+		}
 
 		uint32_t len = strlen (buf);
 		if (len == 1 && buf[0] == 0xa) {
 			switch (emu->latest_step) {
-				case LATEST_CNT: emu->is_debug = 0; return;
-				case LATEST_STEP: emu->debug_step = 1; return;
-				case LATEST_TRACE: emu->debug_step = 1; emu->is_debug = 0; return;
+				case LATEST_CNT: emu->is_debug = 0; emu->timestamp_cycles = 0; return;
+				case LATEST_STEP: emu->debug_step = 1; emu->timestamp_cycles = 0; return;
+				case LATEST_TRACE: emu->debug_step = 1; emu->timestamp_cycles = 0; emu->is_debug = 0; return;
 				default: emu->debug_step = 0; break;
 			}
 		}

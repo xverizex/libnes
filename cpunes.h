@@ -138,6 +138,11 @@ struct breakwrite {
 	uint32_t is_enabled;
 };
 
+struct dispbrk {
+	uint8_t *val;
+	uint16_t off;
+};
+
 struct NESEmu {
     struct CPUNes cpu;
     uint8_t is_branch;
@@ -240,6 +245,10 @@ struct NESEmu {
     struct breakwrite brr[0x100];
     uint32_t debug_brr_cnt;
     uint32_t is_debug_brr;
+
+    struct dispbrk dispbrk[0x100];
+    uint32_t debug_dispbrk_cnt;
+    uint32_t is_debug_dispbrk;
 
     uint32_t is_started;
     uint32_t is_debug;

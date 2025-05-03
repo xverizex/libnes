@@ -523,6 +523,10 @@ void nes_emu_execute (struct NESEmu *emu, uint32_t count_instructions, void *_da
 			//emu->cur_scanline_cycles = 0;
 			//emu->ppu_status |= 0x80;
 		}
+
+		if (emu->is_nmi_works == 1) {
+			i--;
+		}
 	}
 }
 
