@@ -1086,6 +1086,9 @@ static void recreate_palette (struct NESEmu *emu, struct render_opengl_data *r)
 			emu->is_new_palette_background = 1;
 			if (emu->is_pal_changed_debug) {
 				printf ("Debug palette changed\n");
+				if (emu->is_tracelog) {
+					fprintf (emu->tracelog, "Debug palette changed\n");
+				}
 				emu->is_debug = 1;
 			}
 		} else {

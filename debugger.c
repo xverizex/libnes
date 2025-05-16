@@ -531,11 +531,19 @@ void debug (struct NESEmu *emu)
 	}
 	if (emu->is_started == 0) {
 		emu->is_debug = 1;
-		if (!emu->only_show)
+		if (!emu->only_show) {
 			printf ("# Debugger mode\n");
+			if (emu->is_tracelog) {
+				fprintf (emu->tracelog, "# Debugger mode\n");
+			}
+		}
 	} else if (emu->is_debug) {
-		if (!emu->only_show && !emu->debug_step)
+		if (!emu->only_show && !emu->debug_step) {
 			printf ("# Debugger mode\n");
+			if (emu->is_tracelog) {
+				fprintf (emu->tracelog, "# Debugger mode\n");
+			}
+		}
 	}
 
 	emu->only_show = 0;
