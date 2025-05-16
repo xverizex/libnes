@@ -1,7 +1,7 @@
 CC=gcc
-CFLAGS=-I.
-LDFLAGS=-lGLESv2 -lSDL3 -fPIC -shared -O3
-SOURCES=cpunes.c instr.c platform_linux.c palette.c
+CFLAGS=-I. -Iglad/include
+LDFLAGS=-lGL -lSDL3 -fPIC -shared -O3
+SOURCES=cpunes.c instr.c linux/platform.c palette.c sdl3_opengl3.c debugger.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=libnes.so
 LIB_DIR=/usr/local/lib64
@@ -17,4 +17,5 @@ $(EXECUTABLE): $(OBJECTS)
 
 clean:
 	rm -f *o
+	rm -f linux/*.o
 	rm -f $(EXECUTABLE)
