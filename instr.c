@@ -714,6 +714,9 @@ void brk_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "BRK");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	wait_cycles (emu, 7);
@@ -737,6 +740,9 @@ void ora_indirect_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ORA ($%02x, X)", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t val = addr < RAM_MAX? emu->ram[addr]: emu->mem[addr - 0x8000];
@@ -760,6 +766,9 @@ void ora_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "ORA $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t val = emu->ram[addr];
@@ -782,6 +791,9 @@ void asl_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "ASL $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	asl_acts (emu, 
@@ -799,6 +811,9 @@ void php_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "PHP");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	uint16_t addr = 0x100 + cpu->S;
@@ -820,6 +835,9 @@ void ora_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "ORA #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -837,6 +855,9 @@ void asl_accumulator (struct NESEmu *emu)
 		snprintf (buf, 256, "ASL A");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -854,6 +875,9 @@ void ora_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "ORA $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -882,6 +906,9 @@ void asl_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "ASL $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -909,6 +936,9 @@ void bpl_relative (struct NESEmu *emu)
 		snprintf (buf, 256, "BPL $%04x", new_offset);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 
 	uint32_t ext_cycles = 0;
@@ -949,6 +979,9 @@ void ora_indirect_y (struct NESEmu *emu)
 		snprintf (buf, 256, "ORA ($%02x), Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -971,6 +1004,9 @@ void ora_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ORA $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	repetitive_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF,
@@ -990,6 +1026,9 @@ void asl_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ASL $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	asl_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1004,6 +1043,9 @@ void clc_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "CLC");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P &= ~(STATUS_FLAG_CF);
@@ -1038,6 +1080,9 @@ void ora_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "ORA $%04x, Y", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1072,6 +1117,9 @@ void ora_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ORA $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1100,6 +1148,9 @@ void asl_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ASL $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	asl_acts (emu, 
@@ -1137,6 +1188,9 @@ void jsr_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "JSR $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_pc, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_pc, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->PC = new_pc;
@@ -1154,6 +1208,9 @@ void and_indirect_x (struct NESEmu *emu)
 		snprintf (buf, 256, "AND ($%02x, X)", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1173,6 +1230,9 @@ void bit_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "BIT $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	bit_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
@@ -1191,6 +1251,9 @@ void and_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "AND $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1210,6 +1273,9 @@ void rol_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "ROL $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	rol_acts (emu,
@@ -1229,6 +1295,9 @@ void plp_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "PLP");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P = emu->ram[addr];
@@ -1249,6 +1318,9 @@ void and_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "AND #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, val, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, val, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1266,6 +1338,9 @@ void rol_accumulator (struct NESEmu *emu)
 		snprintf (buf, 256, "ROL A");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1283,6 +1358,9 @@ void bit_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "BIT $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	bit_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_VF,
@@ -1300,6 +1378,9 @@ void and_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "AND $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1328,6 +1409,9 @@ void rol_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "ROL $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1354,6 +1438,9 @@ void bmi_relative (struct NESEmu *emu)
 		snprintf (buf, 256, "BMI $%04x", new_offset);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 
 	uint32_t ext_cycles = 0;
@@ -1380,6 +1467,9 @@ void and_indirect_y (struct NESEmu *emu)
 		snprintf (buf, 256, "AND ($%02x), Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1401,6 +1491,9 @@ void and_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "AND $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1420,6 +1513,9 @@ void rol_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ROL $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	rol_acts (emu,
@@ -1435,6 +1531,9 @@ void sec_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "SEC");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	emu->cpu.P |= (STATUS_FLAG_CF);
 	emu->cpu.PC++;
@@ -1452,6 +1551,9 @@ void and_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "AND $%04x, Y", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1487,6 +1589,9 @@ void and_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "AND $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1515,6 +1620,9 @@ void rol_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ROL $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	rol_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1532,6 +1640,9 @@ void rti_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "RTI");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P = emu->ram[addr];
@@ -1564,6 +1675,9 @@ void eor_indirect_x (struct NESEmu *emu)
 		snprintf (buf, 256, "EOR ($%02x, X)", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1584,6 +1698,9 @@ void eor_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "EOR $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1603,6 +1720,9 @@ void lsr_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "LSR $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	lsr_acts (emu, 
@@ -1621,6 +1741,9 @@ void pha_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "PHA");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	--cpu->S;
 
@@ -1640,6 +1763,9 @@ void eor_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "EOR #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, val, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, val, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1657,6 +1783,9 @@ void lsr_accumulator (struct NESEmu *emu)
 		snprintf (buf, 256, "LSR A");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	lsr_acts (emu, 
@@ -1675,6 +1804,9 @@ void jmp_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "JMP $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->PC = new_offset;
@@ -1692,6 +1824,9 @@ void eor_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "EOR $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1720,6 +1855,9 @@ void lsr_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "LSR $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	lsr_acts (emu,
@@ -1749,6 +1887,9 @@ void bvc_relative (struct NESEmu *emu)
 		snprintf (buf, 256, "BVC $%04x", new_offset);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 
 	if (emu->cpu.P & STATUS_FLAG_VF) {
@@ -1772,6 +1913,9 @@ void eor_indirect_y (struct NESEmu *emu)
 		snprintf (buf, 256, "EOR ($%02x), Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1793,6 +1937,9 @@ void eor_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "EOR $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1812,6 +1959,9 @@ void lsr_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "LSR $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	lsr_acts (emu, 
@@ -1827,6 +1977,9 @@ void cli_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "CLI");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	emu->cpu.P &= ~(STATUS_FLAG_IF);
 	emu->cpu.PC++;
@@ -1844,6 +1997,9 @@ void eor_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "EOR $%04x, Y", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1879,6 +2035,9 @@ void eor_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "EOR $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	repetitive_acts (emu, 
@@ -1907,6 +2066,9 @@ void lsr_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "LSR $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	lsr_acts (emu, 
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -1922,6 +2084,9 @@ void rts_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "RTS");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->S++;
@@ -1960,6 +2125,9 @@ void adc_indirect_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ADC ($%02x, X)", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -1982,6 +2150,9 @@ void adc_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "ADC $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -2003,6 +2174,9 @@ void ror_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "ROR $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	ror_acts (emu,
@@ -2019,6 +2193,9 @@ void pla_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "PLA");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->S++;
@@ -2052,6 +2229,9 @@ void adc_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "ADC #$%02x", value);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -2072,6 +2252,9 @@ void ror_accumulator (struct NESEmu *emu)
 		snprintf (buf, 256, "ROR A");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2087,6 +2270,9 @@ void jmp_indirect (struct NESEmu *emu)
 		snprintf (buf, 256, "JMP ($%04x)", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, off, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, off, debugger_print_regs (emu));
+		}
 	}
 	emu->cpu.PC = off;
 
@@ -2112,6 +2298,9 @@ void adc_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "ADC $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -2142,6 +2331,9 @@ void ror_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "ROR $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2168,6 +2360,9 @@ void bvs_relative (struct NESEmu *emu)
 		snprintf (buf, 256, "BVS $%04x", new_offset);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 
 	uint32_t ext_cycles = 0;
@@ -2217,6 +2412,9 @@ void adc_indirect_y (struct NESEmu *emu)
 		snprintf (buf, 256, "ADC ($%02x), Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -2238,6 +2436,9 @@ void adc_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ADC $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -2259,6 +2460,9 @@ void ror_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ROR $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	ror_acts (emu,
@@ -2274,6 +2478,9 @@ void sei_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "SEI");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	emu->cpu.P &= (STATUS_FLAG_IF);
 	emu->cpu.PC++;
@@ -2315,6 +2522,9 @@ void adc_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "ADC $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -2361,6 +2571,9 @@ void adc_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ADC $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -2391,6 +2604,9 @@ void ror_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "ROR $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ror_acts (emu,
 			STATUS_FLAG_NF|STATUS_FLAG_ZF|STATUS_FLAG_CF,
@@ -2407,6 +2623,9 @@ void sta_indirect_x (struct NESEmu *emu)
 		snprintf (buf, 256, "STA ($%02x, X)", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->A, addr, (6 << 8) | 2);
 }
@@ -2420,6 +2639,9 @@ void sty_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "STY $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->Y, addr, (3 << 8) | 2);
 }
@@ -2433,6 +2655,9 @@ void sta_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "STA $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->A, addr, (3 << 8) | 2);
 }
@@ -2445,6 +2670,9 @@ void stx_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "STX $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->X, addr, (3 << 8) | 2);
 }
@@ -2456,6 +2684,9 @@ void dey_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "DEY");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	struct CPUNes *cpu = &emu->cpu;
 
@@ -2480,6 +2711,9 @@ void txa_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "TXA");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	struct CPUNes *cpu = &emu->cpu;
 
@@ -2508,6 +2742,9 @@ void sty_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "STY $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->Y, addr, (4 << 8) | 3);
 }
@@ -2521,6 +2758,9 @@ void sta_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "STA $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->A, addr, (4 << 8) | 3);
 }
@@ -2536,6 +2776,9 @@ void stx_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "STX $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->X, addr, (4 << 8) | 3);
 }
@@ -2562,6 +2805,9 @@ void bcc_relative (struct NESEmu *emu)
 		snprintf (buf, 256, "BCC $%04x", new_offset);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 	if (emu->cpu.P & STATUS_FLAG_CF) {
 		cpu->PC += 2;
@@ -2583,6 +2829,9 @@ void sta_indirect_y (struct NESEmu *emu)
 		snprintf (buf, 256, "STA ($%02x), Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->A, addr, (6 << 8) | 2);
 }
@@ -2596,6 +2845,9 @@ void sty_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "STY $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->Y, addr, (4 << 8) | 2);
 }
@@ -2609,6 +2861,9 @@ void sta_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "STA $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->A, addr, (4 << 8) | 2);
 }
@@ -2621,6 +2876,9 @@ void stx_zeropage_y (struct NESEmu *emu)
 		snprintf (buf, 256, "STX $%02x, Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->X, addr, (4 << 8) | 2);
 }
@@ -2632,6 +2890,9 @@ void tya_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "TYA");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	struct CPUNes *cpu = &emu->cpu;
 
@@ -2660,6 +2921,9 @@ void sta_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "STA $%04x, Y", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->A, addr, (5 << 8) | 3);
 }
@@ -2671,6 +2935,9 @@ void txs_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "TXS");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	struct CPUNes *cpu = &emu->cpu;
 
@@ -2690,6 +2957,9 @@ void sta_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "STA $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	st_acts (emu, &cpu->A, addr, (5 << 8) | 3);
 }
@@ -2703,6 +2973,9 @@ void ldy_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "LDY #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
@@ -2719,6 +2992,9 @@ void lda_indirect_x (struct NESEmu *emu)
 		snprintf (buf, 256, "LDA ($%02x, X)", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
@@ -2735,6 +3011,9 @@ void ldx_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "LDX #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
@@ -2751,6 +3030,9 @@ void ldy_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "LDY $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
@@ -2767,6 +3049,9 @@ void lda_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "LDA $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
@@ -2783,6 +3068,9 @@ void ldx_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "LDX $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
@@ -2798,6 +3086,9 @@ void tay_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "TAY");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P &= ~(STATUS_FLAG_ZF|STATUS_FLAG_NF);
@@ -2825,6 +3116,9 @@ void lda_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "LDA #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	ld_acts_imm (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
@@ -2840,6 +3134,9 @@ void tax_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "TAX");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P &= ~(STATUS_FLAG_ZF|STATUS_FLAG_NF);
@@ -2867,6 +3164,9 @@ void ldy_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "LDY $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
@@ -2883,6 +3183,9 @@ void lda_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "LDA $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
@@ -2899,6 +3202,9 @@ void ldx_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "LDX $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
@@ -2927,6 +3233,9 @@ void bcs_relative (struct NESEmu *emu)
 		snprintf (buf, 256, "BCS $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 
 	if (emu->cpu.P & STATUS_FLAG_CF) {
@@ -2949,6 +3258,9 @@ void lda_indirect_y (struct NESEmu *emu)
 		snprintf (buf, 256, "LDA ($%02x), Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
@@ -2964,6 +3276,9 @@ void ldy_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "LDY $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
@@ -2980,6 +3295,9 @@ void lda_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "LDA $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
@@ -2996,6 +3314,9 @@ void ldx_zeropage_y (struct NESEmu *emu)
 		snprintf (buf, 256, "LDX $%02x, Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
@@ -3011,6 +3332,9 @@ void clv_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "CLV");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	emu->cpu.P &= ~(STATUS_FLAG_VF);
 
@@ -3028,6 +3352,9 @@ void lda_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "LDA $%04x, Y", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
@@ -3043,6 +3370,9 @@ void tsx_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "TSX");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P &= ~(STATUS_FLAG_ZF|STATUS_FLAG_NF);
@@ -3070,6 +3400,9 @@ void ldy_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "LDY $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->Y,
@@ -3086,6 +3419,9 @@ void lda_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "LDA $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->A,
@@ -3102,6 +3438,9 @@ void ldx_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "LDX $%04x, Y", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	ld_acts (emu, STATUS_FLAG_ZF|STATUS_FLAG_NF,
 			&cpu->X,
@@ -3118,6 +3457,9 @@ void cpy_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "CPY #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3138,6 +3480,9 @@ void cmp_indirect_x (struct NESEmu *emu)
 		snprintf (buf, 256, "CMP ($%02x, X)", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3159,6 +3504,9 @@ void cpy_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "CPY $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3180,6 +3528,9 @@ void cmp_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "CMP $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3199,6 +3550,9 @@ void dec_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "DEC $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t result = emu->ram[addr] - 1;
@@ -3219,6 +3573,9 @@ void iny_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "INY");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
@@ -3244,6 +3601,9 @@ void cmp_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "CMP #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3262,6 +3622,9 @@ void dex_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "DEX");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
@@ -3289,6 +3652,9 @@ void cpy_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "CPY $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3309,6 +3675,9 @@ void cmp_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "CMP $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3337,6 +3706,9 @@ void dec_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "DEC $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t result = m[addr - off] - 1;
@@ -3368,6 +3740,9 @@ void bne_relative (struct NESEmu *emu)
 		snprintf (buf, 256, "BNE $%04x", new_offset);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 
 	uint32_t ext_cycles = 0;
@@ -3395,6 +3770,9 @@ void cmp_indirect_y (struct NESEmu *emu)
 		snprintf (buf, 256, "CMP ($%02x), Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3414,6 +3792,9 @@ void cmp_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "CMP $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3433,6 +3814,9 @@ void dec_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "DEC $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t result = emu->ram[addr] - 1;
@@ -3453,6 +3837,9 @@ void cld_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "CLD");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	emu->cpu.P &= ~(STATUS_FLAG_DF);
@@ -3473,6 +3860,9 @@ void cmp_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "CMP $%04x, Y", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3494,6 +3884,9 @@ void cmp_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "CMP $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3522,6 +3915,9 @@ void dec_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "DEC $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t result = m[addr - off] - 1;
@@ -3544,6 +3940,9 @@ void cpx_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "CPX #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3564,6 +3963,9 @@ void sbc_indirect_x (struct NESEmu *emu)
 		snprintf (buf, 256, "SBC ($%02x, X)", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -3588,6 +3990,9 @@ void cpx_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "CPX $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3609,6 +4014,9 @@ void sbc_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "SBC $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -3630,6 +4038,9 @@ void inc_zeropage (struct NESEmu *emu)
 		snprintf (buf, 256, "INC $%02x", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 	uint8_t result = emu->ram[addr] + 1;
 
@@ -3649,6 +4060,9 @@ void inx_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "INX");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	cpu->P &= ~(STATUS_FLAG_NF|STATUS_FLAG_ZF);
@@ -3675,6 +4089,9 @@ void sbc_immediate (struct NESEmu *emu)
 		snprintf (buf, 256, "SBC #$%02x", val);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -3694,6 +4111,9 @@ void nop_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "NOP");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	struct CPUNes *cpu = &emu->cpu;
 	emu->cpu.PC++;
@@ -3711,6 +4131,9 @@ void cpx_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "CPX $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	cmp_act (emu, 
@@ -3730,6 +4153,9 @@ void sbc_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "SBC $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -3760,6 +4186,9 @@ void inc_absolute (struct NESEmu *emu)
 		snprintf (buf, 256, "INC $%04x", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t result = m[addr - off] + 1;
@@ -3794,6 +4223,9 @@ void beq_relative (struct NESEmu *emu)
 		snprintf (buf, 256, "BEQ $%04x", new_offset);
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, new_offset, debugger_print_regs (emu));
+		}
 	}
 
 	if (emu->cpu.P & STATUS_FLAG_ZF) {
@@ -3817,6 +4249,9 @@ void sbc_indirect_y (struct NESEmu *emu)
 		snprintf (buf, 256, "SBC ($%02x), Y", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -3839,6 +4274,9 @@ void sbc_zeropage_x (struct NESEmu *emu)
 		snprintf (buf, 256, "SBC $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -3859,6 +4297,9 @@ void inc_zeropage_x (struct NESEmu *emu) {
 		snprintf (buf, 256, "INC $%02x, X", mem8 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t result = emu->ram[addr] + 1;
@@ -3878,6 +4319,9 @@ void sed_implied (struct NESEmu *emu)
 		snprintf (buf, 256, "SED");
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, 0x0, debugger_print_regs (emu));
+		}
 	}
 	struct CPUNes *cpu = &emu->cpu;
 	emu->cpu.P |= (STATUS_FLAG_DF);
@@ -3897,6 +4341,9 @@ void sbc_absolute_y (struct NESEmu *emu)
 		snprintf (buf, 256, "SBC $%04x, Y", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -3918,6 +4365,9 @@ void sbc_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "SBC $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	adc_acts (emu, 
@@ -3948,6 +4398,9 @@ void inc_absolute_x (struct NESEmu *emu)
 		snprintf (buf, 256, "INC $%04x, X", mem16 (emu));
 		printf ("%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
 		if (emu->only_show) return;
+		if (emu->is_tracelog) {
+			fprintf (emu->tracelog, "%04x: %-20s [%04x] [%s]\n", emu->cpu.PC, buf, addr, debugger_print_regs (emu));
+		}
 	}
 
 	uint8_t result = m[addr - off] + 1;

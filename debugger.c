@@ -143,6 +143,7 @@ static void print_help ()
 	printf ("brkpale - break when is palette changed\n");
 	printf ("dispmem 0xFF - display 8-bit value by offset\n");
 	printf ("restart - restart the emulation.\n");
+	printf ("tracelog [filename] - log trace into file.\n");
 }
 
 static void debug_breakpoint (struct NESEmu *emu, uint8_t *b)
@@ -484,6 +485,25 @@ static void debug_emu_restart (struct NESEmu *emu)
 }
 						
 
+static void debug_tracelog_file (struct NESEmu *emu, char *buf)
+{
+	char *s = strchr (buf, ' ');
+	if (!s) {
+		printf ("Need a filename.\n");
+		return;
+	}
+	s++;
+	char *filename = s;
+	s = strchr (s, '\n');
+	if (s) *s = 0;
+
+	int len = strlen (filename);
+
+	emu->filename_tracelog = strdup (filename);
+	emu->tracelog = fopen (filename, "w");
+	emu->is_tracelog = 1;
+}
+
 void debug (struct NESEmu *emu)
 {
 	if (emu->is_started == 1) {
@@ -556,6 +576,9 @@ void debug (struct NESEmu *emu)
 		}
 		if (!strncmp (buf, "exit", 4)) {
 			emu->latest_step = LATEST_NO;
+			if (emu->tracelog) {
+				fclose (emu->tracelog);
+			}
 			exit (EXIT_SUCCESS);
 		}
 		if (!strncmp (buf, "enable", 6)) {
@@ -586,6 +609,10 @@ void debug (struct NESEmu *emu)
 			emu->only_show = 1;
 			return;
 		}
+		if (!strncmp (buf, "tracelog", 8)) {
+			debug_tracelog_file (emu, buf);
+		}
+
 		if (!strncmp (buf, "trace", 5)) {
 			emu->latest_step = LATEST_TRACE;
 			emu->debug_step = 1;

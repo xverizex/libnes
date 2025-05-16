@@ -30,6 +30,8 @@ extern "C" {
  * or 2273 cycles for MAX_NMI_CYCLES
  */
 
+#include <stdio.h>
+
 enum {
 	PPUCTRL = 0x2000,
 	PPUMASK, // 0x2001
@@ -264,6 +266,10 @@ struct NESEmu {
     uint32_t skip_trace;
     
     uint32_t is_pal_changed_debug;
+
+    uint32_t is_tracelog;
+    char *filename_tracelog;
+    FILE *tracelog;
 };
 
 enum {
